@@ -101,11 +101,14 @@ cd services/api && pip install -r requirements.txt
 
 ### Documentation
 
+**🤖 For AI Assistants (Claude, etc.):**
+- **[claude.md](./claude.md)** - 👈 **START HERE!** Complete onboarding for new sessions
+
 **New here? Start with these docs:**
 1. [📖 Project Overview](./docs/PROJECT_OVERVIEW.md) - Understand the project
-2. [🛠️ Development Workflow](./docs/DEVELOPMENT_WORKFLOW.md) - Learn how to develop features
-3. [🏛️ Architecture](./docs/ARCHITECTURE/) - System design
-4. [⚙️ Setup Guide](./docs/SETUP/) - Development environment setup
+2. [🏗️ Architecture](./docs/ARCHITECTURE.md) - Simplified Supabase-based architecture
+3. [🚀 Quick Start](./QUICKSTART.md) - Setup in 5 minutes
+4. [🛠️ Development Workflow](./docs/DEVELOPMENT_WORKFLOW.md) - Learn how to develop features
 
 ---
 
@@ -160,26 +163,33 @@ cd services/api && pip install -r requirements.txt
 
 ---
 
-## 🛠️ Tech Stack
+## 🛠️ Tech Stack (Simplified!)
 
 ### Frontend
 - **Next.js 16** (React 19.2, Turbopack, PPR)
 - **TypeScript** 5.x
 - **Tailwind CSS** 3.x + **shadcn/ui**
 - **TradingView Lightweight Charts**
+- **Supabase JS Client** (Auth & Data)
 
-### Backend
-- **FastAPI** 0.110+
-- **SQLAlchemy** 2.x ORM
-- **Celery** + **Redis** (Background jobs)
+### Backend - Supabase (Primary)
+- **PostgreSQL** (Managed database)
+- **Supabase Auth** (Email, Social Login, JWT)
+- **Supabase Storage** (Charts, PDFs)
+- **Edge Functions** (Webhooks, Serverless)
+- **Row Level Security** (RLS)
+
+### Backend - FastAPI (AI Agents Only)
+- **FastAPI** 0.110+ (AI orchestration)
+- **Celery** + **Redis** (Background AI tasks)
 - **OpenAI API** + **LangChain** (AI agents)
+- **Supabase Python Client**
 
 ### Infrastructure
-- **PostgreSQL** (User data, trades, reports)
-- **Redis** (Caching, job queue)
-- **Docker Compose** (Local dev)
-- **GitHub Actions** (CI/CD)
-- **Vercel** (Frontend) + **Railway/Fly.io** (Backend)
+- **Supabase** (Database + Auth + Storage)
+- **Railway/Fly.io** (FastAPI + Celery workers)
+- **Vercel** (Next.js Frontend)
+- **Upstash** (Redis)
 
 ---
 
@@ -188,21 +198,23 @@ cd services/api && pip install -r requirements.txt
 ### ✅ Completed
 - [x] Repository structure
 - [x] Documentation system
-- [x] Feature planning templates
+- [x] **Backend architecture simplified with Supabase**
+- [x] **Database schema designed** (SQL migrations ready)
+- [x] **Supabase client configuration**
+- [x] **FastAPI simplified** (AI agents only)
+- [x] **Edge Functions templates** created
 
 ### 🚧 In Progress
 - [ ] Next.js 16 app setup
-- [ ] FastAPI backend setup
-- [ ] Database schema design
-- [ ] AI agent framework
+- [ ] Supabase project creation & migrations
+- [ ] Frontend Supabase client integration
 
 ### 📋 Planned
-- [ ] Authentication & authorization
-- [ ] Stripe subscription integration
-- [ ] Market data pipeline
+- [ ] AI agent implementation (ChartWatcher, SignalBot, etc.)
+- [ ] Stripe subscription integration (via Edge Functions)
 - [ ] Chart analysis system
 - [ ] Report generator
-- [ ] Admin dashboard
+- [ ] Storage bucket configuration
 
 ---
 
