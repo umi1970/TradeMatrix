@@ -19,7 +19,7 @@ TradeMatrix.ai is an AI-powered, fully automated trading analysis system focused
 
 ## 🏗️ Architecture Overview
 
-### Tech Stack
+### Tech Stack (Simplified!)
 
 **Frontend:**
 - Next.js 16 (React 19.2, Turbopack, PPR, React Compiler)
@@ -27,22 +27,24 @@ TradeMatrix.ai is an AI-powered, fully automated trading analysis system focused
 - Tailwind CSS + shadcn/ui
 - TradingView Lightweight Charts
 
-**Backend:**
-- FastAPI (Python 3.11+)
-- SQLAlchemy ORM
-- Celery + Redis (Background tasks)
-- OpenAI API + LangChain (AI agents)
+**Backend (Supabase - All-in-One):**
+- PostgreSQL Database (auto-generated REST APIs)
+- Authentication (Email, Social Login, JWT)
+- Storage (Charts, PDFs)
+- Edge Functions (Webhooks, Serverless)
+- Row Level Security (RLS)
 
-**Database & Storage:**
-- PostgreSQL (Users, Subscriptions, Trades, Reports)
-- Redis (Caching, Job Queue)
-- S3/Supabase Storage (Charts, PDFs)
+**Backend (FastAPI - AI Agents Only):**
+- AI Agent orchestration
+- Celery + Redis (Background AI tasks)
+- OpenAI API + LangChain (AI agents)
+- Complex business logic
 
 **Infrastructure:**
-- Docker Compose (Local dev)
-- GitHub Actions (CI/CD)
-- Vercel (Frontend hosting)
-- Railway/Fly.io (Backend hosting)
+- Supabase (Database + Auth + Storage)
+- Railway/Fly.io (FastAPI + Celery)
+- Vercel (Next.js Frontend)
+- Upstash (Redis)
 
 ---
 
@@ -161,18 +163,23 @@ TradeMatrix/
 ### ✅ Completed
 - [x] Project structure setup
 - [x] Documentation system
+- [x] Backend architecture simplified (Supabase integration)
+- [x] Database schema designed (SQL migrations ready)
+- [x] Supabase client configuration
+- [x] FastAPI simplified to AI agents only
+- [x] Edge Functions templates created
 
 ### 🚧 In Progress
 - [ ] Next.js 16 app setup
-- [ ] FastAPI backend setup
-- [ ] Database schema design
+- [ ] Supabase project creation & migration execution
+- [ ] Frontend Supabase client integration
 
 ### 📋 Planned
-- [ ] Authentication & authorization
-- [ ] Subscription/billing integration (Stripe)
-- [ ] AI agent implementation
+- [ ] AI agent implementation (ChartWatcher, SignalBot, etc.)
+- [ ] Subscription/billing integration (Stripe webhooks)
 - [ ] Chart analysis system
 - [ ] Report generator
+- [ ] Storage bucket configuration
 
 ---
 
@@ -187,9 +194,9 @@ TradeMatrix/
 
 **Quick Links:**
 - [Development Workflow](./DEVELOPMENT_WORKFLOW.md)
-- [Architecture](./ARCHITECTURE/)
+- [Architecture (Supabase-based)](./ARCHITECTURE.md) 👈 **NEU!**
 - [Features](./FEATURES/)
-- [Setup Guide](./SETUP/)
+- [Supabase Setup](../services/api/supabase/README.md)
 
 ---
 
