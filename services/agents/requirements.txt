@@ -1,0 +1,13 @@
+# AI/ML
+openai==1.10.0
+langchain==0.1.4
+langchain-openai==0.0.5
+
+# Data processing
+pandas==2.1.4
+numpy==1.26.3
+
+# Utilities
+python-dotenv==1.0.0
+httpx==0.26.0
+pydantic==2.5.3
