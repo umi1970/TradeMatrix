@@ -18,4 +18,4 @@ langchain-openai==0.0.5
 
 # Utilities
 python-dotenv==1.0.0
-httpx==0.25.0
+httpx>=0.24.0,<0.26.0
