@@ -1,0 +1,23 @@
+# ============================================================
+# TradeMatrix.ai – RiskManagement.yaml
+# Purpose: Global risk definitions used by all agents
+# ============================================================
+
+Parameters:
+  MaxRiskPerTrade: 0.01
+  BreakevenAt: 0.5
+  PauseAfter3Losses: true
+  MaxConcurrentTrades: 3
+  MinRRR: 2.5
+  DefaultATRMultiplier: 1.2
+
+Execution:
+  - OnNewTrade:
+      compute_position_size: "account_balance * MaxRiskPerTrade / (entry - sl)"
+  - OnProfitReached:
+      move_sl_to_be: true
+  - OnLossStreak:
+      if losses_in_row >= 3:
+        trigger: "pause_trading"
+  - OnDayEnd:
+      reset_daily_risk_log: true

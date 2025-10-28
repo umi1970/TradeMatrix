@@ -1,0 +1,26 @@
+# ============================================================
+# TradeMatrix.ai – NewsEventReaction.yaml
+# Purpose: Reaction Flow to Economic Events (CPI, FOMC, NFP)
+# ============================================================
+
+Schedule:
+  - PreUSDataCheck: "14:20–14:35 CET"
+  - FOMCScan: "19:45–20:15 CET"
+
+Sources:
+  - TradingEconomics
+  - InvestingCalendar
+  - Make.com Webhook "macro_events"
+
+Logic:
+  - DetectEventType:
+      - if event in ["CPI","PPI","Retail Sales"]: set_bias("Volatility High")
+      - if event in ["FOMC","NFP","GDP"]: set_bias("High Impact")
+  - MatchAsset:
+      - DAX: correlate_to("DowJones","NASDAQ100")
+      - EURUSD: correlate_to("US Dollar Index")
+  - ResponseRules:
+      - "SpikeDetector": volume_spike > 1.5x_avg → trigger "cooldown"
+      - "VolatilityControl": widen_sl_tp by factor 1.4
+  - ReportImpact:
+      - Save to: "data/macro_reactions.json"

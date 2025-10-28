@@ -1,0 +1,43 @@
+# ============================================================
+# TradeMatrix.ai – MorningPlanner_v3.yaml
+# Version: 3.1 – 28.10.2025
+# Author: Ümit + TradeValidationEngine
+# Purpose: Intraday Flow for Pre-Market and EU Session
+# ============================================================
+
+Meta:
+  Timeframe: 5m
+  TradingHours: "08:00–22:00 CET"
+  Assets: ["DAX", "NASDAQ100", "DowJones", "EUR/USD"]
+  Risk:
+    MaxRiskPerTrade: 0.01
+    BreakevenAt: 0.5
+    PauseAfter3Losses: true
+  Indicators:
+    EMA: [20, 50, 200]
+    PivotPoints: true
+    Ichimoku: [9, 26, 52, 26]
+    RSI: 14
+    MACD: [12, 26, 9]
+    ATR: 14
+
+Flow:
+  - FetchMarketData:
+      provider: ["Stock3", "TwelveData"]
+      lookback: "2 days"
+  - ComputeIndicators
+  - ValidateRules:
+      active_rules: ["MR-01","MR-02","MR-03","MR-04","MR-05","MR-06"]
+  - ApplyTradeValidationEngine
+  - EvaluateRisk
+  - OutputSignal
+
+RulesLogic:
+  Priority:
+    A: ["MR-04","MR-05","MR-06"]
+    B: ["MR-01","MR-02","MR-03"]
+
+Outputs:
+  Format: ["JSON","DOCX"]
+  Destination: "Google Drive/Reports/Daily"
+  Include: ["EntryZones","RiskSummary","ValidationScores"]

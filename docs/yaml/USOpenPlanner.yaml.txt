@@ -1,0 +1,27 @@
+# ============================================================
+# TradeMatrix.ai – USOpenPlanner.yaml
+# Purpose: Handle 15:30–16:30 CET US Market Opening Scenarios
+# ============================================================
+
+Meta:
+  Session: "US Open"
+  Time: "15:30–16:30 CET"
+  Assets: ["NASDAQ100","DowJones","DAX"]
+
+Logic:
+  - CheckPreMarketLevels:
+      reference: "14:00–15:00 CET high/low"
+  - IdentifyOpeningPattern:
+      options: ["GapUp","GapDown","InsideOpen"]
+  - RuleSet:
+      - if "GapUp" and volume_spike > 1.3x_avg:
+          bias: Short
+          rule: "MR-03"
+      - if "GapDown" and reversal_pattern:
+          bias: Long
+          rule: "MR-04"
+  - RiskAdjust:
+      risk_multiplier: 0.8
+  - GenerateSignal:
+      format: "JSON"
+      save_to: "data/usopen_signals.json"

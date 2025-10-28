@@ -1,0 +1,25 @@
+# ============================================================
+# TradeMatrix.ai – EndOfMonthFlow.yaml
+# Purpose: Smart-Money Rotation & Monthly Bias Detection
+# ============================================================
+
+Meta:
+  DetectionWindow: "Last 3 Trading Days"
+  Assets: ["DAX","NASDAQ100","DowJones"]
+  Indicators: ["EMA20","EMA50","Volume"]
+
+Logic:
+  - DetectInstitutionalRotation:
+      condition:
+        - volume_spike > 1.5x_avg
+        - ema20_turns_positive == true
+      result: "SmartMoneyRotation"
+  - RuleLink:
+      activates: "MR-05"
+  - PlanTrade:
+      entry: "break_of_day_high"
+      sl: "day_low - 30"
+      tp: "r1_or_prev_swing_high"
+  - Output:
+      format: "JSON"
+      file: "data/month_end_plan.json"
