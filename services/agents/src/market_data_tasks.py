@@ -26,7 +26,7 @@ from celery.schedules import crontab
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '../../api/src'))
 
 from core.market_data_fetcher import MarketDataFetcher
-from config.supabase import get_supabase_admin_client, get_settings
+from config.supabase import get_supabase_client, get_settings
 
 # Setup logging
 logging.basicConfig(
@@ -82,7 +82,7 @@ class MarketDataTask(Task):
         """Lazy-load fetcher instance"""
         if self._fetcher is None:
             self._fetcher = MarketDataFetcher(
-                api_key=settings.TWELVE_DATA_API_KEY
+                api_key=settings.TWELVEDATA_API_KEY
             )
         return self._fetcher
 
@@ -348,7 +348,7 @@ def check_api_usage() -> Dict[str, Any]:
         Dictionary with API usage information
     """
     try:
-        fetcher = MarketDataFetcher(api_key=settings.TWELVE_DATA_API_KEY)
+        fetcher = MarketDataFetcher(api_key=settings.TWELVEDATA_API_KEY)
         usage = fetcher.get_api_usage()
 
         logger.info(

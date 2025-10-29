@@ -11,9 +11,14 @@ __version__ = "0.1.0"
 # from .signal_bot import SignalBot
 # from .risk_manager import RiskManager
 
-from .morning_planner import MorningPlanner
-from .us_open_planner import USOpenPlanner
-from .signal_bot import SignalBot
-from .chart_watcher import ChartWatcher
+# NOTE: Commented out to avoid import errors when loading market_data_tasks
+# These agents require config.supabase from services/api
+# Uncomment when proper PYTHONPATH is configured or after refactoring imports
 
-__all__ = ["MorningPlanner", "USOpenPlanner", "SignalBot", "ChartWatcher"]
+# from .morning_planner import MorningPlanner
+# from .us_open_planner import USOpenPlanner
+# from .signal_bot import SignalBot
+# from .chart_watcher import ChartWatcher
+
+# __all__ = ["MorningPlanner", "USOpenPlanner", "SignalBot", "ChartWatcher"]
+__all__ = []
