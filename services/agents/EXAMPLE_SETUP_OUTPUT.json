@@ -1,0 +1,149 @@
+{
+  "execution_summary": {
+    "execution_time": "2025-10-29T07:25:00.000000Z",
+    "execution_duration_ms": 1842,
+    "symbols_analyzed": 5,
+    "setups_generated": 2,
+    "setups": [
+      {
+        "symbol": "DAX",
+        "strategy": "asia_sweep",
+        "setup_id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+        "confidence": 0.72,
+        "entry_price": 18345.5
+      },
+      {
+        "symbol": "NDX",
+        "strategy": "y_low_rebound",
+        "setup_id": "b2c3d4e5-f6a7-8901-bcde-f12345678901",
+        "confidence": 0.68,
+        "entry_price": 16250.75
+      }
+    ]
+  },
+  "generated_setup_examples": [
+    {
+      "setup_name": "DAX - Asia Sweep Setup",
+      "database_record": {
+        "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+        "user_id": null,
+        "created_at": "2025-10-29T07:25:01.234567Z",
+        "updated_at": "2025-10-29T07:25:01.234567Z",
+        "module": "morning",
+        "symbol_id": "123e4567-e89b-12d3-a456-426614174001",
+        "strategy": "asia_sweep",
+        "side": "long",
+        "entry_price": 18345.5,
+        "stop_loss": 18290.25,
+        "take_profit": 18420.0,
+        "confidence": 0.72,
+        "status": "pending",
+        "payload": {
+          "strategy": "asia_sweep",
+          "side": "long",
+          "entry_price": 18345.5,
+          "stop_loss": 18290.25,
+          "take_profit": 18420.0,
+          "confidence": 0.72,
+          "metadata": {
+            "asia_low": 18285.0,
+            "y_low": 18300.0,
+            "pivot": 18420.0,
+            "r1": 18540.0,
+            "eu_open_close": 18345.5,
+            "sweep_depth_pct": 0.08,
+            "entry_distance_pct": 0.25,
+            "volume_ratio": 1.8,
+            "detection_time": "2025-10-29T07:25:00.123456Z"
+          }
+        }
+      },
+      "trading_summary": {
+        "symbol": "DAX",
+        "strategy": "Asia Sweep -> EU Open Reversal",
+        "direction": "LONG",
+        "entry": "18345.50",
+        "stop_loss": "18290.25",
+        "take_profit": "18420.00",
+        "risk_reward_ratio": "1:1.35",
+        "confidence": "72%",
+        "key_insights": [
+          "Asia session swept below y_low (18300.00) to 18285.00",
+          "EU Open reversed above y_low with strong volume (1.8x average)",
+          "Entry 0.25% above y_low (good position)",
+          "Target: Pivot at 18420.00"
+        ]
+      }
+    },
+    {
+      "setup_name": "NDX - Y-Low Rebound Setup",
+      "database_record": {
+        "id": "b2c3d4e5-f6a7-8901-bcde-f12345678901",
+        "user_id": null,
+        "created_at": "2025-10-29T07:25:02.345678Z",
+        "updated_at": "2025-10-29T07:25:02.345678Z",
+        "module": "morning",
+        "symbol_id": "234f5678-f90c-23e4-b567-537725285002",
+        "strategy": "y_low_rebound",
+        "side": "long",
+        "entry_price": 16250.75,
+        "stop_loss": 16180.0,
+        "take_profit": 16320.0,
+        "confidence": 0.68,
+        "status": "pending",
+        "payload": {
+          "strategy": "y_low_rebound",
+          "side": "long",
+          "entry_price": 16250.75,
+          "stop_loss": 16180.0,
+          "take_profit": 16320.0,
+          "confidence": 0.68,
+          "metadata": {
+            "y_low": 16200.0,
+            "pivot": 16320.0,
+            "r1": 16440.0,
+            "market_open": 16210.0,
+            "current_price": 16250.75,
+            "extended_target": 16440.0,
+            "distance_from_ylow_pct": 0.31,
+            "time_of_analysis": "08:25",
+            "detection_time": "2025-10-29T07:25:00.234567Z"
+          }
+        }
+      },
+      "trading_summary": {
+        "symbol": "NASDAQ 100",
+        "strategy": "Y-Low -> Pivot Rebound",
+        "direction": "LONG",
+        "entry": "16250.75",
+        "stop_loss": "16180.00",
+        "take_profit": "16320.00",
+        "risk_reward_ratio": "1:0.98",
+        "confidence": "68%",
+        "key_insights": [
+          "Market opened below pivot (16320.00) at 16210.00",
+          "Currently trading 0.31% above y_low (good entry zone)",
+          "No breakout above pivot yet (setup valid)",
+          "Early morning timing (08:25) - plenty of time for rebound"
+        ]
+      }
+    }
+  ],
+  "notes": {
+    "status_values": [
+      "pending - Setup detected, not yet active",
+      "active - User confirmed/activated the setup",
+      "invalid - Conditions no longer met",
+      "filled - Trade executed",
+      "cancelled - Setup cancelled by user or system"
+    ],
+    "confidence_interpretation": {
+      "0.8_to_1.0": "High confidence - Strong signal, ideal conditions",
+      "0.6_to_0.79": "Good confidence - Solid setup with good factors",
+      "0.4_to_0.59": "Medium confidence - Valid but less ideal conditions",
+      "0.0_to_0.39": "Low confidence - Weak signal, higher risk"
+    },
+    "timezone_handling": "All timestamps in UTC, analysis done in Europe/Berlin timezone",
+    "price_precision": "Decimal type used for calculations, converted to float for JSON storage"
+  }
+}

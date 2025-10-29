@@ -70,77 +70,86 @@
 
 ### 🔥 Must-Read (Start HIER!)
 
-1. **[docs/PROJECT_OVERVIEW.md](./docs/PROJECT_OVERVIEW.md)**
+1. **[docs/00_MASTER_ROADMAP.md](./docs/00_MASTER_ROADMAP.md)** ⭐ NEU!
+   - 5 Phases to MVP (Foundation → SaaS)
+   - Current status & next steps
+   - Dependencies & timeline
+   - Complete project roadmap
+
+2. **[docs/PROJECT_OVERVIEW.md](./docs/PROJECT_OVERVIEW.md)**
    - Vollständiger Projekt-Überblick
    - Tech Stack (updated mit Supabase!)
    - Subscription Tiers
    - Current Status
 
-2. **[docs/ARCHITECTURE.md](./docs/ARCHITECTURE.md)** ⭐ NEU!
+3. **[docs/ARCHITECTURE.md](./docs/ARCHITECTURE.md)**
    - Komplette Supabase-Architektur (Deutsch!)
    - Verantwortlichkeiten (Supabase vs FastAPI)
    - Best Practices
    - Deployment-Strategie
 
-3. **[QUICKSTART.md](./QUICKSTART.md)** ⭐ NEU!
+4. **[QUICKSTART.md](./QUICKSTART.md)**
    - Setup in 5 Minuten
    - Supabase Projekt erstellen
    - Backend & Frontend starten
 
 ### 📚 Reference Docs
 
-4. **[docs/DEVELOPMENT_WORKFLOW.md](./docs/DEVELOPMENT_WORKFLOW.md)**
+5. **[docs/DEVELOPMENT_WORKFLOW.md](./docs/DEVELOPMENT_WORKFLOW.md)**
    - Feature-Entwicklung
    - Template-System
    - Checklists
 
-5. **[docs/README.md](./docs/README.md)**
+6. **[docs/README.md](./docs/README.md)**
    - Dokumentations-Übersicht
    - Alle Dokumentations-Kategorien
 
 ### 🔧 Technical Docs
 
-6. **[services/api/supabase/README.md](./services/api/supabase/README.md)**
+7. **[services/api/supabase/README.md](./services/api/supabase/README.md)**
    - Supabase Setup
    - Migrationen
    - RLS Policies
 
-7. **[services/api/supabase/functions/README.md](./services/api/supabase/functions/README.md)**
+8. **[services/api/supabase/functions/README.md](./services/api/supabase/functions/README.md)**
    - Edge Functions
    - Deployment
 
 ---
 
-## 📊 Aktueller Status (2025-10-26)
+## 📊 Aktueller Status (2025-10-29)
 
-### ✅ Completed
+### ✅ Phase 1: Foundation - COMPLETED (100%)
 - [x] Projekt-Struktur
-- [x] Dokumentationssystem
+- [x] Dokumentationssystem (inkl. Master Roadmap!)
 - [x] **Backend auf Supabase vereinfacht** ⭐
 - [x] **Datenbank-Schema designed** (SQL Migrationen)
 - [x] **Supabase Projekt erstellt** ("tradematrix Projekt")
 - [x] **Database Migrationen ausgeführt** (001_initial_schema.sql, 002_rls_policies.sql)
 - [x] **FastAPI vereinfacht** (nur AI Agents)
 - [x] **Edge Functions Templates** (create-trade, stripe-webhook)
-- [x] **Next.js 16 App Setup** ⭐ NEW!
+- [x] **Next.js 16 App Setup** ⭐
 - [x] **ESLint 9 mit Flat Config** (eslint.config.mjs)
 - [x] **Supabase Client Integration** (@supabase/supabase-js, @supabase/ssr)
 - [x] **Authentication (Email/Password)** - Login, Signup, Protected Routes
 - [x] **Auth Pages erstellt** (Login, Signup, Dashboard)
 - [x] **Middleware für Route Protection**
 
-### 🚧 In Progress
-- [ ] Google OAuth Integration (vorbereitet, muss konfiguriert werden)
+### 🚧 Phase 2: Trading Logic - IN PROGRESS (20%)
+- [x] Trading rules documented
+- [x] Validation engine concept
+- [x] Risk management principles
+- [ ] Market data fetcher (Twelve Data API)
+- [ ] Technical indicators (EMA, RSI, MACD, BB, ATR)
+- [ ] Trade validation engine
+- [ ] Risk calculator
 
-### 📋 Next Up
-- [ ] Google OAuth Provider konfigurieren (optional)
-- [ ] UI Components (shadcn/ui)
-- [ ] User Profile Page
-- [ ] AI Agent Implementation (ChartWatcher, SignalBot)
-- [ ] Stripe Subscription Integration
-- [ ] Chart Analysis System
-- [ ] Report Generator
-- [ ] Storage Buckets konfigurieren
+### 📋 Phase 3-5: See Master Roadmap
+- [ ] Phase 3: AI Agents (ChartWatcher, SignalBot, RiskManager, JournalBot)
+- [ ] Phase 4: Dashboard UX (shadcn/ui, Charts, Real-time updates)
+- [ ] Phase 5: SaaS Features (Stripe, Publishing, Notifications)
+
+**For detailed roadmap:** See [docs/00_MASTER_ROADMAP.md](./docs/00_MASTER_ROADMAP.md)
 
 ---
 
@@ -182,12 +191,14 @@ TradeMatrix/
 │   └── shared/                    # Shared Types
 │
 ├── docs/                          # 📚 DOCUMENTATION HUB
-│   ├── PROJECT_OVERVIEW.md        # ⭐ Start here!
-│   ├── ARCHITECTURE.md            # ⭐ NEW! Supabase Architecture
+│   ├── 00_MASTER_ROADMAP.md       # ⭐ ROADMAP! 5 Phases to MVP
+│   ├── PROJECT_OVERVIEW.md        # ⭐ Project Overview
+│   ├── ARCHITECTURE.md            # ⭐ Supabase Architecture
 │   ├── DEVELOPMENT_WORKFLOW.md    # Feature Development
 │   ├── README.md                  # Docs Overview
 │   ├── FEATURES/                  # Feature Planning
 │   │   └── _template/            # Feature Templates
+│   ├── ARCHIVE/                   # Old documentation (pre-Supabase)
 │   └── STRATEGIES/                # Trading Strategies
 │
 └── config/

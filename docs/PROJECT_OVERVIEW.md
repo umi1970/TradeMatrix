@@ -1,8 +1,8 @@
 # TradeMatrix.ai - Project Overview
 
-**Version:** 1.0.0
-**Status:** 🚧 In Development (MVP Phase)
-**Last Updated:** 2025-10-26
+**Version:** 1.1.0
+**Status:** 🚧 Phase 1 Complete - Phase 2 In Progress
+**Last Updated:** 2025-10-29
 
 ---
 
@@ -83,10 +83,12 @@ TradeMatrix/
 │   └── shared/                 # Shared types & utilities
 │
 ├── docs/                       # Documentation (YOU ARE HERE!)
+│   ├── 00_MASTER_ROADMAP.md    # 👈 Complete 5-phase roadmap!
 │   ├── PROJECT_OVERVIEW.md     # 👈 Start here every session!
 │   ├── DEVELOPMENT_WORKFLOW.md # How to develop features
-│   ├── ARCHITECTURE/           # System design
+│   ├── ARCHITECTURE.md         # System design (Supabase)
 │   ├── FEATURES/               # Feature planning & checklists
+│   ├── ARCHIVE/                # Old documentation (pre-Supabase)
 │   ├── STRATEGIES/             # Trading strategies
 │   └── ...
 │
@@ -162,32 +164,43 @@ TradeMatrix/
 
 ## 🚀 Current Status
 
-### ✅ Completed
+> **See [00_MASTER_ROADMAP.md](./00_MASTER_ROADMAP.md) for complete 5-phase roadmap!**
+
+### ✅ Phase 1: Foundation - COMPLETED (100%)
 - [x] Project structure setup
-- [x] Documentation system
+- [x] Documentation system (including Master Roadmap!)
 - [x] Backend architecture simplified (Supabase integration)
 - [x] Database schema designed (SQL migrations ready)
 - [x] Supabase project created ("tradematrix Projekt")
 - [x] Database migrations executed (001_initial_schema.sql, 002_rls_policies.sql)
 - [x] FastAPI simplified to AI agents only
 - [x] Edge Functions templates created
-- [x] **Next.js 16 app setup** ⭐ (App Router, React 19.2)
+- [x] **Next.js 16 app setup** (App Router, React 19.2)
 - [x] **ESLint 9 with Flat Config** (eslint.config.mjs)
 - [x] **Supabase client integration** (@supabase/supabase-js, @supabase/ssr)
 - [x] **Authentication (Email/Password)** - Signup, Login, Protected Routes
 - [x] **Auth pages** - Login, Signup, Dashboard with middleware protection
 
-### 🚧 In Progress
-- [ ] Google OAuth integration (prepared, needs Supabase configuration)
+### 🚧 Phase 2: Trading Logic - IN PROGRESS (50%)
+- [x] Trading rules documented
+- [x] Validation engine concept
+- [x] Risk management principles
+- [x] **Market data fetcher** (Twelve Data API integration) ✅
+- [x] **Technical indicators** (EMA, RSI, MACD, BB, ATR, Ichimoku, Pivots) ✅ NEW!
+- [ ] **Trade validation engine** (rule-based validation)
+- [ ] **Risk calculator** (position sizing, SL/TP)
 
-### 📋 Planned
-- [ ] UI components library (shadcn/ui)
-- [ ] User profile & settings page
-- [ ] AI agent implementation (ChartWatcher, SignalBot, etc.)
-- [ ] Subscription/billing integration (Stripe webhooks)
-- [ ] Chart analysis system
-- [ ] Report generator
-- [ ] Storage bucket configuration
+### 📋 Phases 3-5: Planned
+- **Phase 3:** AI Agents (ChartWatcher, SignalBot, RiskManager, JournalBot)
+- **Phase 4:** Dashboard UX (shadcn/ui, charts, real-time updates)
+- **Phase 5:** SaaS Features (Stripe, publishing, notifications)
+
+### 🎯 Next Immediate Steps
+1. ✅ ~~Implement MarketDataFetcher (Twelve Data API)~~ - COMPLETE
+2. ✅ ~~Create TechnicalIndicators module (EMA, RSI, MACD, etc.)~~ - COMPLETE
+3. Integrate TechnicalIndicators with ValidationEngine
+4. Implement RiskCalculator
+5. Create trading signal generator
 
 ---
 
@@ -195,14 +208,16 @@ TradeMatrix/
 
 **When starting a new chat/session:**
 
-1. **Read this file first** (`docs/PROJECT_OVERVIEW.md`)
-2. Check `docs/DEVELOPMENT_WORKFLOW.md` for feature development process
-3. Review current features in `docs/FEATURES/`
-4. Check implementation checklists for pending tasks
+1. **Read** [CLAUDE.md](../CLAUDE.md) **first** (session onboarding!)
+2. **Review** [00_MASTER_ROADMAP.md](./00_MASTER_ROADMAP.md) (complete roadmap)
+3. Check this file (`PROJECT_OVERVIEW.md`) for current status
+4. Review `DEVELOPMENT_WORKFLOW.md` for feature development process
+5. Check implementation checklists for pending tasks
 
 **Quick Links:**
+- [Master Roadmap](./00_MASTER_ROADMAP.md) 👈 **NEW!**
+- [Architecture (Supabase-based)](./ARCHITECTURE.md)
 - [Development Workflow](./DEVELOPMENT_WORKFLOW.md)
-- [Architecture (Supabase-based)](./ARCHITECTURE.md) 👈 **NEU!**
 - [Features](./FEATURES/)
 - [Supabase Setup](../services/api/supabase/README.md)
 

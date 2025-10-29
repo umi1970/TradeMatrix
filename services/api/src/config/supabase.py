@@ -22,6 +22,9 @@ class Settings(BaseSettings):
     # AI Services
     OPENAI_API_KEY: str
 
+    # Twelve Data API
+    TWELVEDATA_API_KEY: str
+
     # Stripe
     STRIPE_SECRET_KEY: str
     STRIPE_WEBHOOK_SECRET: str
