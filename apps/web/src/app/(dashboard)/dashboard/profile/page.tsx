@@ -10,6 +10,8 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Copy, Eye, EyeOff, Lock, Clock, Bell, AlertCircle } from 'lucide-react'
+import { SubscriptionPlans } from '@/components/billing/SubscriptionPlans'
+import { BillingPortal } from '@/components/billing/BillingPortal'
 
 interface Profile {
   id: string
@@ -349,11 +351,33 @@ export default function ProfilePage() {
                   : 'Thank you for your subscription!'}
               </p>
             </div>
-            <Button variant="outline" className="w-full">
-              {profile.subscription_tier === 'free'
-                ? 'Upgrade Plan'
-                : 'Manage Subscription'}
-            </Button>
+            {profile.subscription_tier === 'free' ? (
+              <Button
+                variant="outline"
+                className="w-full"
+                onClick={() => {
+                  const billingSection = document.getElementById('billing')
+                  if (billingSection) {
+                    billingSection.scrollIntoView({ behavior: 'smooth' })
+                  }
+                }}
+              >
+                Upgrade Plan
+              </Button>
+            ) : (
+              <Button
+                variant="outline"
+                className="w-full"
+                onClick={() => {
+                  const billingSection = document.getElementById('billing')
+                  if (billingSection) {
+                    billingSection.scrollIntoView({ behavior: 'smooth' })
+                  }
+                }}
+              >
+                Manage Subscription
+              </Button>
+            )}
           </CardContent>
         </Card>
       </div>
@@ -629,6 +653,40 @@ export default function ProfilePage() {
           </form>
         </CardContent>
       </Card>
+
+      {/* Billing & Subscription Management */}
+      <div id="billing">
+        <Card>
+          <CardHeader>
+            <CardTitle>Billing & Subscription</CardTitle>
+            <p className="text-sm text-muted-foreground">
+              Manage your subscription and billing information
+            </p>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            {/* Import and use SubscriptionPlans */}
+            <div className="space-y-4">
+              <h3 className="text-lg font-semibold">Available Plans</h3>
+              <SubscriptionPlans currentTier={profile.subscription_tier} />
+            </div>
+
+            {/* Billing Portal Access */}
+            {profile.subscription_tier !== 'free' && (
+              <div className="pt-6 border-t">
+                <div className="space-y-4">
+                  <div>
+                    <h4 className="font-medium mb-2">Manage Your Subscription</h4>
+                    <p className="text-sm text-muted-foreground mb-4">
+                      Update payment method, view invoices, or cancel subscription
+                    </p>
+                  </div>
+                  <BillingPortal />
+                </div>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
     </div>
   )
 }
