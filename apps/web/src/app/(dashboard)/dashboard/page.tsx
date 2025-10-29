@@ -80,19 +80,8 @@ export default function DashboardPage() {
   // Using mock data - remove 'use client' if you want to fetch from Supabase server-side
   // Or use client-side data fetching with useEffect + createBrowserClient()
 
-  // Fetch recent trades (will be implemented with real data)
-  let recentTrades: any[] = []
-  try {
-    const { data } = await supabase
-      .from('trades')
-      .select('*')
-      .eq('user_id', user?.id || '')
-      .order('created_at', { ascending: false })
-      .limit(5)
-    recentTrades = data || []
-  } catch (error) {
-    console.log('Trades table not yet available')
-  }
+  // Mock recent trades - replace with real Supabase data later
+  const recentTrades: any[] = []
 
   return (
     <div className="space-y-6">
