@@ -35,7 +35,7 @@ export async function GET(request: Request) {
     const supabase = await createServerClient()
 
     // Fetch current prices with symbol information
-    const { data, error } = await supabase
+    const { data, error } = await (supabase as any)
       .from('current_prices_with_symbols')
       .select('*')
       .order('updated_at', { ascending: false })

@@ -99,8 +99,8 @@ export default function ProfilePage() {
         const userProfile: Profile = {
           id: user.id,
           email: user.email || '',
-          full_name: profileData?.full_name,
-          avatar_url: profileData?.avatar_url,
+          full_name: profileData?.full_name ?? undefined,
+          avatar_url: profileData?.avatar_url ?? undefined,
           subscription_tier: profileData?.subscription_tier || 'free',
           created_at: user.created_at || new Date().toISOString(),
           updated_at: profileData?.updated_at || new Date().toISOString(),

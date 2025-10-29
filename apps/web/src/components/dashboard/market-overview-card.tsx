@@ -6,8 +6,8 @@ interface MarketData {
   symbol: string
   name: string
   price: number
-  change: number
-  changePercent: number
+  change: number | null
+  changePercent: number | null
   trend: 'up' | 'down' | 'neutral'
 }
 
@@ -55,12 +55,12 @@ export function MarketOverviewCard({ market }: MarketOverviewCardProps) {
             <div className={`flex items-center gap-1 text-sm font-medium mt-1 ${getTrendColor()}`}>
               {getTrendIcon()}
               <span>
-                {market.change >= 0 ? '+' : ''}
-                {market.change.toFixed(2)}
+                {market.change !== null && market.change >= 0 ? '+' : ''}
+                {market.change !== null ? market.change.toFixed(2) : '0.00'}
               </span>
               <span className="text-xs">
-                ({market.changePercent >= 0 ? '+' : ''}
-                {market.changePercent.toFixed(2)}%)
+                ({market.changePercent !== null && market.changePercent >= 0 ? '+' : ''}
+                {market.changePercent !== null ? market.changePercent.toFixed(2) : '0.00'}%)
               </span>
             </div>
           </div>

@@ -44,7 +44,7 @@ export async function POST(request: NextRequest) {
       const customer = await createCustomer({
         email: profile.email,
         userId: user.id,
-        name: profile.full_name,
+        name: profile.full_name ?? undefined,
       })
 
       customerId = customer.id

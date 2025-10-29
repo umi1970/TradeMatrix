@@ -17,9 +17,9 @@ export const dynamic = 'force-dynamic'
 export const revalidate = 0
 
 interface RouteParams {
-  params: {
+  params: Promise<{
     symbol: string
-  }
+  }>
 }
 
 export async function GET(
@@ -27,7 +27,7 @@ export async function GET(
   { params }: RouteParams
 ) {
   try {
-    const { symbol } = params
+    const { symbol } = await params
     const { searchParams } = new URL(request.url)
 
     // Parse query parameters
@@ -56,7 +56,7 @@ export async function GET(
     const supabase = await createServerClient()
 
     // First, get the symbol_id from market_symbols table
-    const { data: symbolData, error: symbolError } = await supabase
+    const { data: symbolData, error: symbolError } = await (supabase as any)
       .from('market_symbols')
       .select('id, alias')
       .eq('symbol', symbol.toUpperCase())
@@ -71,7 +71,7 @@ export async function GET(
     }
 
     // Build query for OHLC data
-    let query = supabase
+    let query = (supabase as any)
       .from('ohlc')
       .select('*')
       .eq('symbol_id', symbolData.id)
