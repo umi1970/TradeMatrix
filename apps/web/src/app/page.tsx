@@ -1,4 +1,30 @@
+'use client'
+
+import { useEffect } from 'react'
+import { useRouter } from 'next/navigation'
+import { createBrowserClient } from '@/lib/supabase/client'
+
 export default function Home() {
+  const router = useRouter()
+
+  useEffect(() => {
+    async function checkAuth() {
+      const supabase = createBrowserClient()
+      const { data: { session } } = await supabase.auth.getSession()
+
+      if (session) {
+        // User is logged in, redirect to dashboard
+        router.replace('/dashboard')
+      } else {
+        // User is not logged in, redirect to login
+        router.replace('/login')
+      }
+    }
+
+    checkAuth()
+  }, [router])
+
+  // Show loading state while checking auth
   return (
     <main className="flex min-h-screen flex-col items-center justify-center p-24">
       <div className="text-center">
@@ -6,10 +32,7 @@ export default function Home() {
           TradeMatrix.ai
         </h1>
         <p className="text-xl text-gray-600">
-          AI-Powered Trading Analysis & Automation Platform
-        </p>
-        <p className="mt-8 text-sm text-gray-500">
-          Status: In Development (MVP Phase)
+          Loading...
         </p>
       </div>
     </main>
