@@ -45,7 +45,7 @@ TradeMatrix.ai is an AI-powered, fully automated trading analysis system focused
 **Infrastructure:**
 - Supabase (Database + Auth + Storage)
 - Railway/Fly.io (FastAPI + Celery)
-- Vercel (Next.js Frontend)
+- Netlify (Next.js Frontend) ✅ Live: https://tradematrix.netlify.app
 - Upstash (Redis)
 
 ---
@@ -226,7 +226,8 @@ TradeMatrix/
 ## 🔗 Important Links
 
 - **Repository:** github.com/umi1970/TradeMatrix
-- **Branch:** `claude/init-saas-project-011CUS1no4jgfoELpLgTnhch`
+- **Branch:** `main`
+- **Live App:** https://tradematrix.netlify.app ✅
 - **Documentation:** `/docs`
 
 ---
