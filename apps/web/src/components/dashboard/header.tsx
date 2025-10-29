@@ -12,9 +12,10 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { Badge } from '@/components/ui/badge'
-import { LogOut, Settings, User as UserIcon, Bell } from 'lucide-react'
+import { LogOut, Settings, User as UserIcon } from 'lucide-react'
 import { createBrowserClient } from '@supabase/ssr'
 import { useRouter } from 'next/navigation'
+import { NotificationBell } from './notification-bell'
 
 interface HeaderProps {
   user: User
@@ -80,12 +81,8 @@ export function Header({ user, profile }: HeaderProps) {
           </Badge>
         )}
 
-        {/* Notifications */}
-        <Button variant="ghost" size="icon" className="relative">
-          <Bell className="h-5 w-5" />
-          <span className="absolute top-1 right-1 h-2 w-2 rounded-full bg-destructive" />
-          <span className="sr-only">Notifications</span>
-        </Button>
+        {/* Notifications Bell */}
+        <NotificationBell userId={user.id} />
 
         {/* User Menu */}
         <DropdownMenu>

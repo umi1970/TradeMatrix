@@ -314,6 +314,52 @@ export interface Database {
           }
         ]
       }
+      alerts: {
+        Row: {
+          id: string
+          user_id: string | null
+          symbol_id: string | null
+          created_at: string
+          kind: string
+          context: Json
+          sent: boolean
+          sent_at: string | null
+        }
+        Insert: {
+          id?: string
+          user_id?: string | null
+          symbol_id?: string | null
+          created_at?: string
+          kind: string
+          context?: Json
+          sent?: boolean
+          sent_at?: string | null
+        }
+        Update: {
+          id?: string
+          user_id?: string | null
+          symbol_id?: string | null
+          created_at?: string
+          kind?: string
+          context?: Json
+          sent?: boolean
+          sent_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'alerts_user_id_fkey'
+            columns: ['user_id']
+            referencedRelation: 'profiles'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'alerts_symbol_id_fkey'
+            columns: ['symbol_id']
+            referencedRelation: 'market_symbols'
+            referencedColumns: ['id']
+          }
+        ]
+      }
     }
     Views: {
       [_ in never]: never
