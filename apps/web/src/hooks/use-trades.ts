@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { createBrowserClient } from '@supabase/ssr'
-import { Trade } from '@/lib/supabase/queries'
+import { Trade } from '@/lib/supabase/queries-client'
 
 export function useTrades(userId: string) {
   const [trades, setTrades] = useState<Trade[]>([])

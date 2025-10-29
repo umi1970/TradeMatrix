@@ -21,7 +21,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { MoreHorizontal, Edit, Trash2, Eye, ArrowUpDown } from 'lucide-react'
-import type { Trade } from '@/lib/supabase/queries'
+import type { Trade } from '@/lib/supabase/queries-client'
 
 interface TradesTableProps {
   trades: Trade[]

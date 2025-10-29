@@ -20,7 +20,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { useToast } from '@/hooks/use-toast'
-import type { Trade } from '@/lib/supabase/queries'
+import type { Trade } from '@/lib/supabase/queries-client'
 
 interface TradeDialogProps {
   open: boolean

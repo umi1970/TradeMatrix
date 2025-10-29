@@ -16,7 +16,7 @@ import {
   deleteTrade,
   type Trade,
   type TradeFilters,
-} from '@/lib/supabase/queries'
+} from '@/lib/supabase/queries-client'
 import { useToast } from '@/hooks/use-toast'
 
 export default function TradesPage() {
