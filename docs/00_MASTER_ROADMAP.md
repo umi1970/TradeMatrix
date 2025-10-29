@@ -370,7 +370,7 @@ Phase 1: Foundation (Infrastructure & Auth) ✅ COMPLETED
 **Key Deliverables:**
 1. **Stripe Integration**
    - Stripe account setup
-   - Subscription plans: Free, Starter (€29/mo), Pro (€79/mo), Expert (€199/mo)
+   - Subscription plans: Free, Starter €9/mo), Pro €39/mo), Expert €79/mo)
    - Webhook handling (Edge Function)
    - Payment flow (checkout, success, cancel)
    - Billing portal

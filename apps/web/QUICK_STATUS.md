@@ -29,15 +29,15 @@
 ## 📋 TODO für Production:
 
 ### Quick Wins (1-2h):
-1. [ ] Supabase Google OAuth aktivieren
+1. [ ] Supabase Google OAuth aktivieren (Code fertig, nur Config nötig)
 2. [ ] Seed-Data für Trades/Reports
 3. [ ] Supabase Realtime enablen
 
-### Phase 5 - SaaS (planned):
-4. [ ] Stripe Integration
-5. [ ] Subscription Management
+### Phase 5 - SaaS:
+4. [x] Stripe Integration (FERTIG!)
+5. [x] Subscription Management (FERTIG!)
 6. [ ] Email Notifications
-7. [ ] Usage Limits
+7. [x] Usage Limits & Feature Gating (FERTIG!)
 
 ### Deployment:
 8. [ ] Celery Workers deployen (Railway/Fly.io)
@@ -58,11 +58,17 @@
 - [ ] Report Generation (PDF)
 
 ## 📊 Stats:
-- **Code:** 66k+ Zeilen
-- **Commits:** 31
+- **Code:** 70k+ Zeilen
+- **Commits:** 35+
 - **Phase 1-4:** 100% ✅
-- **Phase 5:** 0% (SaaS Features)
-- **MVP Ready:** ~80%
+- **Phase 5:** 80% ✅ (Stripe Integration komplett)
+- **MVP Ready:** ~90%
+
+## 💰 Pricing (Final):
+- **Free:** €0/Monat
+- **Starter:** €9/Monat
+- **Pro:** €39/Monat (Most Popular)
+- **Expert:** €79/Monat
 
 ## ⏭️ Nächster Schritt:
 Entscheide:

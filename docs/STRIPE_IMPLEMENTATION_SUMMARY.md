@@ -210,14 +210,14 @@ This implementation adds full Stripe subscription management to TradeMatrix.ai, 
 - No backtesting
 - No API access
 
-### Starter - €29/month
+### Starter €9/month
 - Daily AI reports
 - Email alerts
 - Up to 100 trades
 - 50 reports per month
 - Basic charts
 
-### Pro - €79/month (Most Popular)
+### Pro €39/month (Most Popular)
 - Everything in Starter
 - Backtesting (50/month)
 - API access (1000 calls/day)
@@ -226,7 +226,7 @@ This implementation adds full Stripe subscription management to TradeMatrix.ai, 
 - Custom indicators
 - Export data
 
-### Expert - €199/month
+### Expert €79/month
 - Everything in Pro
 - Unlimited trades & reports
 - Unlimited backtests

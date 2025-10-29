@@ -156,9 +156,9 @@ TradeMatrix/
 | Plan | Price | Features |
 |------|-------|----------|
 | **Free** | €0/mo | Basic market overview, limited reports |
-| **Starter** | €29/mo | Daily reports, email alerts |
-| **Pro** | €79/mo | All features + backtesting, API access |
-| **Expert** | €199/mo | Custom strategies, priority support, WhatsApp alerts |
+| **Starter €9/mo | Daily reports, email alerts |
+| **Pro €39/mo | All features + backtesting, API access |
+| **Expert €79/mo | Custom strategies, priority support, WhatsApp alerts |
 
 ---
 
