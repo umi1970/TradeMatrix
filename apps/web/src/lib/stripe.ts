@@ -5,18 +5,29 @@
 
 import Stripe from 'stripe'
 
-if (!process.env.STRIPE_SECRET_KEY) {
-  throw new Error('STRIPE_SECRET_KEY is not set in environment variables')
-}
+/**
+ * Lazily initialized Stripe instance
+ */
+let stripeInstance: Stripe | null = null
 
 /**
- * Initialize Stripe with secret key
+ * Get Stripe client instance (lazy initialization)
  * This should only be used on the server side
  */
-export const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
-  apiVersion: '2025-09-30.clover',
-  typescript: true,
-})
+export function getStripe(): Stripe {
+  if (!stripeInstance) {
+    if (!process.env.STRIPE_SECRET_KEY) {
+      throw new Error('STRIPE_SECRET_KEY is not set in environment variables')
+    }
+
+    stripeInstance = new Stripe(process.env.STRIPE_SECRET_KEY, {
+      apiVersion: '2025-09-30.clover',
+      typescript: true,
+    })
+  }
+
+  return stripeInstance
+}
 
 /**
  * Create a checkout session for subscription
@@ -35,6 +46,7 @@ export async function createCheckoutSession({
   cancelUrl: string
 }): Promise<Stripe.Checkout.Session> {
   try {
+    const stripe = getStripe()
     const session = await stripe.checkout.sessions.create({
       mode: 'subscription',
       payment_method_types: ['card'],
@@ -77,6 +89,7 @@ export async function createBillingPortalSession({
   returnUrl: string
 }): Promise<Stripe.BillingPortal.Session> {
   try {
+    const stripe = getStripe()
     const session = await stripe.billingPortal.sessions.create({
       customer: customerId,
       return_url: returnUrl,
@@ -96,6 +109,7 @@ export async function getSubscription(
   subscriptionId: string
 ): Promise<Stripe.Subscription | null> {
   try {
+    const stripe = getStripe()
     const subscription = await stripe.subscriptions.retrieve(subscriptionId)
     return subscription
   } catch (error) {
@@ -111,6 +125,7 @@ export async function cancelSubscription(
   subscriptionId: string
 ): Promise<Stripe.Subscription> {
   try {
+    const stripe = getStripe()
     const subscription = await stripe.subscriptions.update(subscriptionId, {
       cancel_at_period_end: true,
     })
@@ -129,6 +144,7 @@ export async function reactivateSubscription(
   subscriptionId: string
 ): Promise<Stripe.Subscription> {
   try {
+    const stripe = getStripe()
     const subscription = await stripe.subscriptions.update(subscriptionId, {
       cancel_at_period_end: false,
     })
@@ -147,6 +163,7 @@ export async function getCustomer(
   customerId: string
 ): Promise<Stripe.Customer | null> {
   try {
+    const stripe = getStripe()
     const customer = await stripe.customers.retrieve(customerId)
 
     if (customer.deleted) {
@@ -173,6 +190,7 @@ export async function createCustomer({
   name?: string
 }): Promise<Stripe.Customer> {
   try {
+    const stripe = getStripe()
     const customer = await stripe.customers.create({
       email,
       name,
@@ -215,6 +233,7 @@ export function verifyWebhookSignature(
   }
 
   try {
+    const stripe = getStripe()
     const event = stripe.webhooks.constructEvent(payload, signature, webhookSecret)
     return event
   } catch (error) {
