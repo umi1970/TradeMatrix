@@ -592,7 +592,11 @@ class JournalBot:
                     'user_id': UUID or None,
                     'report_type': 'daily' | 'weekly' | 'monthly',
                     'report_date': date,
-                    'file_url_pdf': str,
+                    'title': str,
+                    'content': str,
+                    'ai_summary': str,
+                    'ai_insights': dict or list,
+                    'pdf_url': str,
                     'file_url_docx': str,
                     'metrics': {...}
                 }
@@ -603,14 +607,19 @@ class JournalBot:
         logger.info(f"Creating report record for {report_metadata.get('report_type')}")
 
         try:
-            # Prepare record
+            # Prepare record with correct column names matching schema
             record = {
                 'user_id': str(report_metadata['user_id']) if report_metadata.get('user_id') else None,
+                'title': report_metadata.get('title', f"{report_metadata.get('report_type', 'daily').capitalize()} Report"),
+                'content': report_metadata.get('content', ''),
                 'report_type': report_metadata.get('report_type', 'daily'),
+                'ai_summary': report_metadata.get('ai_summary'),
+                'ai_insights': report_metadata.get('ai_insights', []),
+                'status': report_metadata.get('status', 'draft'),
                 'report_date': report_metadata.get('report_date', datetime.now().date()).isoformat(),
-                'file_url_pdf': report_metadata.get('file_url_pdf'),
+                'pdf_url': report_metadata.get('pdf_url'),  # Use pdf_url, not file_url_pdf
                 'file_url_docx': report_metadata.get('file_url_docx'),
-                'metrics': report_metadata.get('metrics', {}),
+                'metadata': report_metadata.get('metrics', {}),  # Store metrics in metadata JSONB
                 'created_at': datetime.now(timezone.utc).isoformat()
             }
 
@@ -710,11 +719,19 @@ class JournalBot:
             # Step 7 - Save report metadata
             report_metadata = {
                 'user_id': user_id,
+                'title': report_data['title'],
+                'content': f"Daily trading report for {today.strftime('%Y-%m-%d')} with {total_trades} trades analyzed.",
                 'report_type': 'daily',
                 'report_date': today,
-                'file_url_pdf': pdf_url,
+                'ai_summary': ai_summary.get('summary', ''),
+                'ai_insights': {
+                    'insights': ai_summary.get('insights', ''),
+                    'recommendations': ai_summary.get('recommendations', '')
+                },
+                'status': 'published',
+                'pdf_url': pdf_url,  # Correct column name
                 'file_url_docx': docx_url,
-                'metrics': metrics
+                'metrics': metrics  # Will be stored in metadata JSONB column
             }
 
             report_id = self.create_report_record(report_metadata)
