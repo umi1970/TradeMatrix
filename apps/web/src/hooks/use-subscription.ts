@@ -50,10 +50,11 @@ export function useSubscription(): UseSubscriptionReturn {
       }
 
       // Fetch profile with subscription info
+      // Note: stripe_price_id removed temporarily until migration 008 is run in Supabase
       const { data: profile, error: profileError } = await supabase
         .from('profiles')
         .select(
-          'subscription_tier, subscription_status, stripe_customer_id, stripe_subscription_id, stripe_price_id'
+          'subscription_tier, subscription_status, stripe_customer_id, stripe_subscription_id'
         )
         .eq('id', user.id)
         .single()
@@ -69,7 +70,7 @@ export function useSubscription(): UseSubscriptionReturn {
         status: profile.subscription_status as 'active' | 'cancelled' | 'past_due' | 'trialing',
         stripeCustomerId: profile.stripe_customer_id,
         stripeSubscriptionId: profile.stripe_subscription_id,
-        stripePriceId: profile.stripe_price_id,
+        stripePriceId: null, // Will be available after running migration 008
       })
     } catch (err) {
       console.error('Error fetching subscription:', err)
