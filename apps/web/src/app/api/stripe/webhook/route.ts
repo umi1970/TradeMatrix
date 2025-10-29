@@ -8,19 +8,25 @@ import { createClient } from '@supabase/supabase-js'
 import { verifyWebhookSignature, mapPriceIdToTier } from '@/lib/stripe'
 import Stripe from 'stripe'
 
-// Supabase admin client (uses service role key for bypassing RLS)
-const supabaseAdmin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!,
-  {
-    auth: {
-      autoRefreshToken: false,
-      persistSession: false,
-    },
-  }
-)
+/**
+ * Get Supabase admin client (lazy initialization)
+ * Uses service role key for bypassing RLS
+ */
+function getSupabaseAdmin() {
+  return createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!,
+    {
+      auth: {
+        autoRefreshToken: false,
+        persistSession: false,
+      },
+    }
+  )
+}
 
 export async function POST(request: NextRequest) {
+  const supabaseAdmin = getSupabaseAdmin()
   const body = await request.text()
   const signature = request.headers.get('stripe-signature')
 
