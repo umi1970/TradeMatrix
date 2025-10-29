@@ -25,8 +25,12 @@ from datetime import datetime, timedelta
 from supabase import Client
 
 from config.supabase import get_supabase_admin, get_settings
+from cachetools import TTLCache
 
 logger = logging.getLogger(__name__)
+
+# Cache for API responses (TTL: 60 seconds)
+_price_cache = TTLCache(maxsize=100, ttl=60)
 
 
 class MarketDataFetcherError(Exception):
@@ -549,6 +553,177 @@ class MarketDataFetcher:
             except Exception as e:
                 logger.error(f"Error fetching {symbol}: {str(e)}")
                 results[symbol] = []
+
+        return results
+
+    def save_current_price(
+        self,
+        symbol: str,
+        quote_data: Dict[str, Any],
+        vendor: str = "twelve_data"
+    ) -> bool:
+        """
+        Save or update current price in the current_prices table.
+
+        Args:
+            symbol: Symbol name (e.g., "DAX")
+            quote_data: Quote data from fetch_quote()
+            vendor: Data vendor (default: "twelve_data")
+
+        Returns:
+            True if successful, False otherwise
+
+        Example:
+            >>> fetcher = MarketDataFetcher()
+            >>> quote = fetcher.fetch_quote("DAX")
+            >>> success = fetcher.save_current_price("DAX", quote)
+        """
+        try:
+            # Get symbol_id
+            symbol_id = self._get_symbol_id(symbol, vendor)
+
+            # Parse quote data
+            price = float(quote_data.get("close", 0))
+            if price <= 0:
+                logger.error(f"Invalid price for {symbol}: {price}")
+                return False
+
+            # Calculate change metrics
+            previous_close = float(quote_data.get("previous_close", 0))
+            change = None
+            change_percent = None
+
+            if previous_close and previous_close > 0:
+                change = price - previous_close
+                change_percent = (change / previous_close) * 100
+
+            # Prepare record
+            record = {
+                "symbol_id": symbol_id,
+                "price": price,
+                "open": float(quote_data.get("open", 0)) or None,
+                "high": float(quote_data.get("high", 0)) or None,
+                "low": float(quote_data.get("low", 0)) or None,
+                "previous_close": previous_close if previous_close > 0 else None,
+                "change": change,
+                "change_percent": change_percent,
+                "volume": int(quote_data.get("volume", 0)) if quote_data.get("volume") else None,
+                "exchange": quote_data.get("exchange"),
+                "currency": quote_data.get("currency", "USD"),
+                "is_market_open": quote_data.get("is_market_open", False),
+                "price_timestamp": quote_data.get("datetime"),
+                "updated_at": datetime.utcnow().isoformat()
+            }
+
+            # Upsert record (insert or update)
+            result = self.supabase.table("current_prices") \
+                .upsert(
+                    record,
+                    on_conflict="symbol_id"
+                ) \
+                .execute()
+
+            if result.data:
+                logger.info(f"Saved current price for {symbol}: {price}")
+                return True
+            else:
+                logger.warning(f"No data returned when saving price for {symbol}")
+                return False
+
+        except Exception as e:
+            logger.error(f"Error saving current price for {symbol}: {str(e)}")
+            return False
+
+    def fetch_and_save_current_price(
+        self,
+        symbol: str,
+        vendor: str = "twelve_data",
+        use_cache: bool = True
+    ) -> Optional[Dict[str, Any]]:
+        """
+        Fetch current quote and save to database (with caching).
+
+        Args:
+            symbol: Trading symbol
+            vendor: Data vendor
+            use_cache: Use cached response if available (default: True)
+
+        Returns:
+            Quote data dictionary or None on error
+
+        Example:
+            >>> fetcher = MarketDataFetcher()
+            >>> quote = fetcher.fetch_and_save_current_price("DAX")
+            >>> print(f"Current DAX price: {quote['close']}")
+        """
+        cache_key = f"{vendor}:{symbol}:quote"
+
+        # Check cache
+        if use_cache and cache_key in _price_cache:
+            logger.debug(f"Using cached quote for {symbol}")
+            return _price_cache[cache_key]
+
+        try:
+            # Fetch fresh quote
+            quote = self.fetch_quote(symbol)
+
+            if not quote:
+                logger.error(f"Empty quote response for {symbol}")
+                return None
+
+            # Save to database
+            self.save_current_price(symbol, quote, vendor)
+
+            # Cache response
+            _price_cache[cache_key] = quote
+
+            return quote
+
+        except Exception as e:
+            logger.error(f"Error fetching and saving current price for {symbol}: {str(e)}")
+            return None
+
+    def batch_fetch_and_save_current_prices(
+        self,
+        symbols: List[str],
+        vendor: str = "twelve_data",
+        delay_between: float = 1.5
+    ) -> Dict[str, Optional[Dict[str, Any]]]:
+        """
+        Fetch and save current prices for multiple symbols.
+
+        Args:
+            symbols: List of trading symbols
+            vendor: Data vendor
+            delay_between: Delay between requests in seconds (for rate limiting)
+
+        Returns:
+            Dictionary mapping symbol to quote data (or None on error)
+
+        Example:
+            >>> fetcher = MarketDataFetcher()
+            >>> symbols = ["DAX", "NDX", "DJI"]
+            >>> results = fetcher.batch_fetch_and_save_current_prices(symbols)
+            >>> for symbol, quote in results.items():
+            >>>     if quote:
+            >>>         print(f"{symbol}: {quote['close']}")
+        """
+        results = {}
+
+        for i, symbol in enumerate(symbols):
+            try:
+                # Add delay between requests (except for first request)
+                if i > 0 and delay_between > 0:
+                    time.sleep(delay_between)
+
+                quote = self.fetch_and_save_current_price(symbol, vendor, use_cache=False)
+                results[symbol] = quote
+
+                logger.info(f"Processed {i+1}/{len(symbols)}: {symbol}")
+
+            except Exception as e:
+                logger.error(f"Error processing {symbol}: {str(e)}")
+                results[symbol] = None
 
         return results
 

@@ -1,39 +1,23 @@
 'use client'
 
+import { useState, useEffect } from 'react'
 import { MarketOverviewCard } from '@/components/dashboard/market-overview-card'
 import { TradeSummaryCard } from '@/components/dashboard/trade-summary-card'
 import { AgentStatusCard } from '@/components/dashboard/agent-status-card'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { Plus, RefreshCw } from 'lucide-react'
+import { Alert, AlertDescription } from '@/components/ui/alert'
+import { Plus, RefreshCw, Loader2 } from 'lucide-react'
 
-// Mock data - will be replaced with real Supabase data
-const mockMarketData = [
-  {
-    symbol: 'DAX',
-    name: 'DAX 40',
-    price: 17542.75,
-    change: 142.5,
-    changePercent: 0.82,
-    trend: 'up' as const,
-  },
-  {
-    symbol: 'NDX',
-    name: 'NASDAQ 100',
-    price: 16234.88,
-    change: -87.32,
-    changePercent: -0.54,
-    trend: 'down' as const,
-  },
-  {
-    symbol: 'EURUSD',
-    name: 'EUR/USD',
-    price: 1.0847,
-    change: 0.0012,
-    changePercent: 0.11,
-    trend: 'up' as const,
-  },
-]
+interface MarketData {
+  symbol: string
+  name: string
+  price: number
+  change: number | null
+  changePercent: number | null
+  trend: 'up' | 'down' | 'neutral'
+  updatedAt: string
+}
 
 const mockTradeSummary = {
   totalTrades: 45,
@@ -77,11 +61,50 @@ const mockAgents = [
 ]
 
 export default function DashboardPage() {
-  // Using mock data - remove 'use client' if you want to fetch from Supabase server-side
-  // Or use client-side data fetching with useEffect + createBrowserClient()
+  const [marketData, setMarketData] = useState<MarketData[]>([])
+  const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+  const [isRefreshing, setIsRefreshing] = useState(false)
 
   // Mock recent trades - replace with real Supabase data later
   const recentTrades: any[] = []
+
+  // Fetch market data from API
+  const fetchMarketData = async () => {
+    try {
+      setError(null)
+      const response = await fetch('/api/market-data/current')
+
+      if (!response.ok) {
+        throw new Error(`Failed to fetch market data: ${response.statusText}`)
+      }
+
+      const result = await response.json()
+      setMarketData(result.data || [])
+    } catch (err: any) {
+      console.error('Error fetching market data:', err)
+      setError(err.message || 'Failed to load market data')
+    } finally {
+      setIsLoading(false)
+      setIsRefreshing(false)
+    }
+  }
+
+  // Initial fetch on mount
+  useEffect(() => {
+    fetchMarketData()
+
+    // Poll every 30 seconds for updates
+    const interval = setInterval(fetchMarketData, 30000)
+
+    return () => clearInterval(interval)
+  }, [])
+
+  // Manual refresh handler
+  const handleRefresh = () => {
+    setIsRefreshing(true)
+    fetchMarketData()
+  }
 
   return (
     <div className="space-y-6">
@@ -94,8 +117,13 @@ export default function DashboardPage() {
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm">
-            <RefreshCw className="h-4 w-4 mr-2" />
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleRefresh}
+            disabled={isRefreshing}
+          >
+            <RefreshCw className={`h-4 w-4 mr-2 ${isRefreshing ? 'animate-spin' : ''}`} />
             Refresh
           </Button>
           <Button size="sm">
@@ -105,14 +133,65 @@ export default function DashboardPage() {
         </div>
       </div>
 
+      {/* Error Alert */}
+      {error && (
+        <Alert variant="destructive">
+          <AlertDescription>
+            {error}
+            <Button
+              variant="link"
+              size="sm"
+              onClick={handleRefresh}
+              className="ml-2"
+            >
+              Try again
+            </Button>
+          </AlertDescription>
+        </Alert>
+      )}
+
       {/* Market Overview */}
       <section>
         <h2 className="text-xl font-semibold mb-4">Market Overview</h2>
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          {mockMarketData.map((market) => (
-            <MarketOverviewCard key={market.symbol} market={market} />
-          ))}
-        </div>
+        {isLoading ? (
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+            {[1, 2, 3].map((i) => (
+              <Card key={i}>
+                <CardContent className="flex items-center justify-center py-12">
+                  <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        ) : marketData.length > 0 ? (
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+            {marketData.map((market) => (
+              <MarketOverviewCard key={market.symbol} market={market} />
+            ))}
+          </div>
+        ) : (
+          <Card>
+            <CardContent className="flex items-center justify-center py-12">
+              <div className="text-center">
+                <p className="text-muted-foreground">
+                  No market data available
+                </p>
+                <p className="text-sm text-muted-foreground mt-2">
+                  Make sure the Celery worker is running to fetch live data
+                </p>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleRefresh}
+                  className="mt-4"
+                >
+                  <RefreshCw className="h-4 w-4 mr-2" />
+                  Retry
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        )}
       </section>
 
       {/* Trade Summary & Quick Stats */}

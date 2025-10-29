@@ -84,27 +84,37 @@ export default function ChartsPage() {
       setError(null)
 
       try {
-        // Simulate API delay
-        await new Promise((resolve) => setTimeout(resolve, 800))
+        // Fetch real data from API
+        const response = await fetch(
+          `/api/market-data/${settings.symbol}/history?interval=${settings.timeframe}&limit=500`
+        )
+
+        if (!response.ok) {
+          throw new Error(`Failed to fetch chart data: ${response.statusText}`)
+        }
+
+        const result = await response.json()
 
         if (cancelled) return
 
-        // In production, fetch from Supabase:
-        // const { data, error } = await supabase
-        //   .from('market_data')
-        //   .select('*')
-        //   .eq('symbol', settings.symbol)
-        //   .eq('timeframe', settings.timeframe)
-        //   .order('time', { ascending: true })
-        //   .limit(500)
-
-        const data = generateSampleData(settings.symbol, settings.timeframe)
-        if (!cancelled) {
-          setChartData(data)
+        // Check if we have data
+        if (result.data && result.data.length > 0) {
+          setChartData(result.data)
+        } else {
+          // Fallback to sample data if no real data available
+          console.warn('No real data available, using sample data')
+          const sampleData = generateSampleData(settings.symbol, settings.timeframe)
+          setChartData(sampleData)
         }
+
       } catch (err) {
         if (!cancelled) {
+          console.error('Error fetching chart data:', err)
           setError(err instanceof Error ? err.message : 'Failed to load chart data')
+
+          // Fallback to sample data on error
+          const sampleData = generateSampleData(settings.symbol, settings.timeframe)
+          setChartData(sampleData)
         }
       } finally {
         if (!cancelled) {
@@ -189,10 +199,17 @@ export default function ChartsPage() {
           <div className="text-sm text-muted-foreground space-y-2">
             <p className="font-medium text-foreground">Chart Information:</p>
             <ul className="list-disc list-inside space-y-1 ml-2">
-              <li>Currently displaying sample data for demonstration purposes</li>
-              <li>Production version will fetch real-time data from Supabase database</li>
+              <li>Fetching real-time data from Twelve Data API via Supabase</li>
+              <li>Data is updated every minute by background workers</li>
               <li>EMA indicators are calculated client-side for performance</li>
-              <li>RSI and MACD indicators coming soon</li>
+              <li>Falls back to sample data if real data is not available</li>
+              <li>
+                {chartData.length > 0 && (
+                  <span className="font-medium text-foreground">
+                    Current: {chartData.length} candles loaded
+                  </span>
+                )}
+              </li>
             </ul>
           </div>
         </CardContent>
