@@ -17,12 +17,24 @@ from .technical_indicators import (
     PivotPointsResult
 )
 
-# RiskCalculator will be imported when it exists
+# RiskCalculator import
 try:
     from .risk_calculator import RiskCalculator
     has_risk_calculator = True
 except ImportError:
     has_risk_calculator = False
+
+# TradeAnalyzer import (Integration Module)
+try:
+    from .trade_analyzer import (
+        TradeAnalyzer,
+        TradeAnalyzerError,
+        InsufficientDataError,
+        create_analyzer
+    )
+    has_trade_analyzer = True
+except ImportError:
+    has_trade_analyzer = False
 
 __all__ = [
     "MarketDataFetcher",
@@ -39,3 +51,11 @@ __all__ = [
 
 if has_risk_calculator:
     __all__.append("RiskCalculator")
+
+if has_trade_analyzer:
+    __all__.extend([
+        "TradeAnalyzer",
+        "TradeAnalyzerError",
+        "InsufficientDataError",
+        "create_analyzer"
+    ])

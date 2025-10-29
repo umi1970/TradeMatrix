@@ -1,0 +1,167 @@
+# ============================================================
+# TradeMatrix.ai – MR-05: End-of-Month Rotation
+# Purpose: Capitalize on institutional month-end rebalancing
+# Confidence Target: 0.80+
+# ============================================================
+
+strategy:
+  id: "MR-05"
+  name: "End-of-Month Rotation"
+  description: "Smart Money rotation at month end, EMA20 turns positive"
+  priority: 1  # HIGH PRIORITY
+  category: "institutional_flow"
+  timeframe: "5m"
+
+entry_conditions:
+  # Primary signal: Month-end timing
+  - type: "calendar_window"
+    period: "last_3_trading_days"
+    description: "Trade within last 3 days of calendar month"
+
+  # Volume spike (institutional activity)
+  - type: "volume_spike"
+    min_volume_ratio: 1.5
+    comparison: "monthly_average"
+    lookback_periods: 20
+    description: "Volume must exceed 1.5x monthly average"
+
+  # EMA momentum shift
+  - type: "ema_turn"
+    ema_period: 20
+    direction: "positive"
+    lookback_candles: 3
+    description: "EMA20 slope turns positive within last 3 candles"
+
+  # Price structure
+  - type: "breakout"
+    level: "day_high"
+    confirmation_candles: 1
+    description: "Break above current day's high"
+
+  # Optional: Institutional flow indicators
+  - type: "smart_money_indicator"
+    indicators: ["cumulative_delta", "large_lot_activity"]
+    required: false
+    confidence_boost: 0.05
+
+exit_conditions:
+  # Take Profit: Pivot R1
+  - type: "take_profit"
+    target: "pivot_r1"
+    description: "Primary target: Daily pivot R1"
+
+  # Alternative TP: Previous swing high
+  - type: "take_profit_level"
+    target: "previous_swing_high"
+    lookback_days: 5
+    priority: "secondary"
+
+  # Stop Loss
+  - type: "stop_loss"
+    method: "below_day_low"
+    buffer_points: 30
+    description: "30 points below day's low"
+
+  # Time-based exit
+  - type: "time_exit"
+    condition: "end_of_month"
+    description: "Close all positions before month end"
+
+  # Trailing stop (for runners)
+  - type: "trailing_stop"
+    activation_rrr: 1.5
+    trail_distance_points: 30
+    description: "Let winners run with trailing stop"
+
+risk_management:
+  max_risk_percent: 1.0
+  position_type: "CFD"
+  breakeven_at_rrr: 0.5
+  max_concurrent_positions: 2
+  scaling:
+    initial_position: 0.5  # Start with 50% position
+    add_on_rrr: 0.5  # Add remaining 50% at 0.5:1
+
+validation_metrics:
+  ema_alignment:
+    weight: 0.25
+    required_score: 0.80
+
+  pivot_confluence:
+    weight: 0.20
+    required_score: 0.75
+
+  volume_confirmation:
+    weight: 0.20
+    required_score: 0.85
+    note: "Volume is key indicator of institutional flow"
+
+  candle_structure:
+    weight: 0.20
+    required_score: 0.75
+
+  context_flow:
+    weight: 0.15
+    required_score: 0.80
+    note: "Calendar context is critical"
+
+  min_confidence_score: 0.80
+
+market_conditions:
+  preferred_session: ["EU_session", "US_session"]
+  calendar_window:
+    start: "3_days_before_month_end"
+    end: "last_trading_day"
+  preferred_volatility: "medium_to_high"
+  ideal_market_state: "rotational"
+
+institutional_indicators:
+  # Signs of smart money activity
+  - type: "cumulative_volume_delta"
+    threshold: "positive_divergence"
+    description: "Buying pressure exceeds selling"
+
+  - type: "large_lot_tracking"
+    min_size: "institutional"
+    net_direction: "long"
+
+  - type: "sector_rotation"
+    flow: "into_equities"
+    description: "Money flowing from bonds/cash into stocks"
+
+calendar_awareness:
+  high_probability_days:
+    - "last_trading_day"
+    - "second_to_last_trading_day"
+
+  avoid_if:
+    - "quarter_end"  # Different dynamics
+    - "year_end"  # Window dressing
+
+  best_months:
+    - "January"  # New year positioning
+    - "April"  # Q1 end, tax considerations
+    - "July"  # Mid-year rebalancing
+    - "October"  # Q3 end
+
+notes: |
+  - **INSTITUTIONAL SETUP** - Based on month-end rebalancing flows
+  - Funds must rebalance portfolios at month end
+  - This creates predictable buying/selling pressure
+  - Volume is the key confirmation - no volume, no trade
+  - EMA20 turning positive shows momentum shift
+  - Best results in last 2-3 trading days of month
+  - Combine with sector analysis for higher confidence
+  - Watch for portfolio rebalancing news
+  - Scale in: Start with 50%, add at 0.5:1 RRR
+
+examples:
+  - scenario: "End of March, 2 days before month end, DAX volume spike"
+    date: "2025-03-28"
+    volume_ratio: "1.8x"
+    entry: "15900 (break of day high)"
+    stop_loss: "15850"
+    take_profit: "16000 (R1)"
+    risk_reward: "2.0"
+    confidence: "0.82"
+    notes: "EMA20 turned positive, institutional buying visible"

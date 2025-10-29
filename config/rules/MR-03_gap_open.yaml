@@ -1,0 +1,133 @@
+# ============================================================
+# TradeMatrix.ai – MR-03: Gap-Open Play
+# Purpose: Capitalize on opening gaps with momentum
+# Confidence Target: 0.72+
+# ============================================================
+
+strategy:
+  id: "MR-03"
+  name: "Gap-Open Play"
+  description: "Opening gap >0.3% with volume >1.5x average, trend following"
+  priority: 2
+  category: "momentum"
+  timeframe: "5m"
+
+entry_conditions:
+  # Primary signal: Gap detection
+  - type: "gap_size"
+    min_gap_percent: 0.3
+    max_gap_percent: 2.0
+    description: "Gap between yesterday close and today open"
+
+  # Volume confirmation
+  - type: "volume_spike"
+    min_volume_ratio: 1.5
+    comparison: "average"
+    lookback_periods: 20
+    description: "Opening volume must be 1.5x average"
+
+  # Trend alignment
+  - type: "trend_direction"
+    method: "ema_slope"
+    ema_period: 50
+    min_slope: 0.01
+    description: "Gap must be in direction of prevailing trend"
+
+  # Gap type
+  - type: "gap_classification"
+    preferred_types: ["continuation_gap", "breakaway_gap"]
+    avoid_types: ["exhaustion_gap"]
+
+  # Timing
+  - type: "time_window"
+    start_time: "08:00"
+    end_time: "09:00"
+    timezone: "CET"
+    description: "Trade within first hour of market open"
+
+exit_conditions:
+  # Take Profit
+  - type: "take_profit"
+    method: "gap_fill_percentage"
+    target_fill: 0.5
+    description: "Exit at 50% gap fill or RRR target"
+
+  # Alternative TP: RRR
+  - type: "take_profit_rrr"
+    risk_reward_ratio: 2.0
+    priority: "secondary"
+
+  # Stop Loss
+  - type: "stop_loss"
+    method: "gap_invalidation"
+    buffer_points: 20
+    description: "Below gap start level with buffer"
+
+  # Time-based exit
+  - type: "time_exit"
+    max_hold_minutes: 120
+    description: "Close within 2 hours if target not reached"
+
+risk_management:
+  max_risk_percent: 1.0
+  position_type: "CFD"
+  breakeven_at_rrr: 0.5
+  max_daily_gap_trades: 2
+
+validation_metrics:
+  ema_alignment:
+    weight: 0.25
+    required_score: 0.70
+
+  pivot_confluence:
+    weight: 0.20
+    required_score: 0.60
+
+  volume_confirmation:
+    weight: 0.20
+    required_score: 0.80
+    note: "Critical for gap plays"
+
+  candle_structure:
+    weight: 0.20
+    required_score: 0.65
+
+  context_flow:
+    weight: 0.15
+    required_score: 0.70
+
+  min_confidence_score: 0.72
+
+market_conditions:
+  preferred_session: ["market_open"]
+  best_days: ["Monday", "Tuesday", "Wednesday"]
+  avoid_days: ["Friday"]  # Weekend gap risk
+  preferred_volatility: "medium_to_high"
+
+gap_types:
+  continuation_gap:
+    description: "Gap in direction of established trend"
+    confidence_boost: 0.05
+
+  breakaway_gap:
+    description: "Gap breaking out of consolidation"
+    confidence_boost: 0.03
+
+  exhaustion_gap:
+    description: "Gap at end of trend - AVOID"
+    confidence_penalty: -0.10
+
+notes: |
+  - Best on Monday/Tuesday after weekend news
+  - Avoid trading against major trend
+  - Large gaps (>1%) can be dangerous
+  - Volume is critical - no volume, no trade
+  - Consider pre-market sentiment
+
+examples:
+  - scenario: "DAX gaps up 0.5% at 08:00, volume 2x average"
+    entry: "15850"
+    stop_loss: "15820"
+    take_profit: "15910"
+    risk_reward: "2.0"
+    gap_direction: "bullish"

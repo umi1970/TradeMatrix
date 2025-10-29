@@ -1,0 +1,113 @@
+# ============================================================
+# TradeMatrix.ai – MR-02: Pivot Rebound
+# Purpose: Mean reversion at key pivot levels
+# Confidence Target: 0.78+
+# ============================================================
+
+strategy:
+  id: "MR-02"
+  name: "Pivot Rebound"
+  description: "Price touches S1/R1 with EMA cluster support, reversal setup"
+  priority: 2
+  category: "mean_reversion"
+  timeframe: "5m"
+
+entry_conditions:
+  # Primary signal: Pivot level touch
+  - type: "pivot_touch"
+    levels: ["S1", "R1"]
+    tolerance_points: 5
+    description: "Price must touch S1 (for long) or R1 (for short)"
+
+  # EMA cluster confirmation
+  - type: "ema_cluster_active"
+    ema_periods: [20, 50, 200]
+    max_spread_points: 30
+    description: "EMAs must be clustered within 30 points"
+
+  # Price action reversal
+  - type: "reversal_candle"
+    patterns: ["hammer", "engulfing", "doji"]
+    min_body_ratio: 0.3
+
+  # Volume spike
+  - type: "volume_confirmation"
+    min_volume_ratio: 1.2
+    lookback_periods: 20
+    description: "Volume above 1.2x average"
+
+exit_conditions:
+  # Take Profit at Pivot PP
+  - type: "take_profit"
+    target: "pivot_pp"
+    description: "Exit at central pivot point"
+
+  # Alternative TP: Risk/Reward
+  - type: "take_profit_rrr"
+    risk_reward_ratio: 2.5
+    priority: "secondary"
+
+  # Stop Loss
+  - type: "stop_loss"
+    method: "beyond_pivot"
+    buffer_points: 25
+    description: "25 points beyond S1/R1 level"
+
+  # Breakeven
+  - type: "move_to_breakeven"
+    trigger_rrr: 0.5
+    lock_in_points: 5
+
+risk_management:
+  max_risk_percent: 1.0
+  position_type: "CFD"
+  breakeven_at_rrr: 0.5
+  max_concurrent_positions: 2
+
+validation_metrics:
+  ema_alignment:
+    weight: 0.25
+    required_score: 0.75
+
+  pivot_confluence:
+    weight: 0.20
+    required_score: 0.80
+    note: "Critical for this strategy"
+
+  volume_confirmation:
+    weight: 0.20
+    required_score: 0.75
+
+  candle_structure:
+    weight: 0.20
+    required_score: 0.75
+
+  context_flow:
+    weight: 0.15
+    required_score: 0.65
+
+  min_confidence_score: 0.78
+
+market_conditions:
+  preferred_session: ["EU_open", "US_open"]
+  avoid_during: ["trending_markets", "news_events"]
+  preferred_volatility: "low_to_medium"
+  ideal_market_state: "range_bound"
+
+priority_override:
+  # MR-04 and MR-06 can override this setup
+  lower_priority_than: ["MR-04", "MR-06"]
+
+notes: |
+  - Best in ranging/consolidating markets
+  - Avoid during strong trends
+  - S1/R1 are primary targets, S2/R2 secondary
+  - Wait for reversal candle confirmation
+  - EMA cluster increases probability significantly
+
+examples:
+  - scenario: "NASDAQ touches R1 at 15:30, hammer candle forms"
+    entry: "16500"
+    stop_loss: "16525"
+    take_profit: "16450 (PP)"
+    risk_reward: "2.0"

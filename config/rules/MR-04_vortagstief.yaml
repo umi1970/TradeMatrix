@@ -1,0 +1,154 @@
+# ============================================================
+# TradeMatrix.ai – MR-04: Yesterday Low Reversal (Vortagstief)
+# Purpose: Stop-grab reversal at previous day's low
+# Confidence Target: 0.85+ (PRIORITY SETUP)
+# ============================================================
+
+strategy:
+  id: "MR-04"
+  name: "Yesterday Low Reversal"
+  description: "Stop-grab under previous day's low, hammer/engulfing reversal"
+  priority: 1  # HIGH PRIORITY - Overrides MR-02
+  category: "liquidity_grab"
+  timeframe: "5m"
+
+entry_conditions:
+  # Primary signal: Stop-grab below yesterday's low
+  - type: "liquidity_grab"
+    reference_level: "yesterday_low"
+    max_breach_points: 15
+    description: "Price briefly breaks below yesterday's low by max 15 points"
+
+  # Reversal confirmation
+  - type: "reversal_candle"
+    patterns: ["hammer", "bullish_engulfing", "morning_star"]
+    min_body_ratio: 0.4
+    required: true
+    description: "Strong reversal candle pattern required"
+
+  # Price action: Quick rejection
+  - type: "rapid_rejection"
+    max_time_below: 15
+    unit: "minutes"
+    description: "Price must reclaim yesterday's low within 15 minutes"
+
+  # Volume spike on reversal
+  - type: "volume_confirmation"
+    min_volume_ratio: 1.3
+    lookback_periods: 20
+    description: "Reversal candle must have strong volume"
+
+  # EMA support (optional but increases confidence)
+  - type: "ema_confluence"
+    ema_periods: [20, 50]
+    max_distance_points: 40
+    required: false
+    confidence_boost: 0.05
+
+exit_conditions:
+  # Take Profit: Previous day's high
+  - type: "take_profit"
+    target: "yesterday_high"
+    description: "Primary target: previous day's high"
+
+  # Alternative TP: Pivot R1
+  - type: "take_profit_pivot"
+    level: "R1"
+    priority: "secondary"
+
+  # Stop Loss: Below the grab
+  - type: "stop_loss"
+    method: "below_liquidity_grab"
+    buffer_points: 25
+    description: "25 points below the low that was grabbed"
+    max_risk_points: 50
+
+  # Breakeven (aggressive)
+  - type: "move_to_breakeven"
+    trigger_rrr: 0.5
+    lock_in_points: 5
+    description: "Move SL to BE at 0.5:1 RRR"
+
+  # Trailing stop
+  - type: "trailing_stop"
+    activation_rrr: 1.5
+    trail_distance_points: 25
+
+risk_management:
+  max_risk_percent: 1.0
+  position_type: "CFD"
+  breakeven_at_rrr: 0.5
+  max_concurrent_positions: 1
+  priority_override: true  # Can override other setups
+
+validation_metrics:
+  ema_alignment:
+    weight: 0.25
+    required_score: 0.75
+
+  pivot_confluence:
+    weight: 0.20
+    required_score: 0.80
+
+  volume_confirmation:
+    weight: 0.20
+    required_score: 0.85
+    note: "Critical for liquidity grab confirmation"
+
+  candle_structure:
+    weight: 0.20
+    required_score: 0.85
+    note: "Reversal pattern must be strong"
+
+  context_flow:
+    weight: 0.15
+    required_score: 0.75
+
+  min_confidence_score: 0.85
+
+market_conditions:
+  preferred_session: ["EU_open", "US_open"]
+  best_time_window:
+    start: "08:00"
+    end: "10:00"
+    timezone: "CET"
+  preferred_volatility: "medium_to_high"
+  ideal_market_state: "trending_or_volatile"
+
+priority_rules:
+  overrides: ["MR-02"]  # Overrides Pivot Rebound setups
+  description: "Yesterday's low is stronger liquidity level than intraday pivots"
+
+confluence_factors:
+  # Additional factors that boost confidence
+  - type: "round_number"
+    proximity_points: 20
+    confidence_boost: 0.03
+
+  - type: "multiple_timeframe"
+    confirm_on: ["15m", "1h"]
+    confidence_boost: 0.05
+
+  - type: "previous_support"
+    historical_bounces: 2
+    confidence_boost: 0.04
+
+notes: |
+  - **PRIORITY SETUP** - One of the highest probability trades
+  - Stop-grab = liquidity hunt by institutions
+  - Look for aggressive wick below yesterday's low
+  - Reversal candle MUST close back above yesterday's low
+  - Volume surge confirms institutional interest
+  - Best during EU and US session opens
+  - Avoid if price slowly drifts below (not a grab)
+  - Multiple timeframe confirmation increases confidence significantly
+
+examples:
+  - scenario: "DAX grabs yesterday's low at 08:15, hammer reversal"
+    yesterday_low: "15750"
+    grab_low: "15738"
+    entry: "15755"
+    stop_loss: "15713"
+    take_profit: "15847 (yesterday high)"
+    risk_reward: "2.2"
+    confidence: "0.87"
