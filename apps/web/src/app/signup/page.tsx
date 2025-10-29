@@ -1,24 +1,33 @@
+'use client'
+
 import Link from 'next/link'
+import { useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 import GoogleSignInButton from '@/components/auth/GoogleSignInButton'
 import AuthForm from '@/components/auth/AuthForm'
-import { createServerClient } from '@/lib/supabase/server'
-import { redirect } from 'next/navigation'
+import { createBrowserClient } from '@/lib/supabase/client'
 
-export const metadata = {
-  title: 'Sign Up - TradeMatrix.ai',
-  description: 'Create your TradeMatrix.ai account',
-}
+export default function SignUpPage() {
+  const router = useRouter()
 
-export default async function SignUpPage() {
-  const supabase = await createServerClient()
-  const {
-    data: { session },
-  } = await supabase.auth.getSession()
+  useEffect(() => {
+    async function checkAuth() {
+      try {
+        const supabase = createBrowserClient()
+        const { data: { session } } = await supabase.auth.getSession()
 
-  // Redirect if already logged in
-  if (session) {
-    redirect('/dashboard')
-  }
+        // Redirect if already logged in
+        if (session) {
+          router.replace('/dashboard')
+        }
+      } catch (error) {
+        // Ignore errors, just stay on signup page
+        console.error('Auth check error:', error)
+      }
+    }
+
+    checkAuth()
+  }, [router])
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4 sm:px-6 lg:px-8">
