@@ -76,13 +76,9 @@ const mockAgents = [
   },
 ]
 
-export default async function DashboardPage() {
-  const supabase = await createServerClient()
-
-  // Get the current user
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
+export default function DashboardPage() {
+  // Using mock data - remove 'use client' if you want to fetch from Supabase server-side
+  // Or use client-side data fetching with useEffect + createBrowserClient()
 
   // Fetch recent trades (will be implemented with real data)
   let recentTrades: any[] = []
