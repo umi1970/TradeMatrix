@@ -77,6 +77,8 @@ export default function ChartsPage() {
 
   // Fetch chart data when settings change
   useEffect(() => {
+    let cancelled = false
+
     const fetchChartData = async () => {
       setIsLoading(true)
       setError(null)
@@ -84,6 +86,8 @@ export default function ChartsPage() {
       try {
         // Simulate API delay
         await new Promise((resolve) => setTimeout(resolve, 800))
+
+        if (cancelled) return
 
         // In production, fetch from Supabase:
         // const { data, error } = await supabase
@@ -95,15 +99,25 @@ export default function ChartsPage() {
         //   .limit(500)
 
         const data = generateSampleData(settings.symbol, settings.timeframe)
-        setChartData(data)
+        if (!cancelled) {
+          setChartData(data)
+        }
       } catch (err) {
-        setError(err instanceof Error ? err.message : 'Failed to load chart data')
+        if (!cancelled) {
+          setError(err instanceof Error ? err.message : 'Failed to load chart data')
+        }
       } finally {
-        setIsLoading(false)
+        if (!cancelled) {
+          setIsLoading(false)
+        }
       }
     }
 
     fetchChartData()
+
+    return () => {
+      cancelled = true
+    }
   }, [settings.symbol, settings.timeframe])
 
   return (

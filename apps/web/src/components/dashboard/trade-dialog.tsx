@@ -67,22 +67,24 @@ export function TradeDialog({
 
   // Populate form when editing
   useEffect(() => {
-    if (trade) {
-      setFormData({
-        symbol: trade.symbol,
-        side: trade.side,
-        entry_price: trade.entry_price.toString(),
-        exit_price: trade.exit_price?.toString() || '',
-        position_size: trade.position_size.toString(),
-        stop_loss: trade.stop_loss?.toString() || '',
-        take_profit: trade.take_profit?.toString() || '',
-        status: trade.status,
-        notes: trade.notes || '',
-      })
-    } else {
-      setFormData(initialFormData)
+    if (open) {
+      if (trade) {
+        setFormData({
+          symbol: trade.symbol,
+          side: trade.side,
+          entry_price: trade.entry_price.toString(),
+          exit_price: trade.exit_price?.toString() || '',
+          position_size: trade.position_size.toString(),
+          stop_loss: trade.stop_loss?.toString() || '',
+          take_profit: trade.take_profit?.toString() || '',
+          status: trade.status,
+          notes: trade.notes || '',
+        })
+      } else {
+        setFormData(initialFormData)
+      }
     }
-  }, [trade, open])
+  }, [trade?.id, open])
 
   const handleChange = (field: keyof TradeFormData, value: string) => {
     setFormData((prev) => ({ ...prev, [field]: value }))

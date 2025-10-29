@@ -35,17 +35,25 @@ export default function TradesPage() {
 
   // Get user ID
   useEffect(() => {
+    let cancelled = false
     const supabase = createBrowserClient()
+
     supabase.auth.getUser().then(({ data: { user } }) => {
-      if (user) {
+      if (user && !cancelled) {
         setUserId(user.id)
       }
     })
+
+    return () => {
+      cancelled = true
+    }
   }, [])
 
   // Fetch trades when userId, filters, or page changes
   useEffect(() => {
     if (!userId) return
+
+    let cancelled = false
 
     const fetchTrades = async () => {
       setIsLoading(true)
@@ -56,33 +64,52 @@ export default function TradesPage() {
           currentPage,
           pageSize
         )
-        setTrades(fetchedTrades)
-        setTotalTrades(total)
+        if (!cancelled) {
+          setTrades(fetchedTrades)
+          setTotalTrades(total)
+        }
       } catch (error) {
-        console.error('Error fetching trades:', error)
-        toast({
-          title: 'Error',
-          description: 'Failed to load trades',
-          variant: 'destructive',
-        })
+        if (!cancelled) {
+          console.error('Error fetching trades:', error)
+          toast({
+            title: 'Error',
+            description: 'Failed to load trades',
+            variant: 'destructive',
+          })
+        }
       } finally {
-        setIsLoading(false)
+        if (!cancelled) {
+          setIsLoading(false)
+        }
       }
     }
 
     fetchTrades()
-  }, [userId, filters, currentPage, toast])
+
+    return () => {
+      cancelled = true
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [userId, filters, currentPage, pageSize])
 
   // Fetch symbols for filter
   useEffect(() => {
     if (!userId) return
 
+    let cancelled = false
+
     const fetchSymbols = async () => {
       const userSymbols = await getUserSymbols(userId)
-      setSymbols(userSymbols)
+      if (!cancelled) {
+        setSymbols(userSymbols)
+      }
     }
 
     fetchSymbols()
+
+    return () => {
+      cancelled = true
+    }
   }, [userId])
 
   const handleFilterChange = (newFilters: TradeFilters) => {
