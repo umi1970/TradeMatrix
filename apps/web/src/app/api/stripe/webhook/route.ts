@@ -76,7 +76,7 @@ export async function POST(request: NextRequest) {
           const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
             apiVersion: '2025-09-30.clover',
           })
-          const subscription = await stripe.subscriptions.retrieve(subscriptionId)
+          const subscription = await stripe.subscriptions.retrieve(subscriptionId) as Stripe.Subscription
           const priceId = subscription.items.data[0]?.price.id
           const tier = priceId ? mapPriceIdToTier(priceId) : null
 
