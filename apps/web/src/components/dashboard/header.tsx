@@ -16,6 +16,7 @@ import { LogOut, Settings, User as UserIcon } from 'lucide-react'
 import { createBrowserClient } from '@supabase/ssr'
 import { useRouter } from 'next/navigation'
 import { NotificationBell } from './notification-bell'
+import { ThemeToggle } from '@/components/theme-toggle'
 
 interface HeaderProps {
   user: User
@@ -83,6 +84,9 @@ export function Header({ user, profile }: HeaderProps) {
 
         {/* Notifications Bell */}
         <NotificationBell userId={user.id} />
+
+        {/* Theme Toggle */}
+        <ThemeToggle />
 
         {/* User Menu */}
         <DropdownMenu>
