@@ -76,7 +76,7 @@ export async function POST(request: NextRequest) {
           const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
             apiVersion: '2025-09-30.clover',
           })
-          const subscription = await stripe.subscriptions.retrieve(subscriptionId) as Stripe.Subscription
+          const subscription = await stripe.subscriptions.retrieve(subscriptionId) as any
           const priceId = subscription.items.data[0]?.price.id
           const tier = priceId ? mapPriceIdToTier(priceId) : null
 
@@ -128,7 +128,7 @@ export async function POST(request: NextRequest) {
       }
 
       case 'customer.subscription.updated': {
-        const subscription = event.data.object as Stripe.Subscription
+        const subscription = event.data.object as any
 
         console.log('Subscription updated:', subscription.id)
 
@@ -189,7 +189,7 @@ export async function POST(request: NextRequest) {
       }
 
       case 'customer.subscription.deleted': {
-        const subscription = event.data.object as Stripe.Subscription
+        const subscription = event.data.object as any
 
         console.log('Subscription deleted:', subscription.id)
 
