@@ -194,7 +194,7 @@ export const TIER_PRICING = {
   },
   starter: {
     name: 'Starter',
-    price: 29,
+    price: 9,
     currency: 'EUR',
     interval: 'month',
     description: 'For active traders',
@@ -210,7 +210,7 @@ export const TIER_PRICING = {
   },
   pro: {
     name: 'Pro',
-    price: 79,
+    price: 39,
     currency: 'EUR',
     interval: 'month',
     description: 'For professional traders',
@@ -228,7 +228,7 @@ export const TIER_PRICING = {
   },
   expert: {
     name: 'Expert',
-    price: 199,
+    price: 79,
     currency: 'EUR',
     interval: 'month',
     description: 'For trading firms & experts',

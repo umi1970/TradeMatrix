@@ -94,7 +94,7 @@ export function SubscriptionPlans({
         return (
           <Card
             key={tier}
-            className={`relative ${
+            className={`relative flex flex-col h-full ${
               tier === 'pro'
                 ? 'border-purple-500 border-2 shadow-lg'
                 : isCurrent
@@ -131,9 +131,9 @@ export function SubscriptionPlans({
               <p className="text-sm text-muted-foreground mt-2">{pricing.description}</p>
             </CardHeader>
 
-            <CardContent className="space-y-4">
+            <CardContent className="flex flex-col flex-grow space-y-4">
               {/* Features list */}
-              <ul className="space-y-2">
+              <ul className="space-y-2 flex-grow">
                 {pricing.features.map((feature, index) => (
                   <li key={index} className="flex items-start gap-2 text-sm">
                     <Check className="h-4 w-4 text-green-600 shrink-0 mt-0.5" />
