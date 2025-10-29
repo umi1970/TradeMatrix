@@ -74,7 +74,7 @@ export async function POST(request: NextRequest) {
 
           // Get subscription to get price ID
           const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-            apiVersion: '2024-12-18.acacia',
+            apiVersion: '2025-09-30.clover',
           })
           const subscription = await stripe.subscriptions.retrieve(subscriptionId)
           const priceId = subscription.items.data[0]?.price.id
