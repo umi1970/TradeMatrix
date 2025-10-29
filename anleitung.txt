@@ -1,0 +1,253 @@
+(kopieren und in Claude Code oder Codex einfügen)
+
+System / Developer Prompt:
+Ich möchte eine React + TypeScript + Tailwind + Supabase App namens TradeMatrix.ai erstellen.
+Sie soll lokal mit npm laufen und später automatisch über Netlify deployen.
+Erstelle mir das komplette Projekt mit folgender Struktur und Logik:
+
+Module:
+morningPlanner → enthält Asia-Sweep & Y-Low-Rebound Strategien
+usOpenPlanner → Opening Range Breakout (ORB)
+riskManager → KO-Produkt-Logik (Berechnung Hebel, Distanz, Risiko)
+journalBot → speichert aktive Setups in Supabase
+
+Pages:
+dashboard (zeigt Morning-Setup & US-Setup JSONs an)
+journal
+alerts
+
+Styling: Tailwind CSS, Dark-Mode (Matrix-Farben)
+
+Integration: supabaseClient.ts mit Umgebungsvariablen aus .env
+
+Startskripte: npm install, npm run dev
+
+Baue die Datei-Struktur, initialisiere Vite (React + TS), installiere alle Pakete, richte Tailwind ein und erstelle Dummy-Funktionen in den Modulen, die die Logik simulieren.
+Anschließend soll die App auf localhost:5173 laufen und auf dem Dashboard die JSON-Outputs der Planner anzeigen.
+
+
+Schritt 2: Datei-Erstellung
+Claude Code (oder Codex) erstellt automatisch:
+
+alle src/modules/*.ts
+src/pages/*.tsx
+tailwind.config.js
+.env.example
+package.json mit den nötigen Abhängigkeiten
+
+Wenn er nach Framework oder Builder fragt → wähle:
+
+Vite
+React + TypeScript
+Tailwind
+
+
+Schritt 3: Lokaler Test
+Sobald alles generiert ist:
+npm install
+npm run dev
+
+Dann öffne:
+👉 http://localhost:5173
+und du solltest im Dashboard deine JSON-Setups sehen (Morning & US Session).
+
+Schritt 4: Git Push + Netlify
+git init && git add . && git commit -m "init tradematrix.ai"
+Repository zu GitHub pushen
+In Netlify: Add New Site → Import from Git → Build Command: npm run build
+Publish Directory: dist/
+
+Wenn du möchtest, kann ich dir den kompletten Claude-Prompt-Text fertig formatiert (copy-ready) liefern – so, dass du ihn 1:1 in Claude einfügen kannst und er alles automatisch erstellt.
+Willst du, dass ich ihn dir so formatiere (mit Zeilenumbrüchen & farbcodierten Kommentaren)?
+
+1) Datenquelle festlegen
+
+Primär: Twelve Data (Realtime+Historical, WebSocket & REST)
+Fallback (nur wenn nötig): Yahoo (End-of-day), stock3 (Charts manuell).
+Symbole (Beispiele):
+
+DAX Kassa/CFD: DE40 (oder Anbieter-spezifisch)
+
+Dow: DJI / US30
+
+Nasdaq100: NDX / NAS100
+
+Silber Spot: XAG/USD
+
+Entscheidung heute: Wir nehmen Twelve Data für 1m/5m/15m/1h/1d OHLCV.
+
+2) Credentials & Env
+
+In Netlify/ lokal .env (keine Schlüssel im Repo):
+
+VITE_SUPABASE_URL
+
+VITE_SUPABASE_KEY (anon)
+
+SRV_SUPABASE_KEY (service role für Serverjobs)
+
+TWELVE_DATA_KEY
+
+3) Supabase – Datenmodell (Tabellen & Policies)
+
+Tabellen:
+
+market_symbols
+Felder: id, vendor, symbol, alias, tick_size, tz, active
+
+ohlc (Intraday+Daily)
+Felder: ts (UTC), symbol_id, tf (1m/5m/15m/1h/1d), open, high, low, close, volume
+Indizes: (symbol_id, tf, ts); Retention: 1m/5m/15m 90 Tage, 1h/1d 2 Jahre
+
+levels_daily (berechnete Levels)
+Felder: trade_date, symbol_id, pivot, r1, r2, s1, s2, y_high, y_low, y_close
+
+setups
+Felder: id, created_at, module (morning/usopen), symbol_id, payload (JSON), status (pending/active/invalid/filled), confidence
+
+alerts
+Felder: id, created_at, symbol_id, kind (range_break/retest/... ), context (JSON), sent (bool)
+
+journal
+Felder: id, trade_date, symbol_id, setup_id, notes, outcome, rr, tags (array)
+
+4) Ingestion-Pipeline (Serverseitig)
+
+Edge Function / Scheduled Function (Netlify Scheduled Functions oder Supabase Cron):
+
+Job A – Historical Seed (einmalig je Symbol/TF): Hole 60–120 Tage OHLC für 1m/5m/15m/1h/1d → schreibe in ohlc.
+
+Job B – Realtime Pull (laufend): Alle 60s (für 1m) → REST pull für aktive Symbole & Zeitrahmen; alternativ WebSocket für Ticks, eigene Candle-Aggregation (nur wenn stabil).
+
+Job C – Daily Close (20:59–22:15 MEZ): Schreibe Y-High/Low/Close in levels_daily.
+
+Timezone: Alle Timestamps in UTC speichern, Client/Logik rechnet auf Europe/Berlin.
+
+5) Berechnungs-Jobs (serverseitige Logik, deterministisch)
+
+Job D – Levels/Pivots (täglich 07:55 MEZ):
+Nimmt Vortag aus ohlc(1d) → berechnet pivot, r1, r2, s1, s2 → speichert levels_daily.
+
+Job E – Session Windows:
+
+EuropeOpen (08:00–10:00 MEZ): Quelle 1m/5m DAX
+
+USOpen (15:30–17:30 MEZ): Quelle 1m/5m NASDAQ/DOW
+
+6) Strategien als deterministische Server-Flows
+
+MorningPlanner (08:25 MEZ Trigger):
+
+Eingaben: ohlc 1m/5m (06:00–08:25), levels_daily von heute.
+
+Regeln:
+
+Asia Sweep → EU Open Reversal: Prüfe 02:00–05:00 MEZ gegen y_low / y_high; wenn Bedingung erfüllt & Open > y_low (oder < y_high) → Signal.
+
+Y-Low → Pivot Rebound: Wenn open < pivot und kein aktiver Breakout → Entry-Zone [y_low..pivot], SL y_low - 0.25%, TP pivot → r1.
+
+Output: Ein setups-Eintrag pro Symbol (JSON mit Entry/SL/TP, Confidence, Status).
+
+USOpenPlanner (15:25 MEZ Trigger):
+
+Eingaben: 15:30–15:45 Kerzen auf 1m/5m/15m.
+
+Regeln:
+
+ORB: Markiere erste 15m Range; 5m Close über High ⇒ Long Bias (unter Low ⇒ Short). Entry-Modell Retest bevorzugt. SL = gegenüberliegende Range-Kante; TP = 2R oder Daily H/L.
+
+Output: setups-Eintrag(e) für DOW/NASDAQ (+ optional DAX).
+
+7) Alerts (Realtime → Client)
+
+AlertEngine (minütlich / via Realtime):
+
+Triggert auf:
+
+range_break (ORB 5m Close über/unter 15m Range)
+
+retest_touch (Preis kehrt zur Range-Kante zurück)
+
+asia_sweep_confirmed (EU-Open über y_low)
+
+pivot_touch / r1_touch / s1_touch
+
+Schreibt alerts-Zeilen & setzt sent=false.
+
+Client (Dashboard) subscribed auf alerts via Supabase Realtime → zeigt Banner/Toast, setzt sent=true nach Anzeige.
+
+8) Frontend – Datennutzung (ohne Code, aber verbindlich)
+
+Dashboard:
+
+Pane „Morning Setup“: liest neuesten setups für DAX (status in {pending, active})
+
+Pane „US Open Setup“: dito für DOW/NASDAQ
+
+Pane „Alerts Live“: Realtime-Feed aus alerts
+
+Pane „Active Levels“: heutige levels_daily
+
+Journal:
+
+Liste aller setups mit Status und „Promote to Trade“ (manuell)
+
+Notizenfeld → journal schreiben
+
+9) Qualität & Tests
+
+Daten-Checks:
+
+Lückenprüfung: pro Symbol/TF muss jede 1m Minute vorhanden sein; bei Gap → Backfill-Job
+
+Sanity: high>=max(open,close) und low<=min(open,close); Volumen ≥ 0
+
+Performance: Indexe prüfen, Partitionierung optional (nach Monat)
+
+Strategie-Backtests (Minimal):
+
+Asia Sweep (30 Tage, DAX 5m): Erfolgsquote bis Pivot & bis Y-High
+
+ORB (30 Sessions, NASDAQ 5m/1m): Quote Breakout vs. Retest, durchschnittliches R
+
+10) Betrieb & Deployment
+
+Netlify (Frontend):
+
+Build: npm run build
+
+Publish: dist/
+
+ENV: VITE_* Variablen setzen
+
+Server-Jobs:
+
+Entweder Supabase Cron (SQL/Edge) oder Netlify Scheduled Functions im 1–5 Min Takt:
+
+A: Seed (einmalig je Symbol/TF)
+
+B: Realtime Pull (jede Minute)
+
+C: Daily Close (abends)
+
+D: Pivots (07:55)
+
+MorningPlanner (08:25)
+
+USOpenPlanner (15:25)
+
+AlertEngine (jede Minute)
+
+11) Abnahme-Kriterien (Definition of Done)
+
+Daten: ohlc füllt sich minütlich für DAX/DOW/NASDAQ/XAGUSD (1m/5m/15m/1h/1d).
+
+Levels: levels_daily korrekt um 07:55 MEZ.
+
+Setups: zwei Records pro Tag (Morning & US), mit plausiblen Zonen.
+
+Alerts: ORB-Break & Retest kommen live an, „sent=true“ nach Anzeige.
+
+Dashboard: zeigt Setups + Alerts ohne Reload (Realtime).
+
+Journal: Speichert manuelle Notiz zu aktivem Setup.
