@@ -72,9 +72,11 @@ Wir folgen dem KISS-Prinzip (Keep It Simple, Stupid):
 
 **Authentication**
 - Email/Password Login
-- Social Login (Google, GitHub)
+- Google OAuth (Social Login)
+- GitHub OAuth (Optional)
 - JWT Token Management
 - Session Management
+- No MagicLink (später mit Resend)
 
 **Storage**
 - Chart Images Upload

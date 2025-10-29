@@ -111,23 +111,31 @@
 
 ---
 
-## 📊 Aktueller Status (2025-10-24)
+## 📊 Aktueller Status (2025-10-26)
 
 ### ✅ Completed
 - [x] Projekt-Struktur
 - [x] Dokumentationssystem
 - [x] **Backend auf Supabase vereinfacht** ⭐
 - [x] **Datenbank-Schema designed** (SQL Migrationen)
-- [x] **Supabase Client konfiguriert**
+- [x] **Supabase Projekt erstellt** ("tradematrix Projekt")
+- [x] **Database Migrationen ausgeführt** (001_initial_schema.sql, 002_rls_policies.sql)
 - [x] **FastAPI vereinfacht** (nur AI Agents)
 - [x] **Edge Functions Templates** (create-trade, stripe-webhook)
+- [x] **Next.js 16 App Setup** ⭐ NEW!
+- [x] **ESLint 9 mit Flat Config** (eslint.config.mjs)
+- [x] **Supabase Client Integration** (@supabase/supabase-js, @supabase/ssr)
+- [x] **Authentication (Email/Password)** - Login, Signup, Protected Routes
+- [x] **Auth Pages erstellt** (Login, Signup, Dashboard)
+- [x] **Middleware für Route Protection**
 
 ### 🚧 In Progress
-- [ ] Next.js 16 App Setup
-- [ ] Supabase Projekt erstellen & Migrationen ausführen
-- [ ] Frontend Supabase Client Integration
+- [ ] Google OAuth Integration (vorbereitet, muss konfiguriert werden)
 
 ### 📋 Next Up
+- [ ] Google OAuth Provider konfigurieren (optional)
+- [ ] UI Components (shadcn/ui)
+- [ ] User Profile Page
 - [ ] AI Agent Implementation (ChartWatcher, SignalBot)
 - [ ] Stripe Subscription Integration
 - [ ] Chart Analysis System
@@ -194,13 +202,14 @@ TradeMatrix/
 ### Frontend
 - **Next.js 16** (React 19.2, Turbopack, PPR, React Compiler)
 - **TypeScript** 5.x
+- **ESLint 9** (Flat Config - eslint.config.mjs)
 - **Tailwind CSS** + **shadcn/ui**
 - **TradingView Lightweight Charts**
 - **Supabase JS Client** (für Auth & Data)
 
 ### Backend (Supabase)
 - **PostgreSQL** (managed by Supabase)
-- **Supabase Auth** (Email, Social Login, JWT)
+- **Supabase Auth** (Email/Password, Google OAuth, GitHub OAuth - No MagicLink)
 - **Supabase Storage** (Charts, PDFs)
 - **Edge Functions** (Deno/TypeScript)
 - **Row Level Security** (RLS)

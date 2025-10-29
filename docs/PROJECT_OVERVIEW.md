@@ -1,8 +1,8 @@
 # TradeMatrix.ai - Project Overview
 
 **Version:** 1.0.0
-**Status:** 🚧 In Development
-**Last Updated:** 2025-10-24
+**Status:** 🚧 In Development (MVP Phase)
+**Last Updated:** 2025-10-26
 
 ---
 
@@ -23,9 +23,11 @@ TradeMatrix.ai is an AI-powered, fully automated trading analysis system focused
 
 **Frontend:**
 - Next.js 16 (React 19.2, Turbopack, PPR, React Compiler)
-- TypeScript
+- TypeScript 5.x
+- ESLint 9 (Flat Config)
 - Tailwind CSS + shadcn/ui
 - TradingView Lightweight Charts
+- Supabase JS Client (@supabase/supabase-js, @supabase/ssr)
 
 **Backend (Supabase - All-in-One):**
 - PostgreSQL Database (auto-generated REST APIs)
@@ -165,16 +167,22 @@ TradeMatrix/
 - [x] Documentation system
 - [x] Backend architecture simplified (Supabase integration)
 - [x] Database schema designed (SQL migrations ready)
-- [x] Supabase client configuration
+- [x] Supabase project created ("tradematrix Projekt")
+- [x] Database migrations executed (001_initial_schema.sql, 002_rls_policies.sql)
 - [x] FastAPI simplified to AI agents only
 - [x] Edge Functions templates created
+- [x] **Next.js 16 app setup** ⭐ (App Router, React 19.2)
+- [x] **ESLint 9 with Flat Config** (eslint.config.mjs)
+- [x] **Supabase client integration** (@supabase/supabase-js, @supabase/ssr)
+- [x] **Authentication (Email/Password)** - Signup, Login, Protected Routes
+- [x] **Auth pages** - Login, Signup, Dashboard with middleware protection
 
 ### 🚧 In Progress
-- [ ] Next.js 16 app setup
-- [ ] Supabase project creation & migration execution
-- [ ] Frontend Supabase client integration
+- [ ] Google OAuth integration (prepared, needs Supabase configuration)
 
 ### 📋 Planned
+- [ ] UI components library (shadcn/ui)
+- [ ] User profile & settings page
 - [ ] AI agent implementation (ChartWatcher, SignalBot, etc.)
 - [ ] Subscription/billing integration (Stripe webhooks)
 - [ ] Chart analysis system

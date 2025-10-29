@@ -89,6 +89,9 @@ cd apps/web
 npm install
 # oder
 pnpm install
+
+# Note: Projekt nutzt ESLint 9 mit Flat Config (eslint.config.mjs)
+# Alte .eslintrc Dateien werden nicht mehr verwendet
 ```
 
 ### Environment Variables
