@@ -86,13 +86,14 @@ class ValidationEngine:
     # Priority strategies that override MR-02 (Pivot Pullback)
     PRIORITY_STRATEGIES = {StrategyType.MR_04.value, StrategyType.MR_06.value}
 
-    def __init__(self, config: Optional[Dict[str, Any]] = None):
+    def __init__(self, config: Optional[Dict[str, Any]] = None, supabase_client = None):
         """
         Initialize the validation engine.
 
         Args:
             config: Optional configuration dictionary for custom thresholds
                    and weights. If not provided, uses default values.
+            supabase_client: Optional Supabase client for EOD data queries
 
         Example:
             >>> engine = ValidationEngine()
@@ -101,6 +102,7 @@ class ValidationEngine:
         """
         self.config = config or {}
         self.threshold = self.config.get('threshold', self.HIGH_CONFIDENCE_THRESHOLD)
+        self.supabase = supabase_client
 
         # Allow custom weights if provided
         self.weights = self.config.get('weights', self.WEIGHTS.copy())
@@ -639,6 +641,147 @@ class ValidationEngine:
         score = min(score, 1.0)
 
         return score
+
+    def validate_entry_context(
+        self,
+        price: float,
+        symbol_id: str,
+        trade_date: str
+    ) -> Dict[str, Any]:
+        """
+        Validate entry price context using EOD levels from database.
+
+        Determines if price is in a breakout, liquidity sweep, or range-bound context
+        based on yesterday's levels. Boosts confidence for favorable contexts.
+
+        Args:
+            price: Current entry price
+            symbol_id: UUID of the market symbol
+            trade_date: Trade date in YYYY-MM-DD format
+
+        Returns:
+            Dict with context analysis:
+            {
+                'context': 'breakout' | 'liquidity_sweep' | 'range_bound' | 'unknown',
+                'confidence_boost': float (0.0-0.2),
+                'details': {
+                    'yesterday_high': float,
+                    'yesterday_low': float,
+                    'yesterday_close': float,
+                    'price_position': str
+                }
+            }
+
+        Example:
+            >>> engine = ValidationEngine(supabase_client=supabase)
+            >>> context = engine.validate_entry_context(18500, symbol_id, '2025-01-15')
+            >>> print(f"Context: {context['context']}, Boost: {context['confidence_boost']}")
+        """
+        if not self.supabase:
+            return {
+                'context': 'unknown',
+                'confidence_boost': 0.0,
+                'details': {},
+                'error': 'Supabase client not configured'
+            }
+
+        try:
+            # Fetch EOD levels from database
+            response = self.supabase.table('eod_levels')\
+                .select('yesterday_high, yesterday_low, yesterday_close, yesterday_range')\
+                .eq('symbol_id', symbol_id)\
+                .eq('trade_date', trade_date)\
+                .limit(1)\
+                .execute()
+
+            if not response.data or len(response.data) == 0:
+                return {
+                    'context': 'unknown',
+                    'confidence_boost': 0.0,
+                    'details': {},
+                    'error': 'No EOD levels found for date'
+                }
+
+            levels = response.data[0]
+            y_high = float(levels['yesterday_high']) if levels['yesterday_high'] else None
+            y_low = float(levels['yesterday_low']) if levels['yesterday_low'] else None
+            y_close = float(levels['yesterday_close']) if levels['yesterday_close'] else None
+            y_range = float(levels['yesterday_range']) if levels['yesterday_range'] else None
+
+            if not all([y_high, y_low, y_close]):
+                return {
+                    'context': 'unknown',
+                    'confidence_boost': 0.0,
+                    'details': {},
+                    'error': 'Incomplete EOD levels data'
+                }
+
+            # Determine context based on price position
+            context = 'unknown'
+            confidence_boost = 0.0
+            price_position = ''
+
+            # 1. Breakout: Price above yesterday_high or below yesterday_low
+            if price > y_high:
+                context = 'breakout'
+                price_position = 'above_yesterday_high'
+                # Strong bullish breakout = high confidence
+                distance_pct = ((price - y_high) / y_high) * 100
+                if distance_pct < 1.0:  # Within 1% of breakout
+                    confidence_boost = 0.15
+                elif distance_pct < 2.0:  # Within 2%
+                    confidence_boost = 0.10
+                else:
+                    confidence_boost = 0.05
+
+            elif price < y_low:
+                context = 'liquidity_sweep'
+                price_position = 'below_yesterday_low'
+                # Liquidity sweep with potential reversal
+                distance_pct = ((y_low - price) / y_low) * 100
+                if distance_pct < 0.5:  # Very close to y_low (retest)
+                    confidence_boost = 0.20  # High confidence for reversal
+                elif distance_pct < 1.0:
+                    confidence_boost = 0.15
+                else:
+                    confidence_boost = 0.10
+
+            # 2. Range-bound: Price within yesterday's range
+            elif y_low <= price <= y_high:
+                context = 'range_bound'
+                # Calculate position within range (0 = at low, 1 = at high)
+                range_position = (price - y_low) / (y_high - y_low) if y_range else 0.5
+
+                if range_position < 0.3:
+                    price_position = 'near_yesterday_low'
+                    confidence_boost = 0.12  # Good for long entries
+                elif range_position > 0.7:
+                    price_position = 'near_yesterday_high'
+                    confidence_boost = 0.08  # Moderate for short entries
+                else:
+                    price_position = 'mid_range'
+                    confidence_boost = 0.05  # Neutral
+
+            return {
+                'context': context,
+                'confidence_boost': confidence_boost,
+                'details': {
+                    'yesterday_high': y_high,
+                    'yesterday_low': y_low,
+                    'yesterday_close': y_close,
+                    'yesterday_range': y_range,
+                    'price_position': price_position,
+                    'current_price': price
+                }
+            }
+
+        except Exception as e:
+            return {
+                'context': 'unknown',
+                'confidence_boost': 0.0,
+                'details': {},
+                'error': f'Error fetching EOD context: {str(e)}'
+            }
 
 
 def validate_trade_signal(signal_data: Dict[str, Any]) -> ValidationResult:

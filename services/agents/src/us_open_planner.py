@@ -349,7 +349,7 @@ class USOpenPlanner:
             # 1. Get symbol_id
             symbol_id = await self._get_symbol_id(symbol)
 
-            # 2. Get daily levels (y_high, y_low) from levels_daily
+            # 2. Get daily levels (yesterday_high, yesterday_low) from eod_levels
             daily_levels = await self._get_daily_levels(symbol_id, trade_date)
 
             # 3. Calculate entry, SL, TP based on direction
@@ -360,10 +360,10 @@ class USOpenPlanner:
                 stop_loss = orb_range['low']
                 risk = entry - stop_loss
 
-                # TP: 2R or Daily High (whichever is closer)
+                # TP: 2R or Yesterday High (whichever is closer)
                 tp_2r = entry + (risk * Decimal('2.0'))
-                if daily_levels and daily_levels.get('y_high'):
-                    tp_daily = Decimal(str(daily_levels['y_high']))
+                if daily_levels and daily_levels.get('yesterday_high'):
+                    tp_daily = Decimal(str(daily_levels['yesterday_high']))
                     take_profit = min(tp_2r, tp_daily)
                 else:
                     take_profit = tp_2r
@@ -375,10 +375,10 @@ class USOpenPlanner:
                 stop_loss = orb_range['high']
                 risk = stop_loss - entry
 
-                # TP: 2R or Daily Low (whichever is closer)
+                # TP: 2R or Yesterday Low (whichever is closer)
                 tp_2r = entry - (risk * Decimal('2.0'))
-                if daily_levels and daily_levels.get('y_low'):
-                    tp_daily = Decimal(str(daily_levels['y_low']))
+                if daily_levels and daily_levels.get('yesterday_low'):
+                    tp_daily = Decimal(str(daily_levels['yesterday_low']))
                     take_profit = max(tp_2r, tp_daily)
                 else:
                     take_profit = tp_2r
@@ -464,7 +464,7 @@ class USOpenPlanner:
         trade_date: datetime
     ) -> Optional[Dict]:
         """
-        Get daily levels (pivot points, yesterday high/low) from levels_daily table
+        Get daily levels (yesterday high/low, ATR) from eod_levels table
 
         Args:
             symbol_id: Symbol UUID
@@ -473,7 +473,7 @@ class USOpenPlanner:
         Returns:
             Dict with daily levels or None if not found
         """
-        response = self.supabase.table('levels_daily')\
+        response = self.supabase.table('eod_levels')\
             .select('*')\
             .eq('symbol_id', str(symbol_id))\
             .eq('trade_date', trade_date.date().isoformat())\
@@ -539,18 +539,19 @@ class USOpenPlanner:
             confidence += 0.05
 
         # Factor 5: Daily level alignment (0-15 points)
+        # Check if breakout aligns with yesterday's context
         if daily_levels:
-            pivot = daily_levels.get('pivot')
-            if pivot:
-                pivot_decimal = Decimal(str(pivot))
+            y_close = daily_levels.get('yesterday_close')
+            if y_close:
+                y_close_decimal = Decimal(str(y_close))
                 breakout_price = breakout['breakout_price']
 
-                # Check alignment
-                if breakout['direction'] == 'long' and breakout_price > pivot_decimal:
-                    # Long above pivot = bullish alignment
+                # Check alignment: Long above yesterday close = bullish, Short below = bearish
+                if breakout['direction'] == 'long' and breakout_price > y_close_decimal:
+                    # Long above yesterday close = bullish alignment
                     confidence += 0.15
-                elif breakout['direction'] == 'short' and breakout_price < pivot_decimal:
-                    # Short below pivot = bearish alignment
+                elif breakout['direction'] == 'short' and breakout_price < y_close_decimal:
+                    # Short below yesterday close = bearish alignment
                     confidence += 0.15
 
         # Ensure between 0.0 and 1.0

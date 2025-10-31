@@ -83,26 +83,30 @@ class MorningPlanner:
         logger.info(f"Analyzing Asia Sweep for {symbol_name} on {trade_date}")
 
         try:
-            # Step 1 - Fetch levels_daily for today
+            # Step 1 - Fetch eod_levels for today (yesterday's data)
             trade_date_str = trade_date.strftime('%Y-%m-%d')
-            levels_result = self.supabase.table('levels_daily')\
+            levels_result = self.supabase.table('eod_levels')\
                 .select('*')\
                 .eq('symbol_id', str(symbol_id))\
                 .eq('trade_date', trade_date_str)\
                 .execute()
 
             if not levels_result.data or len(levels_result.data) == 0:
-                logger.warning(f"No levels found for {symbol_name} on {trade_date_str}")
+                logger.warning(f"No EOD levels found for {symbol_name} on {trade_date_str}")
                 return None
 
             levels = levels_result.data[0]
-            y_low = Decimal(str(levels['y_low'])) if levels['y_low'] else None
-            pivot = Decimal(str(levels['pivot'])) if levels['pivot'] else None
-            r1 = Decimal(str(levels['r1'])) if levels['r1'] else None
+            y_low = Decimal(str(levels['yesterday_low'])) if levels['yesterday_low'] else None
+            y_high = Decimal(str(levels['yesterday_high'])) if levels['yesterday_high'] else None
+            y_close = Decimal(str(levels['yesterday_close'])) if levels['yesterday_close'] else None
 
-            if not y_low or not pivot:
-                logger.warning(f"Missing y_low or pivot for {symbol_name}")
+            if not y_low or not y_high:
+                logger.warning(f"Missing yesterday_low or yesterday_high for {symbol_name}")
                 return None
+
+            # Use yesterday_close as pivot fallback, calculate simple R1
+            pivot = y_close if y_close else (y_high + y_low) / Decimal('2')
+            r1 = y_high  # Use yesterday_high as resistance level
 
             # Step 2 - Fetch OHLC data for Asia session (02:00-05:00 MEZ)
             berlin_tz = pytz.timezone('Europe/Berlin')
@@ -256,26 +260,30 @@ class MorningPlanner:
         logger.info(f"Analyzing Y-Low Rebound for {symbol_name} on {trade_date}")
 
         try:
-            # Step 1 - Fetch levels_daily for today
+            # Step 1 - Fetch eod_levels for today (yesterday's data)
             trade_date_str = trade_date.strftime('%Y-%m-%d')
-            levels_result = self.supabase.table('levels_daily')\
+            levels_result = self.supabase.table('eod_levels')\
                 .select('*')\
                 .eq('symbol_id', str(symbol_id))\
                 .eq('trade_date', trade_date_str)\
                 .execute()
 
             if not levels_result.data or len(levels_result.data) == 0:
-                logger.warning(f"No levels found for {symbol_name} on {trade_date_str}")
+                logger.warning(f"No EOD levels found for {symbol_name} on {trade_date_str}")
                 return None
 
             levels = levels_result.data[0]
-            y_low = Decimal(str(levels['y_low'])) if levels['y_low'] else None
-            pivot = Decimal(str(levels['pivot'])) if levels['pivot'] else None
-            r1 = Decimal(str(levels['r1'])) if levels['r1'] else None
+            y_low = Decimal(str(levels['yesterday_low'])) if levels['yesterday_low'] else None
+            y_high = Decimal(str(levels['yesterday_high'])) if levels['yesterday_high'] else None
+            y_close = Decimal(str(levels['yesterday_close'])) if levels['yesterday_close'] else None
 
-            if not y_low or not pivot:
-                logger.warning(f"Missing y_low or pivot for {symbol_name}")
+            if not y_low or not y_high:
+                logger.warning(f"Missing yesterday_low or yesterday_high for {symbol_name}")
                 return None
+
+            # Use yesterday_close as pivot fallback, calculate simple R1
+            pivot = y_close if y_close else (y_high + y_low) / Decimal('2')
+            r1 = y_high  # Use yesterday_high as resistance level
 
             # Step 2 - Fetch first candle of the day (market open at 08:00 MEZ)
             berlin_tz = pytz.timezone('Europe/Berlin')

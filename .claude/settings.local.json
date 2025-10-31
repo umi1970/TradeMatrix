@@ -1,0 +1,19 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(env)",
+      "Bash(dir \"C:\\Users\\localadmin\\Documents\\SaaS\\TradeMatrix\\services\" /b)",
+      "Bash(dir \"C:\\Users\\localadmin\\Documents\\SaaS\\TradeMatrix\\services\\agents\" /b)",
+      "Bash(cat:*)",
+      "Bash(python -c:*)",
+      "Bash(pip install:*)",
+      "Bash(python -m pip:*)",
+      "Bash(python:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git config:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

@@ -304,6 +304,40 @@ class JournalBot:
 
             doc.add_paragraph()  # Spacer
 
+            # EOD Performance Section (if available)
+            eod_performance = metrics.get('eod_performance', {})
+            if eod_performance.get('status') == 'success' and eod_performance.get('symbols'):
+                doc.add_heading('Yesterday Market Performance', level=2)
+
+                eod_table = doc.add_table(rows=1, cols=5)
+                eod_table.style = 'Light Grid Accent 1'
+
+                # Header row
+                header_cells = eod_table.rows[0].cells
+                headers = ['Symbol', 'Y. High', 'Y. Low', 'Y. Close', 'Change %']
+                for idx, header in enumerate(headers):
+                    header_cells[idx].text = header
+                    header_cells[idx].paragraphs[0].runs[0].font.bold = True
+
+                # Data rows
+                for symbol in eod_performance['symbols']:
+                    row_cells = eod_table.add_row().cells
+                    row_cells[0].text = symbol['symbol']
+                    row_cells[1].text = f"{symbol['yesterday_high']:.2f}"
+                    row_cells[2].text = f"{symbol['yesterday_low']:.2f}"
+                    row_cells[3].text = f"{symbol['yesterday_close']:.2f}"
+
+                    change_pct = symbol['daily_change_percent']
+                    row_cells[4].text = f"{change_pct:+.2f}%"
+
+                    # Color code change
+                    if change_pct > 0:
+                        row_cells[4].paragraphs[0].runs[0].font.color.rgb = RGBColor(0, 128, 0)  # Green
+                    elif change_pct < 0:
+                        row_cells[4].paragraphs[0].runs[0].font.color.rgb = RGBColor(255, 0, 0)  # Red
+
+                doc.add_paragraph()  # Spacer
+
             # AI Insights Section
             doc.add_heading('AI-Powered Insights', level=2)
 
@@ -639,6 +673,61 @@ class JournalBot:
             return None
 
 
+    def _get_eod_performance(self, trade_date: date) -> Dict[str, Any]:
+        """
+        Fetch yesterday's market performance from EOD data
+
+        Args:
+            trade_date: Current trading date
+
+        Returns:
+            Dict with EOD performance metrics for all active symbols
+        """
+        try:
+            # Query eod_data for yesterday (trade_date - 1 day)
+            yesterday = trade_date - timedelta(days=1)
+            trade_date_str = trade_date.strftime('%Y-%m-%d')
+
+            response = self.supabase.table('eod_levels')\
+                .select('*, symbols(symbol, name)')\
+                .eq('trade_date', trade_date_str)\
+                .execute()
+
+            if not response.data:
+                return {
+                    'status': 'no_data',
+                    'symbols': []
+                }
+
+            # Format EOD performance summary
+            symbols_performance = []
+            for level in response.data:
+                if level.get('symbols'):
+                    symbol_data = {
+                        'symbol': level['symbols']['symbol'],
+                        'name': level['symbols']['name'],
+                        'yesterday_high': float(level.get('yesterday_high', 0)),
+                        'yesterday_low': float(level.get('yesterday_low', 0)),
+                        'yesterday_close': float(level.get('yesterday_close', 0)),
+                        'daily_change_points': float(level.get('daily_change_points', 0)),
+                        'daily_change_percent': float(level.get('daily_change_percent', 0))
+                    }
+                    symbols_performance.append(symbol_data)
+
+            return {
+                'status': 'success',
+                'date': trade_date_str,
+                'symbols': symbols_performance
+            }
+
+        except Exception as e:
+            logger.error(f"Error fetching EOD performance: {str(e)}", exc_info=True)
+            return {
+                'status': 'error',
+                'error': str(e),
+                'symbols': []
+            }
+
     def generate_daily_report(self, user_id: Optional[UUID] = None) -> Dict[str, Any]:
         """
         Generate daily trading report
@@ -683,13 +772,17 @@ class JournalBot:
             r_multiples = [float(t.get('r_multiple', 0)) for t in trades if t.get('r_multiple')]
             avg_r_multiple = sum(r_multiples) / len(r_multiples) if r_multiples else 0
 
+            # Step 2b - Fetch EOD performance data (yesterday's market moves)
+            eod_performance = self._get_eod_performance(today)
+
             metrics = {
                 'total_trades': total_trades,
                 'winning_trades': len(winning_trades),
                 'losing_trades': len(losing_trades),
                 'win_rate': round(win_rate, 1),
                 'total_pnl': round(total_pnl, 2),
-                'avg_r_multiple': round(avg_r_multiple, 2)
+                'avg_r_multiple': round(avg_r_multiple, 2),
+                'eod_performance': eod_performance  # Market context
             }
 
             # Step 3 - Generate AI summary
