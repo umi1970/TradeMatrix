@@ -1,0 +1,331 @@
+# ============================================================
+# TradeMatrix.ai – EOD Data Layer Configuration
+# Purpose: End-of-Day market data collection and management
+# Version: 1.0.0
+# ============================================================
+
+# Data Sources Configuration
+data_sources:
+  primary:
+    name: "Stooq.com"
+    type: "csv"
+    enabled: true
+    priority: 1
+    description: "Primary EOD data source - CSV feed, no API key required"
+    base_url: "https://stooq.com/q/d/l/"
+    parameters:
+      interval: "d"  # daily
+    rate_limit: null  # No limit
+    cost: 0
+    
+  backup:
+    name: "Yahoo Finance"
+    type: "json"
+    enabled: true
+    priority: 2
+    description: "Backup source for cross-validation"
+    base_url: "https://query1.finance.yahoo.com/v8/finance/chart/"
+    parameters:
+      interval: "1d"
+      range: "5d"
+    rate_limit: null
+    cost: 0
+    
+  optional:
+    name: "EOD Historical Data"
+    type: "json"
+    enabled: false
+    priority: 3
+    description: "Optional structured API (requires free API key)"
+    base_url: "https://eodhd.com/api/eod/"
+    parameters:
+      fmt: "json"
+    rate_limit: 20  # requests per day
+    cost: 0
+    requires_auth: true
+    api_key_env: "EODHD_API_KEY"
+
+# Symbols to Track
+symbols:
+  indices:
+    - symbol: "^GDAXI"  # DAX
+      name: "DAX 40"
+      stooq_symbol: "^dax"
+      yahoo_symbol: "^GDAXI"
+      eodhd_symbol: "DE30.EUR"
+      priority: 1
+      fetch_enabled: true
+      
+    - symbol: "^NDX"  # NASDAQ 100
+      name: "NASDAQ 100"
+      stooq_symbol: "^ndq"
+      yahoo_symbol: "^NDX"
+      eodhd_symbol: "NDX.INDX"
+      priority: 1
+      fetch_enabled: true
+      
+    - symbol: "^DJI"  # Dow Jones
+      name: "Dow Jones Industrial"
+      stooq_symbol: "^dji"
+      yahoo_symbol: "^DJI"
+      eodhd_symbol: "DJI.INDX"
+      priority: 1
+      fetch_enabled: true
+      
+  forex:
+    - symbol: "EURUSD"
+      name: "EUR/USD"
+      stooq_symbol: "eurusd"
+      yahoo_symbol: "EURUSD=X"
+      eodhd_symbol: "EURUSD.FOREX"
+      priority: 2
+      fetch_enabled: true
+      
+    - symbol: "GBPUSD"
+      name: "GBP/USD"
+      stooq_symbol: "gbpusd"
+      yahoo_symbol: "GBPUSD=X"
+      eodhd_symbol: "GBPUSD.FOREX"
+      priority: 3
+      fetch_enabled: false
+
+# Scheduling Configuration
+schedule:
+  daily_fetch:
+    time: "07:30"
+    timezone: "Europe/Berlin"
+    description: "Fetch previous day's EOD data"
+    retry_attempts: 3
+    retry_delay_minutes: 5
+    
+  pre_us_open_update:
+    time: "14:45"
+    timezone: "Europe/Berlin"
+    enabled: false
+    description: "Optional: Refresh before US market open"
+    
+  weekend_maintenance:
+    day: "saturday"
+    time: "09:00"
+    timezone: "Europe/Berlin"
+    description: "Archive old EOD files (7-day rolling window)"
+    retention_days: 7
+
+# Data Storage Configuration
+storage:
+  local_cache:
+    enabled: true
+    base_path: "/data/eod"
+    structure: "{symbol}/{YYYY-MM-DD}.json"
+    max_size_mb: 100
+    
+  supabase:
+    enabled: true
+    table: "eod_data"
+    storage_bucket: "market-data"
+    path_template: "eod/{symbol}/{YYYY}/{MM}/{YYYY-MM-DD}.json"
+    
+  github_backup:
+    enabled: false
+    repository: "TradeMatrix"
+    path: "data/eod/"
+    commit_message: "EOD data update: {date}"
+    auto_commit: false
+
+# Data Quality Configuration
+quality_control:
+  cross_validation:
+    enabled: true
+    max_deviation_percent: 0.5
+    sources_to_compare: ["primary", "backup"]
+    action_on_deviation: "log_warning"  # log_warning | use_backup | skip
+    
+  timestamp_validation:
+    enabled: true
+    max_age_hours: 24
+    action_on_stale: "alert"  # alert | fetch_again | skip
+    
+  missing_data_handling:
+    action: "notify"  # notify | retry | skip
+    notification_channels: ["slack", "telegram"]
+    max_missing_consecutive_days: 2
+
+# Integration with Existing Modules
+module_integration:
+  morning_planner:
+    enabled: true
+    fields_required: ["open", "high", "low", "close"]
+    derived_levels:
+      - "yesterday_high"
+      - "yesterday_low"
+      - "yesterday_close"
+      - "yesterday_range"
+    preprocessing:
+      - calculate_atr_5d
+      - calculate_pivot_points
+      
+  us_open_planner:
+    enabled: true
+    fields_required: ["high", "low", "close"]
+    derived_levels:
+      - "yesterday_high"
+      - "yesterday_low"
+    preprocessing:
+      - compare_premarket_range
+      
+  validation_engine:
+    enabled: true
+    fields_required: ["high", "low", "close"]
+    context_evaluation:
+      - breakout_vs_yesterday_high
+      - reject_vs_yesterday_low
+      - liquidity_sweep_detection
+      
+  report_publisher:
+    enabled: true
+    fields_required: ["open", "high", "low", "close", "volume"]
+    report_sections:
+      - daily_performance_summary
+      - weekly_range_comparison
+      
+  backtest_engine:
+    enabled: true
+    fields_required: ["open", "high", "low", "close", "volume"]
+    historical_depth_days: 365
+
+# Chart Integration (Chart-img.com)
+chart_integration:
+  enabled: true
+  provider: "chart-img"
+  api_url: "https://api.chart-img.com/v3/tradingview/advanced-chart"
+  api_key_env: "CHARTIMG_API_KEY"
+  
+  default_params:
+    theme: "dark"
+    width: 1600
+    height: 900
+    backgroundColor: "#0C0C0C"
+    
+  level_overlays:
+    yesterday_levels:
+      enabled: true
+      style:
+        high:
+          color: "#00D084"  # Profit Green
+          width: 2
+          style: "dashed"
+        low:
+          color: "#FF3B30"  # Risk Red
+          width: 2
+          style: "dashed"
+        close:
+          color: "#E0E0E0"  # Logic Gray
+          width: 1
+          style: "dotted"
+          
+  flow_templates:
+    morning_planner:
+      interval: "1h"
+      studies: ["EMA50", "SMA200", "RSI"]
+      overlays: ["yesterday_high", "yesterday_low"]
+      
+    us_open_planner:
+      interval: "15m"
+      studies: ["EMA20", "EMA50", "MACD", "Volume"]
+      overlays: ["yesterday_high", "yesterday_low"]
+      
+    news_reaction:
+      interval: "5m"
+      studies: ["EMA9", "EMA20", "RSI", "Ichimoku"]
+      overlays: ["yesterday_close"]
+
+# Notifications
+notifications:
+  slack:
+    enabled: false
+    webhook_url_env: "SLACK_WEBHOOK_EOD"
+    events:
+      - "fetch_success"
+      - "fetch_failure"
+      - "data_quality_warning"
+      
+  telegram:
+    enabled: false
+    bot_token_env: "TELEGRAM_BOT_TOKEN"
+    chat_id_env: "TELEGRAM_CHAT_ID"
+    events:
+      - "fetch_failure"
+      - "missing_data"
+      
+  email:
+    enabled: false
+    smtp_config_env: "SMTP_CONFIG"
+    recipients: []
+    events:
+      - "fetch_failure"
+
+# Monitoring & Logging
+monitoring:
+  log_level: "INFO"  # DEBUG | INFO | WARNING | ERROR
+  log_file: "logs/eod_data_layer.log"
+  log_rotation: "daily"
+  log_retention_days: 30
+  
+  metrics:
+    enabled: true
+    track:
+      - fetch_duration_ms
+      - fetch_success_rate
+      - data_quality_score
+      - storage_usage_mb
+      - api_call_count
+    export_to: "supabase"  # supabase | prometheus | none
+
+# Feature Flags
+features:
+  auto_level_calculation:
+    enabled: true
+    description: "Automatically calculate YH/YL/YC levels after fetch"
+    
+  delta_tracking:
+    enabled: true
+    description: "Track percentage change vs previous day"
+    
+  weekly_summary:
+    enabled: true
+    description: "Generate weekly ATR and range statistics"
+    
+  macro_overlay:
+    enabled: false
+    description: "Combine EOD with economic calendar events"
+    
+  chart_auto_export:
+    enabled: true
+    description: "Automatically generate charts with levels"
+
+# Extension Points
+extensions:
+  custom_indicators:
+    - name: "ATR_5D"
+      enabled: true
+      lookback_days: 5
+      
+    - name: "Weekly_Range"
+      enabled: true
+      calculation: "max(high) - min(low) over 5 days"
+      
+  custom_levels:
+    - name: "Previous_Week_High"
+      enabled: false
+      calculation: "max(high) over previous 5 trading days"
+      
+    - name: "Previous_Week_Low"
+      enabled: false
+      calculation: "min(low) over previous 5 trading days"
+
+# Version Info
+version:
+  config_version: "1.0.0"
+  compatible_tradematrix_version: ">=0.5.0"
+  last_updated: "2025-10-31"
+  author: "TradeMatrix.ai Team"
