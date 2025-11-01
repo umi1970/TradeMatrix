@@ -1,6 +1,6 @@
 celery==5.4.0
 redis==5.2.0
-supabase==2.13.1
+supabase==2.9.0
 python-dotenv==1.0.1
 finnhub-python==2.4.20
 pywebpush==2.0.1
