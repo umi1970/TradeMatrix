@@ -116,19 +116,23 @@ def check_liquidity_alerts(self):
 
             for alert in triggered_alerts:
                 try:
+                    # Convert Decimal to float for JSON serialization
+                    level_price = float(alert['level_price'])
+                    current_price = float(alert['current_price'])
+
                     # Format notification title and body
                     title = f"🔴 {alert['symbol']} touched {alert['level_type'].replace('_', ' ').title()}"
-                    body = f"Level: {alert['level_price']:.2f} | Current: {alert['current_price']:.2f}"
+                    body = f"Level: {level_price:.2f} | Current: {current_price:.2f}"
 
                     success = push_service.send_push_notification(
                         user_id=alert['user_id'],
                         title=title,
                         body=body,
                         data={
-                            'symbol': alert['symbol'],
-                            'level_type': alert['level_type'],
-                            'level_price': float(alert['level_price']),
-                            'current_price': float(alert['current_price'])
+                            'symbol': str(alert['symbol']),
+                            'level_type': str(alert['level_type']),
+                            'level_price': level_price,
+                            'current_price': current_price
                         }
                     )
 
