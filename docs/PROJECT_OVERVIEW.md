@@ -1,8 +1,8 @@
 # TradeMatrix.ai - Project Overview
 
-**Version:** 1.1.0
-**Status:** 🚧 Phase 1 Complete - Phase 2 In Progress
-**Last Updated:** 2025-10-29
+**Version:** 1.2.0
+**Status:** ✅ Phase 1-4 Complete - Phase 5 Liquidity Alerts DEPLOYED TO PRODUCTION
+**Last Updated:** 2025-11-01
 
 ---
 
@@ -166,34 +166,34 @@ TradeMatrix/
 
 > **See [00_MASTER_ROADMAP.md](./00_MASTER_ROADMAP.md) for complete 5-phase roadmap!**
 
-### ✅ Phase 1: Foundation - COMPLETED (100%)
-- [x] Project structure setup
-- [x] Documentation system (including Master Roadmap!)
-- [x] Backend architecture simplified (Supabase integration)
-- [x] Database schema designed (SQL migrations ready)
-- [x] Supabase project created ("tradematrix Projekt")
-- [x] Database migrations executed (001_initial_schema.sql, 002_rls_policies.sql)
-- [x] FastAPI simplified to AI agents only
-- [x] Edge Functions templates created
-- [x] **Next.js 16 app setup** (App Router, React 19.2)
-- [x] **ESLint 9 with Flat Config** (eslint.config.mjs)
-- [x] **Supabase client integration** (@supabase/supabase-js, @supabase/ssr)
-- [x] **Authentication (Email/Password)** - Signup, Login, Protected Routes
-- [x] **Auth pages** - Login, Signup, Dashboard with middleware protection
+### ✅ Phase 1-4: Foundation to Dashboard - COMPLETED (100%)
+- [x] Project structure, documentation, Supabase integration
+- [x] Next.js 16, Authentication, Protected Routes
+- [x] Database schema with RLS policies
+- [x] Trading rules, Validation engine, Risk management
+- [x] Market data fetcher, Technical indicators
+- [x] Dashboard UI with shadcn/ui components
+- [x] Real-time features with Supabase Realtime
 
-### 🚧 Phase 2: Trading Logic - IN PROGRESS (50%)
-- [x] Trading rules documented
-- [x] Validation engine concept
-- [x] Risk management principles
-- [x] **Market data fetcher** (Twelve Data API integration) ✅
-- [x] **Technical indicators** (EMA, RSI, MACD, BB, ATR, Ichimoku, Pivots) ✅ NEW!
-- [ ] **Trade validation engine** (rule-based validation)
-- [ ] **Risk calculator** (position sizing, SL/TP)
+### ✅ Phase 5A: Liquidity Alert System - DEPLOYED TO PRODUCTION (100%)
+- [x] **EOD Data Layer** - 86,469+ records (DAX, NASDAQ, DOW, EUR/USD, EUR/GBP)
+- [x] **EOD Levels Calculation** - 100% complete (Yesterday High/Low, Pivot Points)
+- [x] **Dashboard Widgets** - 8 new widgets (EOD Levels Today, Market Sentiment, Trade Performance, etc.)
+- [x] **Liquidity Alert Engine** - Real-time price monitoring every 60 seconds
+- [x] **Browser Push Notifications** - VAPID keys configured, Web Push API
+- [x] **Hetzner Production Deployment** - CX11 server running 24/7
+  - Server: 135.191.195.241 (2 vCPU, 4GB RAM, 40GB SSD)
+  - Services: Redis 7-alpine, Celery Worker, Celery Beat
+  - Repository: `hetzner-deploy/` (Docker Compose)
+  - Latest commit: 6f952fb (JSON serialization fix)
 
-### 📋 Phases 3-5: Planned
-- **Phase 3:** AI Agents (ChartWatcher, SignalBot, RiskManager, JournalBot)
-- **Phase 4:** Dashboard UX (shadcn/ui, charts, real-time updates)
-- **Phase 5:** SaaS Features (Stripe, publishing, notifications)
+### 🚧 Phase 5B: Stripe Integration & SaaS Features - PLANNED
+- [ ] Stripe subscription billing
+- [ ] Subscription management (upgrade/downgrade)
+- [ ] Usage tracking & limits
+- [ ] Email notifications
+- [ ] Report publishing (subdomain/blog)
+- [ ] WhatsApp alerts (Expert tier)
 
 ### 🎯 Next Immediate Steps
 1. ✅ ~~Implement MarketDataFetcher (Twelve Data API)~~ - COMPLETE

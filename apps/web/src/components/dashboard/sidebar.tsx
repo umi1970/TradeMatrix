@@ -13,6 +13,7 @@ import {
   FileText,
   User,
   Menu,
+  Database,
 } from 'lucide-react'
 
 const navigation = [
@@ -30,6 +31,11 @@ const navigation = [
     name: 'Charts',
     href: '/dashboard/charts',
     icon: BarChart3,
+  },
+  {
+    name: 'EOD Data',
+    href: '/dashboard/eod',
+    icon: Database,
   },
   {
     name: 'Reports',

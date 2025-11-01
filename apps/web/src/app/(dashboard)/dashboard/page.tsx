@@ -2,8 +2,15 @@
 
 import { useState, useEffect } from 'react'
 import { MarketOverviewCard } from '@/components/dashboard/market-overview-card'
-import { TradeSummaryCard } from '@/components/dashboard/trade-summary-card'
 import { AgentStatusCard } from '@/components/dashboard/agent-status-card'
+import { EODLevelsToday } from '@/components/dashboard/eod-levels-today'
+import { TradePerformanceCard } from '@/components/dashboard/trade-performance-card'
+import { MarketSentimentCard } from '@/components/dashboard/market-sentiment-card'
+import { TopPerformersCard } from '@/components/dashboard/top-performers-card'
+import { TradingStreakCard } from '@/components/dashboard/trading-streak-card'
+import { RiskMetricsCard } from '@/components/dashboard/risk-metrics-card'
+import { RecentTradesCard } from '@/components/dashboard/recent-trades-card'
+import { AlertSettingsCard } from '@/components/dashboard/alert-settings-card'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Alert, AlertDescription } from '@/components/ui/alert'
@@ -17,16 +24,6 @@ interface MarketData {
   changePercent: number | null
   trend: 'up' | 'down' | 'neutral'
   updatedAt: string
-}
-
-const mockTradeSummary = {
-  totalTrades: 45,
-  winningTrades: 28,
-  losingTrades: 17,
-  winRate: 62.2,
-  totalProfitLoss: 3250.75,
-  averageWin: 245.5,
-  averageLoss: 132.8,
 }
 
 const mockAgents = [
@@ -65,9 +62,6 @@ export default function DashboardPage() {
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [isRefreshing, setIsRefreshing] = useState(false)
-
-  // Mock recent trades - replace with real Supabase data later
-  const recentTrades: any[] = []
 
   // Fetch market data from API
   const fetchMarketData = async () => {
@@ -150,6 +144,11 @@ export default function DashboardPage() {
         </Alert>
       )}
 
+      {/* EOD Levels Today */}
+      <section>
+        <EODLevelsToday />
+      </section>
+
       {/* Market Overview */}
       <section>
         <h2 className="text-xl font-semibold mb-4">Market Overview</h2>
@@ -194,11 +193,20 @@ export default function DashboardPage() {
         )}
       </section>
 
-      {/* Trade Summary & Quick Stats */}
-      <section className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-        <div className="lg:col-span-2">
-          <TradeSummaryCard summary={mockTradeSummary} />
+      {/* Performance Cards Row */}
+      <section>
+        <h2 className="text-xl font-semibold mb-4">Performance Metrics</h2>
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+          <TradePerformanceCard />
+          <MarketSentimentCard />
+          <TopPerformersCard />
         </div>
+      </section>
+
+      {/* Stats & Quick Actions Row */}
+      <section className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+        <TradingStreakCard />
+        <RiskMetricsCard />
         <Card>
           <CardHeader>
             <CardTitle className="text-sm font-medium">Quick Actions</CardTitle>
@@ -217,9 +225,19 @@ export default function DashboardPage() {
         </Card>
       </section>
 
+      {/* Recent Trades */}
+      <section>
+        <RecentTradesCard />
+      </section>
+
+      {/* Alert Settings */}
+      <section>
+        <AlertSettingsCard />
+      </section>
+
       {/* AI Agents Status */}
       <section>
-        <h2 className="text-xl font-semibold mb-4">AI Agents</h2>
+        <h2 className="text-xl font-semibold mb-4">AI Agents (Coming Soon)</h2>
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
           {mockAgents.map((agent) => (
             <AgentStatusCard
@@ -229,59 +247,9 @@ export default function DashboardPage() {
             />
           ))}
         </div>
-      </section>
-
-      {/* Recent Activity */}
-      <section>
-        <Card>
-          <CardHeader>
-            <CardTitle>Recent Activity</CardTitle>
-          </CardHeader>
-          <CardContent>
-            {recentTrades.length === 0 ? (
-              <div className="text-center py-8">
-                <p className="text-muted-foreground">
-                  No recent trades. Start trading to see your activity here.
-                </p>
-                <Button className="mt-4" variant="outline">
-                  <Plus className="h-4 w-4 mr-2" />
-                  Create First Trade
-                </Button>
-              </div>
-            ) : (
-              <div className="space-y-4">
-                {recentTrades.map((trade: any, index: number) => (
-                  <div
-                    key={index}
-                    className="flex items-center justify-between border-b pb-3 last:border-0"
-                  >
-                    <div>
-                      <p className="font-medium">{trade.symbol}</p>
-                      <p className="text-sm text-muted-foreground">
-                        {new Date(trade.created_at).toLocaleDateString()}
-                      </p>
-                    </div>
-                    <div className="text-right">
-                      <p
-                        className={`font-semibold ${
-                          trade.profit_loss >= 0
-                            ? 'text-green-600'
-                            : 'text-red-600'
-                        }`}
-                      >
-                        {trade.profit_loss >= 0 ? '+' : ''}$
-                        {trade.profit_loss?.toFixed(2)}
-                      </p>
-                      <p className="text-sm text-muted-foreground">
-                        {trade.status}
-                      </p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </CardContent>
-        </Card>
+        <p className="text-sm text-muted-foreground mt-4 text-center">
+          AI agents are currently in development. Stay tuned for automated trading analysis!
+        </p>
       </section>
     </div>
   )
