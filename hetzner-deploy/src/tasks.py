@@ -82,58 +82,58 @@ def check_liquidity_alerts(self):
             ('EURGBP', 'EUR/GBP'),
         ]
 
-        total_alerts_triggered = 0
+        # Step 1: Fetch all prices and update cache
+        logger.info("\n📊 Fetching prices for all symbols...")
+        prices_fetched = 0
 
         for symbol_code, symbol_name in symbols:
             try:
-                logger.info(f"\n📊 Checking {symbol_name} ({symbol_code})...")
+                logger.info(f"  Fetching {symbol_name} ({symbol_code})...")
 
-                # 1. Fetch current price
                 price_data = price_fetcher.fetch_price(symbol_code)
-                if not price_data:
-                    logger.warning(f"  ⚠️  Could not fetch price for {symbol_name}")
-                    continue
-
-                # Update price cache
-                price_fetcher.update_price_cache(symbol_code, price_data)
-
-                current_price = price_data['current_price']
-                logger.info(f"  💰 Current price: {current_price}")
-
-                # 2. Check if any alerts were triggered
-                triggered_alerts = alert_engine.check_and_trigger_alerts(
-                    symbol_code,
-                    current_price
-                )
-
-                if triggered_alerts:
-                    logger.info(f"  🎯 {len(triggered_alerts)} alert(s) triggered!")
-
-                    # 3. Send push notifications
-                    for alert in triggered_alerts:
-                        try:
-                            success = push_service.send_alert_notification(
-                                user_id=alert['user_id'],
-                                symbol_name=symbol_name,
-                                level_type=alert['level_type'],
-                                target_price=alert['target_price'],
-                                current_price=current_price
-                            )
-
-                            if success:
-                                total_alerts_triggered += 1
-                                logger.info(f"     ✅ Notification sent to user {alert['user_id'][:8]}...")
-                            else:
-                                logger.warning(f"     ⚠️  Failed to send notification to user {alert['user_id'][:8]}...")
-
-                        except Exception as e:
-                            logger.error(f"     ❌ Error sending notification: {str(e)}")
+                if price_data:
+                    price_fetcher.update_price_cache(symbol_code, price_data)
+                    logger.info(f"    💰 {price_data['current_price']}")
+                    prices_fetched += 1
                 else:
-                    logger.info(f"  ✓ No alerts triggered")
+                    logger.warning(f"    ⚠️  Could not fetch price")
 
             except Exception as e:
-                logger.error(f"  ❌ Error checking {symbol_name}: {str(e)}")
+                logger.error(f"    ❌ Error fetching price: {str(e)}")
                 continue
+
+        logger.info(f"\n✅ Fetched {prices_fetched}/{len(symbols)} prices")
+
+        # Step 2: Check ALL subscriptions for triggered alerts
+        logger.info("\n🔍 Checking liquidity levels...")
+        triggered_alerts = alert_engine.check_all_alerts()
+
+        # Step 3: Send push notifications for triggered alerts
+        total_alerts_triggered = 0
+
+        if triggered_alerts:
+            logger.info(f"\n🎯 {len(triggered_alerts)} alert(s) triggered!")
+
+            for alert in triggered_alerts:
+                try:
+                    success = push_service.send_alert_notification(
+                        user_id=alert['user_id'],
+                        symbol_name=alert['symbol'],  # alert_engine returns 'symbol'
+                        level_type=alert['level_type'],
+                        target_price=alert['level_price'],  # alert_engine returns 'level_price'
+                        current_price=alert['current_price']
+                    )
+
+                    if success:
+                        total_alerts_triggered += 1
+                        logger.info(f"  ✅ {alert['symbol']} - {alert['level_type']} - User {alert['user_id'][:8]}...")
+                    else:
+                        logger.warning(f"  ⚠️  Failed to send notification for {alert['symbol']}")
+
+                except Exception as e:
+                    logger.error(f"  ❌ Error sending notification: {str(e)}")
+        else:
+            logger.info("  ✓ No levels crossed")
 
         logger.info("=" * 70)
         logger.info(f"✅ Check complete! {total_alerts_triggered} notification(s) sent")
