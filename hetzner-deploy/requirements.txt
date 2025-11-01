@@ -1,0 +1,8 @@
+celery==5.4.0
+redis==5.2.0
+supabase==2.13.1
+python-dotenv==1.0.1
+finnhub-python==2.4.20
+pywebpush==2.0.1
+httpx==0.25.2
+cryptography==44.0.0

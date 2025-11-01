@@ -1,0 +1,51 @@
+version: '3.8'
+
+services:
+  redis:
+    image: redis:7-alpine
+    container_name: tradematrix_redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  celery_worker:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: tradematrix_celery_worker
+    restart: unless-stopped
+    command: celery -A src.tasks worker --loglevel=info
+    env_file:
+      - .env
+    depends_on:
+      redis:
+        condition: service_healthy
+    volumes:
+      - ./src:/app/src
+      - ./logs:/app/logs
+
+  celery_beat:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: tradematrix_celery_beat
+    restart: unless-stopped
+    command: celery -A src.tasks beat --loglevel=info
+    env_file:
+      - .env
+    depends_on:
+      redis:
+        condition: service_healthy
+    volumes:
+      - ./src:/app/src
+      - ./logs:/app/logs
+
+volumes:
+  redis_data:
