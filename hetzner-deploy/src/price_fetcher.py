@@ -27,10 +27,11 @@ class PriceFetcher:
         )
 
         # Symbol mapping
+        # Note: Finnhub uses ^ prefix for indices (^GDAXI, ^NDX, ^DJI)
         self.symbol_config = {
-            '^GDAXI': {'type': 'index', 'api': 'finnhub', 'ticker': 'DAX'},
-            '^NDX': {'type': 'index', 'api': 'finnhub', 'ticker': 'NDX'},
-            '^DJI': {'type': 'index', 'api': 'finnhub', 'ticker': 'DJI'},
+            '^GDAXI': {'type': 'index', 'api': 'finnhub', 'ticker': '^GDAXI'},
+            '^NDX': {'type': 'index', 'api': 'finnhub', 'ticker': '^NDX'},
+            '^DJI': {'type': 'index', 'api': 'finnhub', 'ticker': '^DJI'},
             'EURUSD': {'type': 'forex', 'api': 'alpha_vantage', 'pair': 'EUR/USD'},
             'EURGBP': {'type': 'forex', 'api': 'alpha_vantage', 'pair': 'EUR/GBP'},
         }

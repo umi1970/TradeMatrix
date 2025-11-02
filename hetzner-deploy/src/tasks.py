@@ -78,73 +78,50 @@ def check_liquidity_alerts(self):
         alert_engine = LiquidityAlertEngine()
         push_service = PushNotificationService()
 
-        # Monitor 5 symbols
-        symbols = [
-            ('^GDAXI', 'DAX'),
-            ('^NDX', 'NASDAQ'),
-            ('^DJI', 'DOW'),
-            ('EURUSD', 'EUR/USD'),
-            ('EURGBP', 'EUR/GBP'),
-        ]
+        # Step 1: Fetch all prices and update cache
+        logger.info("\n📊 Fetching realtime prices...")
+        fetched_prices = price_fetcher.fetch_all_prices()
+        logger.info(f"✓ Fetched prices for {len(fetched_prices)} symbol(s)")
 
-        total_alerts_triggered = 0
+        # Step 2: Check all alerts (AlertEngine reads from price_cache)
+        logger.info("\n🔔 Checking liquidity alerts...")
+        triggered_alerts = alert_engine.check_all_alerts()
 
-        for symbol_code, symbol_name in symbols:
-            try:
-                logger.info(f"\n📊 Checking {symbol_name} ({symbol_code})...")
+        # Step 3: Send push notifications for triggered alerts
+        total_notifications_sent = 0
 
-                # 1. Fetch current price
-                price_data = price_fetcher.fetch_price(symbol_code)
-                if not price_data:
-                    logger.warning(f"  ⚠️  Could not fetch price for {symbol_name}")
-                    continue
+        if triggered_alerts:
+            logger.info(f"\n🎯 {len(triggered_alerts)} alert(s) triggered!")
 
-                current_price = price_data['current_price']
-                logger.info(f"  💰 Current price: {current_price}")
+            for alert in triggered_alerts:
+                try:
+                    success = push_service.send_alert_notification(
+                        user_id=alert['user_id'],
+                        symbol_name=alert['symbol'],
+                        level_type=alert['level_type'],
+                        target_price=float(alert['level_price']),
+                        current_price=float(alert['current_price'])
+                    )
 
-                # 2. Check if any alerts were triggered
-                triggered_alerts = alert_engine.check_and_trigger_alerts(
-                    symbol_code,
-                    current_price
-                )
+                    if success:
+                        total_notifications_sent += 1
+                        logger.info(f"  ✅ Notification sent: {alert['symbol']} ({alert['level_type']})")
+                    else:
+                        logger.warning(f"  ⚠️  Failed to send notification: {alert['symbol']}")
 
-                if triggered_alerts:
-                    logger.info(f"  🎯 {len(triggered_alerts)} alert(s) triggered!")
-
-                    # 3. Send push notifications
-                    for alert in triggered_alerts:
-                        try:
-                            success = push_service.send_alert_notification(
-                                user_id=alert['user_id'],
-                                symbol_name=symbol_name,
-                                level_type=alert['level_type'],
-                                target_price=alert['target_price'],
-                                current_price=current_price
-                            )
-
-                            if success:
-                                total_alerts_triggered += 1
-                                logger.info(f"     ✅ Notification sent to user {alert['user_id'][:8]}...")
-                            else:
-                                logger.warning(f"     ⚠️  Failed to send notification to user {alert['user_id'][:8]}...")
-
-                        except Exception as e:
-                            logger.error(f"     ❌ Error sending notification: {str(e)}")
-                else:
-                    logger.info(f"  ✓ No alerts triggered")
-
-            except Exception as e:
-                logger.error(f"  ❌ Error checking {symbol_name}: {str(e)}")
-                continue
+                except Exception as e:
+                    logger.error(f"  ❌ Error sending notification for {alert.get('symbol', 'unknown')}: {str(e)}")
+        else:
+            logger.info("  ✓ No alerts triggered")
 
         logger.info("=" * 70)
-        logger.info(f"✅ Check complete! {total_alerts_triggered} notification(s) sent")
+        logger.info(f"✅ Check complete! {total_notifications_sent} notification(s) sent")
         logger.info("=" * 70)
 
         return {
             'status': 'success',
-            'alerts_triggered': total_alerts_triggered,
-            'symbols_checked': len(symbols)
+            'alerts_triggered': total_notifications_sent,
+            'symbols_checked': len(fetched_prices)
         }
 
     except Exception as e:
