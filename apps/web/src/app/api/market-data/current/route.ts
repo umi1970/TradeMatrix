@@ -34,95 +34,89 @@ export async function GET(request: Request) {
   try {
     const supabase = await createServerClient()
 
-    // Try to fetch from price_cache first (real-time prices)
-    const { data: cacheData, error: cacheError } = await (supabase as any)
-      .from('price_cache')
+    // Step 1: Get all symbols from eod_levels (same as EOD widget)
+    const { data: eodLevels, error: eodError } = await (supabase as any)
+      .from('eod_levels')
       .select(`
         *,
         symbols!inner(
           symbol,
           name,
-          id
+          is_active
         )
       `)
-      .order('updated_at', { ascending: false })
+      .eq('symbols.is_active', true)
+      .order('trade_date', { ascending: false })
+      .limit(100)
 
-    console.log(`Price cache query result: ${cacheData?.length || 0} records, error:`, cacheError)
+    console.log(`EOD Levels query result: ${eodLevels?.length || 0} records, error:`, eodError)
 
-    // If price_cache is empty or error, fallback to last EOD close prices
-    let marketData: any[] = []
-
-    if (cacheData && cacheData.length > 0) {
-      // Use real-time prices from cache
-      marketData = cacheData.map((item: any) => {
-        const price = item.price ? parseFloat(item.price) : null
-        return {
-          symbol: item.symbols.symbol,
-          name: item.symbols.name || item.symbols.symbol,
-          price: price,
-          open: null,
-          high: null,
-          low: null,
-          change: null,
-          changePercent: null,
-          volume: null,
-          exchange: null,
-          currency: 'USD',
-          isMarketOpen: true,
-          priceTimestamp: item.updated_at,
-          updatedAt: item.updated_at,
-          trend: 'neutral'
-        }
+    if (!eodLevels || eodLevels.length === 0) {
+      return NextResponse.json({
+        data: [],
+        count: 0,
+        timestamp: new Date().toISOString()
       })
-    } else {
-      // Fallback to last EOD levels (yesterday_close from eod_levels table)
-      console.log('Price cache empty, falling back to eod_levels')
-
-      const { data: eodLevels, error: eodError } = await (supabase as any)
-        .from('eod_levels')
-        .select(`
-          *,
-          symbols!inner(
-            symbol,
-            name
-          )
-        `)
-        .eq('symbols.is_active', true)
-        .order('trade_date', { ascending: false })
-        .limit(50) // Get recent data for all symbols
-
-      console.log(`EOD Levels query result: ${eodLevels?.length || 0} records, error:`, eodError)
-
-      if (eodLevels && eodLevels.length > 0) {
-        // Group by symbol and get most recent close price for each
-        const symbolMap = new Map()
-        eodLevels.forEach((item: any) => {
-          const symbol = item.symbols.symbol
-          if (!symbolMap.has(symbol)) {
-            symbolMap.set(symbol, {
-              symbol: symbol,
-              name: item.symbols.name || symbol,
-              price: item.yesterday_close ? parseFloat(item.yesterday_close) : null,
-              open: null,
-              high: item.yesterday_high ? parseFloat(item.yesterday_high) : null,
-              low: item.yesterday_low ? parseFloat(item.yesterday_low) : null,
-              change: null,
-              changePercent: null,
-              volume: null,
-              exchange: null,
-              currency: 'USD',
-              isMarketOpen: false, // Markets are closed (using EOD data)
-              priceTimestamp: item.trade_date,
-              updatedAt: item.trade_date,
-              trend: 'neutral'
-            })
-          }
-        })
-        marketData = Array.from(symbolMap.values())
-      }
     }
 
-    console.log(`Returning ${marketData.length} market data records`)
+    // Step 2: Get latest EOD level for each symbol
+    const symbolMap = new Map()
+    eodLevels.forEach((item: any) => {
+      const symbol = item.symbols.symbol
+      if (!symbolMap.has(symbol)) {
+        symbolMap.set(symbol, {
+          symbol_id: item.symbol_id,
+          symbol: symbol,
+          name: item.symbols.name,
+          eod_price: item.yesterday_close ? parseFloat(item.yesterday_close) : null,
+          eod_high: item.yesterday_high ? parseFloat(item.yesterday_high) : null,
+          eod_low: item.yesterday_low ? parseFloat(item.yesterday_low) : null,
+          eod_date: item.trade_date
+        })
+      }
+    })
+
+    // Step 3: Try to get live prices from price_cache
+    const { data: cacheData } = await (supabase as any)
+      .from('price_cache')
+      .select('*')
+      .in('symbol_id', Array.from(symbolMap.values()).map(s => s.symbol_id))
+
+    console.log(`Price cache query result: ${cacheData?.length || 0} records`)
+
+    // Step 4: Build cache map by symbol_id
+    const cacheMap = new Map()
+    cacheData?.forEach((item: any) => {
+      cacheMap.set(item.symbol_id, {
+        price: item.price ? parseFloat(item.price) : null,
+        updated_at: item.updated_at
+      })
+    })
+
+    // Step 5: Merge live prices with EOD data
+    const marketData = Array.from(symbolMap.values()).map((symbolData: any) => {
+      const livePrice = cacheMap.get(symbolData.symbol_id)
+
+      return {
+        symbol: symbolData.symbol,
+        name: symbolData.name,
+        price: livePrice?.price || symbolData.eod_price,
+        open: null,
+        high: symbolData.eod_high,
+        low: symbolData.eod_low,
+        change: null,
+        changePercent: null,
+        volume: null,
+        exchange: null,
+        currency: 'USD',
+        isMarketOpen: !!livePrice?.price, // true if we have live price
+        priceTimestamp: livePrice?.updated_at || symbolData.eod_date,
+        updatedAt: livePrice?.updated_at || symbolData.eod_date,
+        trend: 'neutral'
+      }
+    })
+
+    console.log(`Returning ${marketData.length} market data records (${cacheMap.size} with live prices)`)
 
     return NextResponse.json({
       data: marketData,
