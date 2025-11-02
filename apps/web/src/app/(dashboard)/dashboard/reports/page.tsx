@@ -202,9 +202,30 @@ export default function ReportsPage() {
   }
 
   const downloadReport = (report: Report, format: 'pdf' | 'docx' | 'json') => {
-    // Mock download
-    const filename = `${report.title.replace(/\s+/g, '_')}.${format === 'json' ? 'json' : format === 'docx' ? 'docx' : 'pdf'}`
-    console.log(`Downloading ${filename}`)
+    const filename = `${report.title.replace(/\s+/g, '_')}.${format}`
+
+    if (format === 'json') {
+      // Export report as JSON
+      const jsonData = JSON.stringify(report, null, 2)
+      const blob = new Blob([jsonData], { type: 'application/json' })
+      const url = URL.createObjectURL(blob)
+      const link = document.createElement('a')
+      link.href = url
+      link.download = filename
+      link.click()
+      URL.revokeObjectURL(url)
+    } else if (format === 'pdf') {
+      // Download PDF from Supabase Storage
+      if (report.file_url) {
+        window.open(report.file_url, '_blank')
+      } else {
+        setError('PDF not available for this report')
+      }
+    } else if (format === 'docx') {
+      // Download DOCX from Supabase Storage (stored in metadata)
+      // Note: DOCX URL would be in metadata.file_url_docx
+      setError('DOCX download not yet implemented')
+    }
   }
 
   const getTypeIcon = (type: string) => {
@@ -458,7 +479,8 @@ export default function ReportsPage() {
                             variant="ghost"
                             size="sm"
                             onClick={() => downloadReport(report, 'pdf')}
-                            title="Download as PDF"
+                            disabled={!report.file_url}
+                            title={report.file_url ? 'Download as PDF' : 'PDF not available'}
                           >
                             <File className="h-4 w-4 mr-2" />
                             PDF
@@ -467,7 +489,8 @@ export default function ReportsPage() {
                             variant="ghost"
                             size="sm"
                             onClick={() => downloadReport(report, 'docx')}
-                            title="Download as DOCX"
+                            disabled={true}
+                            title="DOCX download coming soon"
                           >
                             <FileText className="h-4 w-4 mr-2" />
                             DOCX
@@ -476,7 +499,7 @@ export default function ReportsPage() {
                             variant="ghost"
                             size="sm"
                             onClick={() => downloadReport(report, 'json')}
-                            title="Download as JSON"
+                            title="Download report data as JSON"
                           >
                             <FileJson className="h-4 w-4 mr-2" />
                             JSON
