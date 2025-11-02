@@ -73,11 +73,11 @@ export async function GET(request: Request) {
         }
       })
     } else {
-      // Fallback to last EOD close prices
-      console.log('Price cache empty, falling back to EOD data')
+      // Fallback to last EOD levels (yesterday_close from eod_levels table)
+      console.log('Price cache empty, falling back to eod_levels')
 
-      const { data: eodData, error: eodError } = await (supabase as any)
-        .from('eod_data')
+      const { data: eodLevels, error: eodError } = await (supabase as any)
+        .from('eod_levels')
         .select(`
           *,
           symbols!inner(
@@ -85,70 +85,36 @@ export async function GET(request: Request) {
             name
           )
         `)
+        .eq('symbols.is_active', true)
         .order('trade_date', { ascending: false })
         .limit(50) // Get recent data for all symbols
 
-      if (eodData && eodData.length > 0) {
+      if (eodLevels && eodLevels.length > 0) {
         // Group by symbol and get most recent close price for each
         const symbolMap = new Map()
-        eodData.forEach((item: any) => {
+        eodLevels.forEach((item: any) => {
           const symbol = item.symbols.symbol
           if (!symbolMap.has(symbol)) {
             symbolMap.set(symbol, {
               symbol: symbol,
               name: item.symbols.name || symbol,
-              price: item.close ? parseFloat(item.close) : null,
-              open: item.open ? parseFloat(item.open) : null,
-              high: item.high ? parseFloat(item.high) : null,
-              low: item.low ? parseFloat(item.low) : null,
-              change: item.close && item.open ? parseFloat(item.close) - parseFloat(item.open) : null,
-              changePercent: item.close && item.open ? ((parseFloat(item.close) - parseFloat(item.open)) / parseFloat(item.open) * 100) : null,
-              volume: item.volume,
+              price: item.yesterday_close ? parseFloat(item.yesterday_close) : null,
+              open: null,
+              high: item.yesterday_high ? parseFloat(item.yesterday_high) : null,
+              low: item.yesterday_low ? parseFloat(item.yesterday_low) : null,
+              change: null,
+              changePercent: null,
+              volume: null,
               exchange: null,
               currency: 'USD',
               isMarketOpen: false, // Markets are closed (using EOD data)
               priceTimestamp: item.trade_date,
               updatedAt: item.trade_date,
-              trend: item.close && item.open ? (parseFloat(item.close) >= parseFloat(item.open) ? 'up' : 'down') : 'neutral'
+              trend: 'neutral'
             })
           }
         })
         marketData = Array.from(symbolMap.values())
-      } else {
-        // No EOD data available, fetch symbols with placeholder data
-        console.log('No EOD data, fetching symbols only')
-
-        const { data: symbolsData, error: symbolsError } = await (supabase as any)
-          .from('symbols')
-          .select('*')
-          .eq('is_active', true)
-
-        if (symbolsError) {
-          console.error('Error fetching symbols:', symbolsError)
-          return NextResponse.json(
-            { error: 'Failed to fetch symbols', details: symbolsError.message },
-            { status: 500 }
-          )
-        }
-
-        // Return symbols with "Market Closed" placeholder
-        marketData = symbolsData?.map((item: any) => ({
-          symbol: item.symbol,
-          name: item.name || item.symbol,
-          price: null,
-          open: null,
-          high: null,
-          low: null,
-          change: null,
-          changePercent: null,
-          volume: null,
-          exchange: null,
-          currency: 'USD',
-          isMarketOpen: false,
-          priceTimestamp: null,
-          updatedAt: new Date().toISOString(),
-          trend: 'neutral'
-        })) || []
       }
     }
 
