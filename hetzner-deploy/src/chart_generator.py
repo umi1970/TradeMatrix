@@ -26,8 +26,8 @@ import redis
 from supabase import create_client, Client
 from dotenv import load_dotenv
 
-from config.chart_img import ChartImgConfig
-from exceptions.chart_errors import (
+from src.config.chart_img import ChartImgConfig
+from src.exceptions.chart_errors import (
     RateLimitError,
     ChartGenerationError,
     SymbolNotFoundError,
