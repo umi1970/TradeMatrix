@@ -19,13 +19,13 @@ export function useNotifications(userId: string) {
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
     )
 
-    // Initial fetch of unsent alerts
+    // Initial fetch of triggered alerts
     async function fetchNotifications() {
       const { data, error } = await supabase
         .from('alerts')
         .select('*')
         .eq('user_id', userId)
-        .eq('sent', false)
+        .eq('status', 'triggered')
         .order('created_at', { ascending: false })
         .limit(50)
 
@@ -62,81 +62,16 @@ export function useNotifications(userId: string) {
       )
       .subscribe()
 
-    // Subscribe to trade updates for notifications
-    const tradesChannel = supabase
-      .channel(`trades:${userId}`)
-      .on(
-        'postgres_changes',
-        {
-          event: 'INSERT',
-          schema: 'public',
-          table: 'trades',
-          filter: `user_id=eq.${userId}`,
-        },
-        (payload) => {
-          const trade = payload.new as any
-          const tradeNotification: Notification = {
-            id: trade.id,
-            user_id: userId,
-            symbol_id: null,
-            kind: 'trade_opened',
-            context: {
-              symbol: trade.symbol,
-              side: trade.side,
-              entry_price: trade.entry_price,
-              position_size: trade.position_size,
-            },
-            sent: false,
-            sent_at: null,
-            created_at: new Date().toISOString(),
-            read: false,
-          }
-          setNotifications((current) => [tradeNotification, ...current])
-          setUnreadCount((current) => current + 1)
-        }
-      )
-      .subscribe()
+    // TODO: Subscribe to trade updates for notifications (disabled for now)
+    // const tradesChannel = supabase.channel(`trades:${userId}`)...
 
-    // Subscribe to agent logs for notifications
-    const agentLogsChannel = supabase
-      .channel(`agent_logs:${userId}`)
-      .on(
-        'postgres_changes',
-        {
-          event: 'INSERT',
-          schema: 'public',
-          table: 'agent_logs',
-          filter: `user_id=eq.${userId}`,
-        },
-        (payload) => {
-          const agentLog = payload.new as any
-          // Only notify for completed agent tasks
-          if (agentLog.status === 'completed') {
-            const agentNotification: Notification = {
-              id: agentLog.id,
-              user_id: userId,
-              symbol_id: null,
-              kind: `agent_${agentLog.agent_type}_completed`,
-              context: {
-                agent_type: agentLog.agent_type,
-                duration_ms: agentLog.duration_ms,
-              },
-              sent: false,
-              sent_at: null,
-              created_at: new Date().toISOString(),
-              read: false,
-            }
-            setNotifications((current) => [agentNotification, ...current])
-            setUnreadCount((current) => current + 1)
-          }
-        }
-      )
-      .subscribe()
+    // TODO: Subscribe to agent logs for notifications (disabled for now)
+    // const agentLogsChannel = supabase.channel(`agent_logs:${userId}`)...
 
     return () => {
       supabase.removeChannel(alertsChannel)
-      supabase.removeChannel(tradesChannel)
-      supabase.removeChannel(agentLogsChannel)
+      // supabase.removeChannel(tradesChannel)
+      // supabase.removeChannel(agentLogsChannel)
     }
   }, [userId])
 

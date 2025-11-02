@@ -18,60 +18,44 @@ interface NotificationBellProps {
   userId: string
 }
 
-const getAlertColor = (kind: string): string => {
-  if (kind.includes('_touch') || kind.includes('retest')) return 'text-blue-500'
-  if (kind.includes('break') || kind.includes('sweep')) return 'text-orange-500'
-  if (kind.includes('trade')) return 'text-green-500'
-  if (kind.includes('agent')) return 'text-purple-500'
-  return 'text-gray-500'
+const getAlertColor = (levelType: string): string => {
+  if (levelType === 'yesterday_high') return 'text-red-500'
+  if (levelType === 'yesterday_low') return 'text-green-500'
+  if (levelType === 'pivot_point') return 'text-yellow-500'
+  return 'text-blue-500'
 }
 
-const getAlertIcon = (kind: string): string => {
-  if (kind.includes('trade')) return 'Trade'
-  if (kind.includes('agent')) return 'Agent'
-  if (kind.includes('break')) return 'Break'
-  if (kind.includes('retest')) return 'Retest'
-  if (kind.includes('touch')) return 'Touch'
-  return 'Alert'
+const getAlertIcon = (levelType: string): string => {
+  if (levelType === 'yesterday_high') return '🔴'
+  if (levelType === 'yesterday_low') return '🟢'
+  if (levelType === 'pivot_point') return '🟡'
+  return '🔔'
 }
 
 const getAlertTitle = (notification: Notification): string => {
-  switch (notification.kind) {
-    case 'range_break':
-      return 'Range Break'
-    case 'retest_touch':
-      return 'Retest Touch'
-    case 'asia_sweep':
-      return 'Asia Sweep'
-    case 'pivot_touch':
-      return 'Pivot Touch'
-    case 'r1_touch':
-      return 'R1 Touch'
-    case 's1_touch':
-      return 'S1 Touch'
-    case 'trade_opened':
-      return 'Trade Opened'
+  switch (notification.level_type) {
+    case 'yesterday_high':
+      return 'Yesterday High Touched'
+    case 'yesterday_low':
+      return 'Yesterday Low Touched'
+    case 'pivot_point':
+      return 'Pivot Point Touched'
     default:
-      if (notification.kind.includes('agent_')) {
-        const agentType = notification.kind.replace('agent_', '').replace('_completed', '')
-        return `${agentType.replace(/_/g, ' ')} Completed`
-      }
-      return notification.kind
+      return 'Liquidity Alert'
   }
 }
 
 const getAlertDescription = (notification: Notification): string => {
-  const context = notification.context as Record<string, any>
-
-  switch (notification.kind) {
-    case 'trade_opened':
-      return `${context.side?.toUpperCase()} ${context.symbol} @ ${context.entry_price}`
-    case 'range_break':
-    case 'retest_touch':
-    case 'asia_sweep':
-      return context.symbol || 'Market Alert'
+  const price = notification.target_price.toFixed(2)
+  switch (notification.level_type) {
+    case 'yesterday_high':
+      return `SHORT SETUP: Consider MR-01 reversal @ ${price}`
+    case 'yesterday_low':
+      return `LONG SETUP: Consider MR-04 reversal @ ${price}`
+    case 'pivot_point':
+      return `Pivot level @ ${price} - Evaluate position management`
     default:
-      return context.agent_type ? `Took ${context.duration_ms}ms` : 'New notification'
+      return `Level @ ${price}`
   }
 }
 
@@ -136,9 +120,9 @@ export function NotificationBell({ userId }: NotificationBellProps) {
                 >
                   {/* Alert Icon */}
                   <div
-                    className={`mt-1 flex-shrink-0 text-lg font-semibold ${getAlertColor(notification.kind)}`}
+                    className={`mt-1 flex-shrink-0 text-lg font-semibold ${getAlertColor(notification.level_type)}`}
                   >
-                    {getAlertIcon(notification.kind)}
+                    {getAlertIcon(notification.level_type)}
                   </div>
 
                   {/* Content */}
