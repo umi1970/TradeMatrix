@@ -34,10 +34,16 @@ export async function GET(request: Request) {
   try {
     const supabase = await createServerClient()
 
-    // Fetch current prices with symbol information
+    // Fetch current prices from price_cache (populated by liquidity alert system)
     const { data, error } = await (supabase as any)
-      .from('current_prices_with_symbols')
-      .select('*')
+      .from('price_cache')
+      .select(`
+        *,
+        symbols!inner(
+          symbol,
+          name
+        )
+      `)
       .order('updated_at', { ascending: false })
 
     if (error) {
@@ -50,24 +56,21 @@ export async function GET(request: Request) {
 
     // Transform data to frontend format
     const marketData = data?.map((item: any) => ({
-      symbol: item.symbol,
-      name: item.symbol_name || item.symbol,
+      symbol: item.symbols.symbol,
+      name: item.symbols.name || item.symbols.symbol,
       price: parseFloat(item.price),
-      open: item.open ? parseFloat(item.open) : null,
-      high: item.high ? parseFloat(item.high) : null,
-      low: item.low ? parseFloat(item.low) : null,
-      change: item.change ? parseFloat(item.change) : null,
-      changePercent: item.change_percent ? parseFloat(item.change_percent) : null,
-      volume: item.volume,
-      exchange: item.exchange,
-      currency: item.currency,
-      isMarketOpen: item.is_market_open,
-      priceTimestamp: item.price_timestamp,
+      open: null, // price_cache doesn't store OHLC data
+      high: null,
+      low: null,
+      change: null,
+      changePercent: null,
+      volume: null,
+      exchange: null,
+      currency: 'USD',
+      isMarketOpen: true, // Assume market open if price is cached
+      priceTimestamp: item.updated_at,
       updatedAt: item.updated_at,
-      // Calculate trend for UI
-      trend: item.change_percent
-        ? (parseFloat(item.change_percent) >= 0 ? 'up' : 'down')
-        : 'neutral'
+      trend: 'neutral'
     })) || []
 
     return NextResponse.json({
