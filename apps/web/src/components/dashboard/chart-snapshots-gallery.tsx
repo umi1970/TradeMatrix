@@ -287,7 +287,7 @@ export function ChartSnapshotsGallery({
       {/* Delete Confirmation Dialog */}
       <AlertDialog
         open={!!deleteDialogSnapshot}
-        onOpenChange={(open) => !open && setDeleteDialogSnapshot(null)}
+        onOpenChange={(open: boolean) => !open && setDeleteDialogSnapshot(null)}
       >
         <AlertDialogContent>
           <AlertDialogHeader>
