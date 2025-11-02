@@ -34,44 +34,95 @@ export async function GET(request: Request) {
   try {
     const supabase = await createServerClient()
 
-    // Fetch current prices from price_cache (populated by liquidity alert system)
-    const { data, error } = await (supabase as any)
+    // Try to fetch from price_cache first (real-time prices)
+    const { data: cacheData, error: cacheError } = await (supabase as any)
       .from('price_cache')
       .select(`
         *,
         symbols!inner(
           symbol,
-          name
+          name,
+          id
         )
       `)
       .order('updated_at', { ascending: false })
 
-    if (error) {
-      console.error('Error fetching current prices:', error)
-      return NextResponse.json(
-        { error: 'Failed to fetch current prices', details: error.message },
-        { status: 500 }
-      )
-    }
+    // If price_cache is empty or error, fallback to last EOD close prices
+    let marketData: any[] = []
 
-    // Transform data to frontend format
-    const marketData = data?.map((item: any) => ({
-      symbol: item.symbols.symbol,
-      name: item.symbols.name || item.symbols.symbol,
-      price: parseFloat(item.price),
-      open: null, // price_cache doesn't store OHLC data
-      high: null,
-      low: null,
-      change: null,
-      changePercent: null,
-      volume: null,
-      exchange: null,
-      currency: 'USD',
-      isMarketOpen: true, // Assume market open if price is cached
-      priceTimestamp: item.updated_at,
-      updatedAt: item.updated_at,
-      trend: 'neutral'
-    })) || []
+    if (cacheData && cacheData.length > 0) {
+      // Use real-time prices from cache
+      marketData = cacheData.map((item: any) => {
+        const price = item.price ? parseFloat(item.price) : null
+        return {
+          symbol: item.symbols.symbol,
+          name: item.symbols.name || item.symbols.symbol,
+          price: price,
+          open: null,
+          high: null,
+          low: null,
+          change: null,
+          changePercent: null,
+          volume: null,
+          exchange: null,
+          currency: 'USD',
+          isMarketOpen: true,
+          priceTimestamp: item.updated_at,
+          updatedAt: item.updated_at,
+          trend: 'neutral'
+        }
+      })
+    } else {
+      // Fallback to last EOD close prices
+      console.log('Price cache empty, falling back to EOD data')
+
+      const { data: eodData, error: eodError } = await (supabase as any)
+        .from('eod_data')
+        .select(`
+          *,
+          symbols!inner(
+            symbol,
+            name
+          )
+        `)
+        .order('date', { ascending: false })
+        .limit(50) // Get recent data for all symbols
+
+      if (eodError) {
+        console.error('Error fetching EOD data:', eodError)
+        return NextResponse.json(
+          { error: 'Failed to fetch market data', details: eodError.message },
+          { status: 500 }
+        )
+      }
+
+      // Group by symbol and get most recent close price for each
+      const symbolMap = new Map()
+      eodData?.forEach((item: any) => {
+        const symbol = item.symbols.symbol
+        if (!symbolMap.has(symbol)) {
+          symbolMap.set(symbol, {
+            symbol: symbol,
+            name: item.symbols.name || symbol,
+            price: item.close ? parseFloat(item.close) : null,
+            open: item.open ? parseFloat(item.open) : null,
+            high: item.high ? parseFloat(item.high) : null,
+            low: item.low ? parseFloat(item.low) : null,
+            change: item.close && item.open ? parseFloat(item.close) - parseFloat(item.open) : null,
+            changePercent: item.close && item.open ? ((parseFloat(item.close) - parseFloat(item.open)) / parseFloat(item.open) * 100) : null,
+            volume: item.volume,
+            exchange: null,
+            currency: 'USD',
+            isMarketOpen: false, // Markets are closed (using EOD data)
+            priceTimestamp: item.date,
+            updatedAt: item.date,
+            trend: item.close && item.open ? (parseFloat(item.close) >= parseFloat(item.open) ? 'up' : 'down') : 'neutral'
+          })
+        }
+      })
+
+      marketData = Array.from(symbolMap.values())
+    }
 
     return NextResponse.json({
       data: marketData,
