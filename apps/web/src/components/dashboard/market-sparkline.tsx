@@ -1,7 +1,6 @@
 'use client'
 
-import { useEffect, useRef } from 'react'
-import { createChart, ColorType, IChartApi, ISeriesApi } from 'lightweight-charts'
+import { useEffect, useRef, useState } from 'react'
 
 interface MarketSparklineProps {
   symbol: string
@@ -11,73 +10,87 @@ interface MarketSparklineProps {
 
 export function MarketSparkline({ symbol, data = [], trend = 'neutral' }: MarketSparklineProps) {
   const chartContainerRef = useRef<HTMLDivElement>(null)
-  const chartRef = useRef<IChartApi | null>(null)
-  const seriesRef = useRef<ISeriesApi<'Line'> | null>(null)
+  const chartRef = useRef<any>(null)
+  const seriesRef = useRef<any>(null)
+  const [isMounted, setIsMounted] = useState(false)
 
   useEffect(() => {
-    if (!chartContainerRef.current) return
+    setIsMounted(true)
+  }, [])
 
-    const lineColor = trend === 'up' ? '#22c55e' : trend === 'down' ? '#ef4444' : '#6b7280'
+  useEffect(() => {
+    if (!chartContainerRef.current || !isMounted) return
 
-    // Create chart
-    const chart = createChart(chartContainerRef.current, {
-      width: 80,
-      height: 40,
-      layout: {
-        background: { type: ColorType.Solid, color: 'transparent' },
-        textColor: '#6b7280',
-      },
-      grid: {
-        vertLines: { visible: false },
-        horzLines: { visible: false },
-      },
-      leftPriceScale: { visible: false },
-      rightPriceScale: { visible: false },
-      timeScale: { visible: false },
-      handleScroll: false,
-      handleScale: false,
-      crosshair: { horzLine: { visible: false }, vertLine: { visible: false } },
+    // Dynamic import to avoid SSR issues
+    import('lightweight-charts').then(({ createChart, ColorType }) => {
+      if (!chartContainerRef.current) return
+
+      const lineColor = trend === 'up' ? '#22c55e' : trend === 'down' ? '#ef4444' : '#6b7280'
+
+      // Create chart
+      const chart = createChart(chartContainerRef.current, {
+        width: 80,
+        height: 40,
+        layout: {
+          background: { type: ColorType.Solid, color: 'transparent' },
+          textColor: '#6b7280',
+        },
+        grid: {
+          vertLines: { visible: false },
+          horzLines: { visible: false },
+        },
+        leftPriceScale: { visible: false },
+        rightPriceScale: { visible: false },
+        timeScale: { visible: false },
+        handleScroll: false,
+        handleScale: false,
+        crosshair: { horzLine: { visible: false }, vertLine: { visible: false } },
+      })
+
+      chartRef.current = chart
+
+      // Add line series
+      const lineSeries = chart.addLineSeries({
+        color: lineColor,
+        lineWidth: 2,
+        priceLineVisible: false,
+        lastValueVisible: false,
+        crosshairMarkerVisible: false,
+      })
+
+      seriesRef.current = lineSeries
+
+      // If we have data, set it
+      if (data && data.length > 0) {
+        const chartData = data.map((item) => ({
+          time: item.time,
+          value: item.value,
+        }))
+        lineSeries.setData(chartData)
+        chart.timeScale().fitContent()
+      } else {
+        // Generate dummy flat line if no data
+        const now = Date.now() / 1000
+        const dummyData = Array.from({ length: 10 }, (_, i) => ({
+          time: (now - (10 - i) * 3600) as any,
+          value: 100 + Math.random() * 2,
+        }))
+        lineSeries.setData(dummyData)
+        chart.timeScale().fitContent()
+      }
+    }).catch(err => {
+      console.error('Error loading chart:', err)
     })
-
-    chartRef.current = chart
-
-    // Add line series
-    const lineSeries = chart.addLineSeries({
-      color: lineColor,
-      lineWidth: 2,
-      priceLineVisible: false,
-      lastValueVisible: false,
-      crosshairMarkerVisible: false,
-    })
-
-    seriesRef.current = lineSeries
-
-    // If we have data, set it
-    if (data && data.length > 0) {
-      const chartData = data.map((item) => ({
-        time: item.time,
-        value: item.value,
-      }))
-      lineSeries.setData(chartData)
-      chart.timeScale().fitContent()
-    } else {
-      // Generate dummy flat line if no data
-      const now = Date.now() / 1000
-      const dummyData = Array.from({ length: 10 }, (_, i) => ({
-        time: (now - (10 - i) * 3600) as any,
-        value: 100 + Math.random() * 2,
-      }))
-      lineSeries.setData(dummyData)
-      chart.timeScale().fitContent()
-    }
 
     // Cleanup
     return () => {
-      chart.remove()
-      chartRef.current = null
-      seriesRef.current = null
+      if (chartRef.current) {
+        chartRef.current.remove()
+        chartRef.current = null
+        seriesRef.current = null
+      }
     }
-  }, [data, trend])
+  }, [data, trend, isMounted])
 
   return (
     <div
