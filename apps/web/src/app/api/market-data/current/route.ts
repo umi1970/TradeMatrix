@@ -88,40 +88,68 @@ export async function GET(request: Request) {
         .order('trade_date', { ascending: false })
         .limit(50) // Get recent data for all symbols
 
-      if (eodError) {
-        console.error('Error fetching EOD data:', eodError)
-        return NextResponse.json(
-          { error: 'Failed to fetch market data', details: eodError.message },
-          { status: 500 }
-        )
-      }
+      if (eodData && eodData.length > 0) {
+        // Group by symbol and get most recent close price for each
+        const symbolMap = new Map()
+        eodData.forEach((item: any) => {
+          const symbol = item.symbols.symbol
+          if (!symbolMap.has(symbol)) {
+            symbolMap.set(symbol, {
+              symbol: symbol,
+              name: item.symbols.name || symbol,
+              price: item.close ? parseFloat(item.close) : null,
+              open: item.open ? parseFloat(item.open) : null,
+              high: item.high ? parseFloat(item.high) : null,
+              low: item.low ? parseFloat(item.low) : null,
+              change: item.close && item.open ? parseFloat(item.close) - parseFloat(item.open) : null,
+              changePercent: item.close && item.open ? ((parseFloat(item.close) - parseFloat(item.open)) / parseFloat(item.open) * 100) : null,
+              volume: item.volume,
+              exchange: null,
+              currency: 'USD',
+              isMarketOpen: false, // Markets are closed (using EOD data)
+              priceTimestamp: item.trade_date,
+              updatedAt: item.trade_date,
+              trend: item.close && item.open ? (parseFloat(item.close) >= parseFloat(item.open) ? 'up' : 'down') : 'neutral'
+            })
+          }
+        })
+        marketData = Array.from(symbolMap.values())
+      } else {
+        // No EOD data available, fetch symbols with placeholder data
+        console.log('No EOD data, fetching symbols only')
 
-      // Group by symbol and get most recent close price for each
-      const symbolMap = new Map()
-      eodData?.forEach((item: any) => {
-        const symbol = item.symbols.symbol
-        if (!symbolMap.has(symbol)) {
-          symbolMap.set(symbol, {
-            symbol: symbol,
-            name: item.symbols.name || symbol,
-            price: item.close ? parseFloat(item.close) : null,
-            open: item.open ? parseFloat(item.open) : null,
-            high: item.high ? parseFloat(item.high) : null,
-            low: item.low ? parseFloat(item.low) : null,
-            change: item.close && item.open ? parseFloat(item.close) - parseFloat(item.open) : null,
-            changePercent: item.close && item.open ? ((parseFloat(item.close) - parseFloat(item.open)) / parseFloat(item.open) * 100) : null,
-            volume: item.volume,
-            exchange: null,
-            currency: 'USD',
-            isMarketOpen: false, // Markets are closed (using EOD data)
-            priceTimestamp: item.trade_date,
-            updatedAt: item.trade_date,
-            trend: item.close && item.open ? (parseFloat(item.close) >= parseFloat(item.open) ? 'up' : 'down') : 'neutral'
-          })
+        const { data: symbolsData, error: symbolsError } = await (supabase as any)
+          .from('symbols')
+          .select('*')
+          .eq('is_active', true)
+
+        if (symbolsError) {
+          console.error('Error fetching symbols:', symbolsError)
+          return NextResponse.json(
+            { error: 'Failed to fetch symbols', details: symbolsError.message },
+            { status: 500 }
+          )
         }
-      })
 
-      marketData = Array.from(symbolMap.values())
+        // Return symbols with "Market Closed" placeholder
+        marketData = symbolsData?.map((item: any) => ({
+          symbol: item.symbol,
+          name: item.name || item.symbol,
+          price: null,
+          open: null,
+          high: null,
+          low: null,
+          change: null,
+          changePercent: null,
+          volume: null,
+          exchange: null,
+          currency: 'USD',
+          isMarketOpen: false,
+          priceTimestamp: null,
+          updatedAt: new Date().toISOString(),
+          trend: 'neutral'
+        })) || []
+      }
     }
 
     return NextResponse.json({

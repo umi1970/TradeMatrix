@@ -50,7 +50,9 @@ export function MarketOverviewCard({ market }: MarketOverviewCardProps) {
         <div className="flex items-baseline justify-between">
           <div>
             <div className="text-2xl font-bold">
-              ${market.price !== null ? market.price.toLocaleString() : 'N/A'}
+              {market.price !== null ? `$${market.price.toLocaleString()}` : (
+                <span className="text-muted-foreground text-lg">Market Closed</span>
+              )}
             </div>
             <div className={`flex items-center gap-1 text-sm font-medium mt-1 ${getTrendColor()}`}>
               {getTrendIcon()}
