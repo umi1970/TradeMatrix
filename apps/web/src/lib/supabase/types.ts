@@ -317,33 +317,39 @@ export interface Database {
       alerts: {
         Row: {
           id: string
-          user_id: string | null
-          symbol_id: string | null
+          user_id: string
+          symbol_id: string
+          level_type: string
+          target_price: number
+          direction: string
+          status: string
+          triggered_at: string | null
+          expires_at: string | null
           created_at: string
-          kind: string
-          context: Json
-          sent: boolean
-          sent_at: string | null
         }
         Insert: {
           id?: string
-          user_id?: string | null
-          symbol_id?: string | null
+          user_id: string
+          symbol_id: string
+          level_type: string
+          target_price: number
+          direction?: string
+          status?: string
+          triggered_at?: string | null
+          expires_at?: string | null
           created_at?: string
-          kind: string
-          context?: Json
-          sent?: boolean
-          sent_at?: string | null
         }
         Update: {
           id?: string
-          user_id?: string | null
-          symbol_id?: string | null
+          user_id?: string
+          symbol_id?: string
+          level_type?: string
+          target_price?: number
+          direction?: string
+          status?: string
+          triggered_at?: string | null
+          expires_at?: string | null
           created_at?: string
-          kind?: string
-          context?: Json
-          sent?: boolean
-          sent_at?: string | null
         }
         Relationships: [
           {
@@ -355,7 +361,221 @@ export interface Database {
           {
             foreignKeyName: 'alerts_symbol_id_fkey'
             columns: ['symbol_id']
-            referencedRelation: 'market_symbols'
+            referencedRelation: 'symbols'
+            referencedColumns: ['id']
+          }
+        ]
+      }
+      symbols: {
+        Row: {
+          id: string
+          symbol: string
+          name: string
+          asset_type: string
+          exchange: string | null
+          is_active: boolean
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          symbol: string
+          name: string
+          asset_type: string
+          exchange?: string | null
+          is_active?: boolean
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          symbol?: string
+          name?: string
+          asset_type?: string
+          exchange?: string | null
+          is_active?: boolean
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      eod_levels: {
+        Row: {
+          id: string
+          symbol_id: string
+          trade_date: string
+          yesterday_high: number
+          yesterday_low: number
+          pivot_point: number | null
+          r1: number | null
+          r2: number | null
+          s1: number | null
+          s2: number | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          symbol_id: string
+          trade_date: string
+          yesterday_high: number
+          yesterday_low: number
+          pivot_point?: number | null
+          r1?: number | null
+          r2?: number | null
+          s1?: number | null
+          s2?: number | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          symbol_id?: string
+          trade_date?: string
+          yesterday_high?: number
+          yesterday_low?: number
+          pivot_point?: number | null
+          r1?: number | null
+          r2?: number | null
+          s1?: number | null
+          s2?: number | null
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'eod_levels_symbol_id_fkey'
+            columns: ['symbol_id']
+            referencedRelation: 'symbols'
+            referencedColumns: ['id']
+          }
+        ]
+      }
+      price_cache: {
+        Row: {
+          id: string
+          symbol_id: string
+          current_price: number
+          last_updated: string
+          source: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          symbol_id: string
+          current_price: number
+          last_updated?: string
+          source?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          symbol_id?: string
+          current_price?: number
+          last_updated?: string
+          source?: string | null
+          created_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'price_cache_symbol_id_fkey'
+            columns: ['symbol_id']
+            referencedRelation: 'symbols'
+            referencedColumns: ['id']
+          }
+        ]
+      }
+      alert_subscriptions: {
+        Row: {
+          id: string
+          user_id: string
+          symbol_id: string
+          yesterday_high_enabled: boolean
+          yesterday_low_enabled: boolean
+          pivot_point_enabled: boolean
+          is_active: boolean
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          symbol_id: string
+          yesterday_high_enabled?: boolean
+          yesterday_low_enabled?: boolean
+          pivot_point_enabled?: boolean
+          is_active?: boolean
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          symbol_id?: string
+          yesterday_high_enabled?: boolean
+          yesterday_low_enabled?: boolean
+          pivot_point_enabled?: boolean
+          is_active?: boolean
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'alert_subscriptions_user_id_fkey'
+            columns: ['user_id']
+            referencedRelation: 'profiles'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'alert_subscriptions_symbol_id_fkey'
+            columns: ['symbol_id']
+            referencedRelation: 'symbols'
+            referencedColumns: ['id']
+          }
+        ]
+      }
+      user_push_subscriptions: {
+        Row: {
+          id: string
+          user_id: string
+          endpoint: string
+          p256dh: string
+          auth: string
+          user_agent: string | null
+          is_active: boolean
+          last_used_at: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          endpoint: string
+          p256dh: string
+          auth: string
+          user_agent?: string | null
+          is_active?: boolean
+          last_used_at?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          endpoint?: string
+          p256dh?: string
+          auth?: string
+          user_agent?: string | null
+          is_active?: boolean
+          last_used_at?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'user_push_subscriptions_user_id_fkey'
+            columns: ['user_id']
+            referencedRelation: 'profiles'
             referencedColumns: ['id']
           }
         ]
