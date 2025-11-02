@@ -222,7 +222,7 @@ export function SymbolEditModal({
                 <Label htmlFor="theme">Chart Theme</Label>
                 <Select
                   value={theme}
-                  onValueChange={(value) => setTheme(value as 'dark' | 'light')}
+                  onValueChange={(value: string) => setTheme(value as 'dark' | 'light')}
                 >
                   <SelectTrigger id="theme">
                     <SelectValue />
