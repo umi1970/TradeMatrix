@@ -18,6 +18,7 @@ import { Plus, RefreshCw, Loader2 } from 'lucide-react'
 
 interface MarketData {
   symbol: string
+  symbolId?: string
   name: string
   price: number
   change: number | null

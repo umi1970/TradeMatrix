@@ -1,102 +1,83 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useState } from 'react'
+import { createBrowserClient } from '@/lib/supabase/client'
 
 interface MarketSparklineProps {
   symbol: string
-  data?: Array<{ time: string; value: number }>
+  symbolId?: string
   trend?: 'up' | 'down' | 'neutral'
 }
 
-export function MarketSparkline({ symbol, data = [], trend = 'neutral' }: MarketSparklineProps) {
-  const chartContainerRef = useRef<HTMLDivElement>(null)
-  const chartRef = useRef<any>(null)
-  const seriesRef = useRef<any>(null)
-  const [isMounted, setIsMounted] = useState(false)
+export function MarketSparkline({ symbol, symbolId, trend = 'neutral' }: MarketSparklineProps) {
+  const [points, setPoints] = useState<number[]>([])
+  const supabase = createBrowserClient()
 
   useEffect(() => {
-    setIsMounted(true)
-  }, [])
+    async function loadHistoricalData() {
+      if (!symbolId) return
 
-  useEffect(() => {
-    if (!chartContainerRef.current || !isMounted) return
+      // Fetch last 20 days of EOD data
+      const { data, error } = await supabase
+        .from('eod_data' as any)
+        .select('close, trade_date')
+        .eq('symbol_id', symbolId)
+        .order('trade_date', { ascending: false })
+        .limit(20)
 
-    // Dynamic import to avoid SSR issues
-    import('lightweight-charts').then(({ createChart, ColorType }) => {
-      if (!chartContainerRef.current) return
-
-      const lineColor = trend === 'up' ? '#22c55e' : trend === 'down' ? '#ef4444' : '#6b7280'
-
-      // Create chart
-      const chart = createChart(chartContainerRef.current, {
-        width: 80,
-        height: 40,
-        layout: {
-          background: { type: ColorType.Solid, color: 'transparent' },
-          textColor: '#6b7280',
-        },
-        grid: {
-          vertLines: { visible: false },
-          horzLines: { visible: false },
-        },
-        leftPriceScale: { visible: false },
-        rightPriceScale: { visible: false },
-        timeScale: { visible: false },
-        handleScroll: false,
-        handleScale: false,
-        crosshair: { horzLine: { visible: false }, vertLine: { visible: false } },
-      })
-
-      chartRef.current = chart
-
-      // Add line series
-      const lineSeries = chart.addLineSeries({
-        color: lineColor,
-        lineWidth: 2,
-        priceLineVisible: false,
-        lastValueVisible: false,
-        crosshairMarkerVisible: false,
-      })
-
-      seriesRef.current = lineSeries
-
-      // If we have data, set it
-      if (data && data.length > 0) {
-        const chartData = data.map((item) => ({
-          time: item.time,
-          value: item.value,
-        }))
-        lineSeries.setData(chartData)
-        chart.timeScale().fitContent()
-      } else {
-        // Generate dummy flat line if no data
-        const now = Date.now() / 1000
-        const dummyData = Array.from({ length: 10 }, (_, i) => ({
-          time: (now - (10 - i) * 3600) as any,
-          value: 100 + Math.random() * 2,
-        }))
-        lineSeries.setData(dummyData)
-        chart.timeScale().fitContent()
-      }
-    }).catch(err => {
-      console.error('Error loading chart:', err)
-    })
-
-    // Cleanup
-    return () => {
-      if (chartRef.current) {
-        chartRef.current.remove()
-        chartRef.current = null
-        seriesRef.current = null
+      if (!error && data && data.length > 0) {
+        // Reverse to get chronological order
+        const closePrices = data.reverse().map((d: any) => parseFloat(d.close))
+        setPoints(closePrices)
       }
     }
-  }, [data, trend, isMounted])
+
+    loadHistoricalData()
+  }, [symbol, symbolId, supabase])
+
+  // If no data loaded yet, show loading state
+  if (points.length === 0) {
+    return (
+      <div className="w-20 h-10 flex items-center justify-center">
+        <div className="w-2 h-2 bg-gray-400 rounded-full animate-pulse" />
+      </div>
+    )
+  }
+
+  // Calculate SVG path
+  const width = 80
+  const height = 40
+  const padding = 2
+
+  const max = Math.max(...points)
+  const min = Math.min(...points)
+  const range = max - min || 1
+
+  const pathPoints = points.map((value, index) => {
+    const x = padding + (index / (points.length - 1)) * (width - 2 * padding)
+    const y = padding + ((max - value) / range) * (height - 2 * padding)
+    return `${x},${y}`
+  })
+
+  const pathD = `M ${pathPoints.join(' L ')}`
+
+  const strokeColor = trend === 'up' ? '#22c55e' : trend === 'down' ? '#ef4444' : '#6b7280'
 
   return (
-    <div
-      ref={chartContainerRef}
+    <svg
+      width={width}
+      height={height}
       className="flex-shrink-0"
-      style={{ width: '80px', height: '40px' }}
-    />
+      style={{ overflow: 'visible' }}
+    >
+      <path
+        d={pathD}
+        fill="none"
+        stroke={strokeColor}
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
   )
 }

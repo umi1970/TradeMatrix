@@ -99,6 +99,7 @@ export async function GET(request: Request) {
 
       return {
         symbol: symbolData.symbol,
+        symbolId: symbolData.symbol_id, // Add symbol_id for sparkline
         name: symbolData.name,
         price: livePrice?.price || symbolData.eod_price,
         open: null,
