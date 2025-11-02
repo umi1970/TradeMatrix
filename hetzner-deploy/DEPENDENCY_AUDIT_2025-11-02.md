@@ -44,7 +44,7 @@ All Python files in `hetzner-deploy/src/` have been analyzed, and ALL external d
 
 ### 6. **langchain** >=0.1.0
 - **Usage:** `journal_bot.py` - AI agent orchestration framework
-- **Imports:** `from langchain.chains import LLMChain`, `from langchain.chat_models import ChatOpenAI`, `from langchain.prompts import ChatPromptTemplate`
+- **Imports:** `from langchain.chains import LLMChain`, `from langchain_openai import ChatOpenAI`, `from langchain_core.prompts import ChatPromptTemplate`
 - **Status:** ✅ ADDED
 
 ### 7. **langchain-openai** >=0.0.5

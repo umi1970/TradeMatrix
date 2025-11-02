@@ -96,8 +96,8 @@ def test_specific_imports():
         ("from docx import Document", "DOCX Document class"),
         ("from docx.shared import Inches, Pt, RGBColor", "DOCX formatting"),
         ("from docx.enum.text import WD_ALIGN_PARAGRAPH", "DOCX alignment"),
-        ("from langchain.chat_models import ChatOpenAI", "LangChain ChatOpenAI"),
-        ("from langchain.prompts import ChatPromptTemplate", "LangChain prompts"),
+        ("from langchain_openai import ChatOpenAI", "LangChain ChatOpenAI"),
+        ("from langchain_core.prompts import ChatPromptTemplate", "LangChain prompts"),
         ("from langchain.chains import LLMChain", "LangChain chains"),
 
         # ReportLab imports

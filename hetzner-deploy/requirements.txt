@@ -46,6 +46,7 @@ cryptography==44.0.0             # Required by pywebpush (VAPID keys)
 openai>=1.0.0                    # OpenAI API client (GPT-4, Vision API)
 langchain>=0.1.0                 # AI agent orchestration framework
 langchain-openai>=0.0.5          # LangChain OpenAI integration
+langchain-core>=0.1.0            # LangChain core components (prompts, etc.)
 
 # Report Generation (JournalBot)
 python-docx>=1.1.0               # DOCX report generation
