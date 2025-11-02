@@ -12,3 +12,6 @@ uvicorn[standard]>=0.27.0  # ASGI server for FastAPI
 openai>=1.0.0  # For ChartWatcher Vision API
 pillow>=10.0.0  # For image processing (if needed)
 reportlab>=4.0.0  # For PDF report generation (JournalBot)
+pytz>=2024.1  # For timezone handling (MorningPlanner, USOpenPlanner)
+langchain>=0.1.0  # For AI chains (JournalBot)
+langchain-openai>=0.0.5  # For OpenAI integration with LangChain
