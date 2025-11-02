@@ -24,6 +24,8 @@ services:
     command: celery -A src.tasks worker --loglevel=info
     env_file:
       - .env
+    environment:
+      - PYTHONPATH=/app
     depends_on:
       redis:
         condition: service_healthy
@@ -40,6 +42,8 @@ services:
     command: celery -A src.tasks beat --loglevel=info
     env_file:
       - .env
+    environment:
+      - PYTHONPATH=/app
     depends_on:
       redis:
         condition: service_healthy
