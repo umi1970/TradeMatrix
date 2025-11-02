@@ -14,9 +14,6 @@ pytz==2024.1
 
 # AI/ML
 openai==1.10.0
-langchain==0.1.4
-langchain-openai==0.0.5
-langchain-core>=0.1.0
 
 # Data processing & Technical Analysis
 numpy==1.26.3

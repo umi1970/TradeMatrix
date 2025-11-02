@@ -42,9 +42,7 @@ from reportlab.lib.units import inch
 from reportlab.lib.enums import TA_CENTER, TA_LEFT, TA_RIGHT
 import httpx
 
-from langchain_openai import ChatOpenAI
-from langchain_core.prompts import ChatPromptTemplate
-from langchain.chains import LLMChain
+from openai import OpenAI
 
 from src.chart_generator import ChartGenerator
 from src.exceptions.chart_errors import (
@@ -77,18 +75,14 @@ class JournalBot:
 
         Args:
             supabase_client: Supabase client instance (admin client for bypassing RLS)
-            openai_api_key: OpenAI API key for LangChain
+            openai_api_key: OpenAI API key for GPT-4
         """
         self.supabase = supabase_client
         self.openai_api_key = openai_api_key
         self.chart_generator = ChartGenerator()
 
-        # Initialize LangChain LLM
-        self.llm = ChatOpenAI(
-            model="gpt-4",
-            temperature=0.7,
-            openai_api_key=openai_api_key
-        )
+        # Initialize OpenAI client (direct API, no LangChain)
+        self.openai_client = OpenAI(api_key=openai_api_key)
 
         logger.info("JournalBot initialized with ChartGenerator")
 
@@ -148,7 +142,7 @@ class JournalBot:
 
     def generate_ai_summary(self, trades_data: List[Dict[str, Any]]) -> Dict[str, str]:
         """
-        Generate AI-powered summary and insights using LangChain
+        Generate AI-powered summary and insights using OpenAI GPT-4
 
         Args:
             trades_data: List of trade records
@@ -183,56 +177,59 @@ class JournalBot:
                 for t in trades_data[:20]  # Limit to 20 trades for context window
             ])
 
-            # Create LangChain prompt
-            summary_prompt = ChatPromptTemplate.from_messages([
-                ("system", """You are an expert trading analyst for TradeMatrix.ai.
-                Analyze the trading performance data and provide professional insights.
-                Focus on: patterns, execution quality, risk management, and actionable improvements."""),
-                ("user", """Analyze these trading statistics and trades:
+            # Generate summary using OpenAI API (direct, no LangChain)
+            prompt_text = f"""Analyze these trading statistics and trades:
 
-                Total Trades: {total_trades}
-                Win Rate: {win_rate:.1f}%
-                Total P&L: {total_pnl:.2f}
-                Average Win: {avg_win:.2f}
-                Average Loss: {avg_loss:.2f}
+Total Trades: {total_trades}
+Win Rate: {win_rate:.1f}%
+Total P&L: {total_pnl:.2f}
+Average Win: {avg_win:.2f}
+Average Loss: {avg_loss:.2f}
 
-                Recent Trades:
-                {trades_summary}
+Recent Trades:
+{trades_summary}
 
-                Provide:
-                1. SUMMARY: 2-3 sentence overview of performance
-                2. INSIGHTS: Key patterns or observations (3-4 bullet points)
-                3. RECOMMENDATIONS: Actionable suggestions for improvement (3-4 bullet points)
+Provide:
+1. SUMMARY: 2-3 sentence overview of performance
+2. INSIGHTS: Key patterns or observations (3-4 bullet points)
+3. RECOMMENDATIONS: Actionable suggestions for improvement (3-4 bullet points)
 
-                Format as JSON with keys: summary, insights, recommendations
-                """)
-            ])
+Format as JSON with keys: summary, insights, recommendations"""
 
-            # Generate summary using LangChain
-            chain = summary_prompt | self.llm
-
-            response = chain.invoke({
-                "total_trades": total_trades,
-                "win_rate": win_rate,
-                "total_pnl": total_pnl,
-                "avg_win": avg_win,
-                "avg_loss": avg_loss,
-                "trades_summary": trades_summary
-            })
+            response = self.openai_client.chat.completions.create(
+                model="gpt-4",
+                temperature=0.7,
+                messages=[
+                    {
+                        "role": "system",
+                        "content": "You are an expert trading analyst for TradeMatrix.ai. Analyze the trading performance data and provide professional insights. Focus on: patterns, execution quality, risk management, and actionable improvements."
+                    },
+                    {
+                        "role": "user",
+                        "content": prompt_text
+                    }
+                ]
+            )
 
             # Parse response
-            content = response.content if hasattr(response, 'content') else str(response)
+            content = response.choices[0].message.content
 
             # Try to extract structured data (fallback to simple parsing)
-            summary_text = f"Total Trades: {total_trades} | Win Rate: {win_rate:.1f}% | P&L: {total_pnl:.2f}"
-            insights_text = content
-            recommendations_text = "Continue following trading rules and risk management principles."
-
-            ai_summary = {
-                'summary': summary_text,
-                'insights': insights_text,
-                'recommendations': recommendations_text
-            }
+            try:
+                import json
+                parsed = json.loads(content)
+                ai_summary = {
+                    'summary': parsed.get('summary', f"Total Trades: {total_trades} | Win Rate: {win_rate:.1f}% | P&L: {total_pnl:.2f}"),
+                    'insights': parsed.get('insights', content),
+                    'recommendations': parsed.get('recommendations', "Continue following trading rules and risk management principles.")
+                }
+            except json.JSONDecodeError:
+                # Fallback if not valid JSON
+                ai_summary = {
+                    'summary': f"Total Trades: {total_trades} | Win Rate: {win_rate:.1f}% | P&L: {total_pnl:.2f}",
+                    'insights': content,
+                    'recommendations': "Continue following trading rules and risk management principles."
+                }
 
             logger.info("AI summary generated successfully")
             return ai_summary

@@ -37,8 +37,6 @@ def test_imports():
 
         # AI & Reports
         ('openai', 'OpenAI API'),
-        ('langchain', 'AI Framework'),
-        ('langchain_openai', 'LangChain OpenAI'),
         ('docx', 'DOCX Generation'),
         ('reportlab', 'PDF Generation'),
         ('PIL', 'Image Processing (Pillow)'),
@@ -96,9 +94,7 @@ def test_specific_imports():
         ("from docx import Document", "DOCX Document class"),
         ("from docx.shared import Inches, Pt, RGBColor", "DOCX formatting"),
         ("from docx.enum.text import WD_ALIGN_PARAGRAPH", "DOCX alignment"),
-        ("from langchain_openai import ChatOpenAI", "LangChain ChatOpenAI"),
-        ("from langchain_core.prompts import ChatPromptTemplate", "LangChain prompts"),
-        ("from langchain.chains import LLMChain", "LangChain chains"),
+        ("from openai import OpenAI", "OpenAI client"),
 
         # ReportLab imports
         ("from reportlab.lib import colors", "ReportLab colors"),
