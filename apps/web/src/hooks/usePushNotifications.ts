@@ -92,13 +92,17 @@ export function usePushNotifications() {
         throw new Error('User not authenticated')
       }
 
+      if (!subscriptionJSON.endpoint || !subscriptionJSON.keys?.p256dh || !subscriptionJSON.keys?.auth) {
+        throw new Error('Invalid subscription data')
+      }
+
       const { error: dbError } = await supabase
         .from('user_push_subscriptions')
         .upsert({
           user_id: userData.user.id,
           endpoint: subscriptionJSON.endpoint,
-          p256dh: subscriptionJSON.keys?.p256dh || '',
-          auth: subscriptionJSON.keys?.auth || '',
+          p256dh: subscriptionJSON.keys.p256dh,
+          auth: subscriptionJSON.keys.auth,
           user_agent: navigator.userAgent,
           last_used_at: new Date().toISOString(),
         })
