@@ -45,14 +45,30 @@ class PushNotificationService:
         vapid_private_raw = os.getenv('VAPID_PRIVATE_KEY')
         vapid_public_raw = os.getenv('VAPID_PUBLIC_KEY')
 
+        # Helper function to decode base64 with automatic padding fix
+        def decode_base64_key(encoded_key: str) -> str:
+            """Decode base64-encoded PEM key with automatic padding correction"""
+            try:
+                # Add padding if needed (base64 strings must be multiple of 4)
+                missing_padding = len(encoded_key) % 4
+                if missing_padding:
+                    encoded_key += '=' * (4 - missing_padding)
+
+                # Decode and return as UTF-8 string
+                return base64.b64decode(encoded_key).decode('utf-8')
+            except Exception as e:
+                print(f"⚠️  Failed to decode base64 key: {e}")
+                # Return original key if decoding fails
+                return encoded_key
+
         # Decode base64-encoded PEM if needed (starts with "LS0tLS1" = "-----BEGIN" in base64)
         if vapid_private_raw and vapid_private_raw.startswith('LS0tLS1'):
-            self.vapid_private_key = base64.b64decode(vapid_private_raw).decode('utf-8')
+            self.vapid_private_key = decode_base64_key(vapid_private_raw)
         else:
             self.vapid_private_key = vapid_private_raw
 
         if vapid_public_raw and vapid_public_raw.startswith('LS0tLS1'):
-            self.vapid_public_key = base64.b64decode(vapid_public_raw).decode('utf-8')
+            self.vapid_public_key = decode_base64_key(vapid_public_raw)
         else:
             self.vapid_public_key = vapid_public_raw
 
