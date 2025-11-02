@@ -99,3 +99,4 @@ reports/
 *.crt
 secrets/
 credentials/
+hetzner-deploy/.env
