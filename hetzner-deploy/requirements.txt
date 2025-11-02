@@ -12,6 +12,7 @@
 # Task Queue & Scheduling
 celery==5.4.0                    # Background task processing
 redis==5.2.0                     # Message broker & cache
+flower==2.0.1                    # Celery monitoring & HTTP API
 
 # Database & Backend
 supabase==2.9.0                  # Supabase Python client

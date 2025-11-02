@@ -51,5 +51,24 @@ services:
       - ./src:/app/src
       - ./logs:/app/logs
 
+  flower:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: tradematrix_flower
+    restart: unless-stopped
+    command: celery -A src.tasks flower --port=5555 --basic_auth=admin:${FLOWER_PASSWORD:-changeme123}
+    env_file:
+      - .env
+    environment:
+      - PYTHONPATH=/app
+    ports:
+      - "5555:5555"
+    depends_on:
+      redis:
+        condition: service_healthy
+    volumes:
+      - ./src:/app/src
+
 volumes:
   redis_data:
