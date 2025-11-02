@@ -1,6 +1,6 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
 import { ArrowUpRight, ArrowDownRight, Minus } from 'lucide-react'
+import { MarketSparkline } from './market-sparkline'
 
 interface MarketData {
   symbol: string
@@ -42,9 +42,7 @@ export function MarketOverviewCard({ market }: MarketOverviewCardProps) {
     <Card>
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
         <CardTitle className="text-sm font-medium">{market.name}</CardTitle>
-        <Badge variant="outline" className="text-xs">
-          {market.symbol}
-        </Badge>
+        <MarketSparkline symbol={market.symbol} trend={market.trend} />
       </CardHeader>
       <CardContent>
         <div className="flex items-baseline justify-between">
