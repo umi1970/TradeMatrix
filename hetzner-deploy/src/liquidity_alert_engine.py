@@ -87,6 +87,36 @@ class LiquidityAlertEngine:
         # Price is within tolerance of level
         return price_diff <= tolerance_amount
 
+    def has_recent_alert(
+        self,
+        user_id: str,
+        symbol_id: str,
+        level_type: str,
+        cooldown_hours: int = 1
+    ) -> bool:
+        """
+        Check if user already received this alert recently
+        Returns True if alert exists within cooldown period
+        """
+        try:
+            # Calculate cooldown threshold (default: 1 hour ago)
+            cooldown_time = datetime.utcnow() - timedelta(hours=cooldown_hours)
+
+            response = self.supabase.table('alerts')\
+                .select('*')\
+                .eq('user_id', user_id)\
+                .eq('symbol_id', symbol_id)\
+                .eq('level_type', level_type)\
+                .gte('triggered_at', cooldown_time.isoformat())\
+                .limit(1)\
+                .execute()
+
+            return len(response.data) > 0
+
+        except Exception as e:
+            print(f"❌ Error checking recent alert: {e}")
+            return False
+
     def create_alert_record(
         self,
         user_id: str,
@@ -168,68 +198,80 @@ class LiquidityAlertEngine:
         if subscription.get('yesterday_high_enabled'):
             yesterday_high = Decimal(str(eod_levels['yesterday_high']))
             if self.check_level_crossed(current_price, yesterday_high, 'yesterday_high'):
-                context = self.get_setup_context('yesterday_high')
+                # Check if alert already sent recently (1 hour cooldown)
+                if not self.has_recent_alert(user_id, symbol_id, 'yesterday_high', cooldown_hours=1):
+                    context = self.get_setup_context('yesterday_high')
 
-                # Create alert record
-                self.create_alert_record(
-                    user_id, symbol_id, 'yesterday_high',
-                    yesterday_high, current_price
-                )
+                    # Create alert record
+                    self.create_alert_record(
+                        user_id, symbol_id, 'yesterday_high',
+                        yesterday_high, current_price
+                    )
 
-                triggered_alerts.append({
-                    'symbol': symbol_name,
-                    'level_type': 'yesterday_high',
-                    'level_price': yesterday_high,
-                    'current_price': current_price,
-                    'context': context,
-                    'user_id': user_id,
-                })
+                    triggered_alerts.append({
+                        'symbol': symbol_name,
+                        'level_type': 'yesterday_high',
+                        'level_price': yesterday_high,
+                        'current_price': current_price,
+                        'context': context,
+                        'user_id': user_id,
+                    })
 
-                print(f"  🔴 {symbol_name}: Yesterday High touched ({yesterday_high})")
+                    print(f"  🔴 {symbol_name}: Yesterday High touched ({yesterday_high})")
+                else:
+                    print(f"  ⏭️  {symbol_name}: Yesterday High on cooldown (skip)")
 
         # Check Yesterday Low
         if subscription.get('yesterday_low_enabled'):
             yesterday_low = Decimal(str(eod_levels['yesterday_low']))
             if self.check_level_crossed(current_price, yesterday_low, 'yesterday_low'):
-                context = self.get_setup_context('yesterday_low')
+                # Check if alert already sent recently (1 hour cooldown)
+                if not self.has_recent_alert(user_id, symbol_id, 'yesterday_low', cooldown_hours=1):
+                    context = self.get_setup_context('yesterday_low')
 
-                self.create_alert_record(
-                    user_id, symbol_id, 'yesterday_low',
-                    yesterday_low, current_price
-                )
+                    self.create_alert_record(
+                        user_id, symbol_id, 'yesterday_low',
+                        yesterday_low, current_price
+                    )
 
-                triggered_alerts.append({
-                    'symbol': symbol_name,
-                    'level_type': 'yesterday_low',
-                    'level_price': yesterday_low,
-                    'current_price': current_price,
-                    'context': context,
-                    'user_id': user_id,
-                })
+                    triggered_alerts.append({
+                        'symbol': symbol_name,
+                        'level_type': 'yesterday_low',
+                        'level_price': yesterday_low,
+                        'current_price': current_price,
+                        'context': context,
+                        'user_id': user_id,
+                    })
 
-                print(f"  🟢 {symbol_name}: Yesterday Low touched ({yesterday_low})")
+                    print(f"  🟢 {symbol_name}: Yesterday Low touched ({yesterday_low})")
+                else:
+                    print(f"  ⏭️  {symbol_name}: Yesterday Low on cooldown (skip)")
 
         # Check Pivot Point
         if subscription.get('pivot_point_enabled') and eod_levels.get('pivot_point'):
             pivot_point = Decimal(str(eod_levels['pivot_point']))
             if self.check_level_crossed(current_price, pivot_point, 'pivot_point'):
-                context = self.get_setup_context('pivot_point')
+                # Check if alert already sent recently (1 hour cooldown)
+                if not self.has_recent_alert(user_id, symbol_id, 'pivot_point', cooldown_hours=1):
+                    context = self.get_setup_context('pivot_point')
 
-                self.create_alert_record(
-                    user_id, symbol_id, 'pivot_point',
-                    pivot_point, current_price
-                )
+                    self.create_alert_record(
+                        user_id, symbol_id, 'pivot_point',
+                        pivot_point, current_price
+                    )
 
-                triggered_alerts.append({
-                    'symbol': symbol_name,
-                    'level_type': 'pivot_point',
-                    'level_price': pivot_point,
-                    'current_price': current_price,
-                    'context': context,
-                    'user_id': user_id,
-                })
+                    triggered_alerts.append({
+                        'symbol': symbol_name,
+                        'level_type': 'pivot_point',
+                        'level_price': pivot_point,
+                        'current_price': current_price,
+                        'context': context,
+                        'user_id': user_id,
+                    })
 
-                print(f"  🟡 {symbol_name}: Pivot Point touched ({pivot_point})")
+                    print(f"  🟡 {symbol_name}: Pivot Point touched ({pivot_point})")
+                else:
+                    print(f"  ⏭️  {symbol_name}: Pivot Point on cooldown (skip)")
 
         return triggered_alerts
 
