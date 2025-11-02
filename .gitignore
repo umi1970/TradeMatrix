@@ -88,10 +88,13 @@ docker-compose.override.yml
 *.temp
 .tmp/
 
-# Reports & outputs
-reports/
+# Generated report files (not source code!)
+/reports/
 *.pdf
 *.docx
+# But allow source code in apps/web/src/app/.../reports/
+!apps/web/src/app/**/reports/
+!apps/web/src/app/**/reports/**/*
 
 # API keys & secrets
 *.key

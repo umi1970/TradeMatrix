@@ -149,15 +149,16 @@ export interface Database {
           user_id: string
           title: string
           content: string
-          report_type: 'daily' | 'weekly' | 'analysis' | 'custom'
+          report_type: 'daily' | 'weekly' | 'monthly' | 'analysis' | 'custom' | 'trade_analysis' | 'risk_assessment'
           ai_summary: string | null
           ai_insights: Json
-          status: 'draft' | 'published' | 'archived'
+          status: 'draft' | 'published' | 'archived' | 'processing' | 'completed' | 'failed'
           published_at: string | null
           slug: string | null
           chart_urls: string[] | null
           pdf_url: string | null
           metadata: Json
+          metrics: Json
           created_at: string
           updated_at: string
         }
@@ -166,15 +167,16 @@ export interface Database {
           user_id: string
           title: string
           content: string
-          report_type: 'daily' | 'weekly' | 'analysis' | 'custom'
+          report_type: 'daily' | 'weekly' | 'monthly' | 'analysis' | 'custom' | 'trade_analysis' | 'risk_assessment'
           ai_summary?: string | null
           ai_insights?: Json
-          status?: 'draft' | 'published' | 'archived'
+          status?: 'draft' | 'published' | 'archived' | 'processing' | 'completed' | 'failed'
           published_at?: string | null
           slug?: string | null
           chart_urls?: string[] | null
           pdf_url?: string | null
           metadata?: Json
+          metrics?: Json
           created_at?: string
           updated_at?: string
         }
@@ -183,15 +185,16 @@ export interface Database {
           user_id?: string
           title?: string
           content?: string
-          report_type?: 'daily' | 'weekly' | 'analysis' | 'custom'
+          report_type?: 'daily' | 'weekly' | 'monthly' | 'analysis' | 'custom' | 'trade_analysis' | 'risk_assessment'
           ai_summary?: string | null
           ai_insights?: Json
-          status?: 'draft' | 'published' | 'archived'
+          status?: 'draft' | 'published' | 'archived' | 'processing' | 'completed' | 'failed'
           published_at?: string | null
           slug?: string | null
           chart_urls?: string[] | null
           pdf_url?: string | null
           metadata?: Json
+          metrics?: Json
           created_at?: string
           updated_at?: string
         }

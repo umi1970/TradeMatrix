@@ -680,11 +680,14 @@ Format as JSON with keys: summary, insights, recommendations"""
                 'report_type': report_metadata.get('report_type', 'daily'),
                 'ai_summary': report_metadata.get('ai_summary'),
                 'ai_insights': report_metadata.get('ai_insights', []),
-                'status': report_metadata.get('status', 'draft'),
-                'report_date': report_metadata.get('report_date', datetime.now().date()).isoformat(),
-                'pdf_url': report_metadata.get('pdf_url'),  # Use pdf_url, not file_url_pdf
-                'file_url_docx': report_metadata.get('file_url_docx'),
-                'metadata': report_metadata.get('metrics', {}),  # Store metrics in metadata JSONB
+                'status': report_metadata.get('status', 'completed'),  # Use 'completed' instead of 'draft' for generated reports
+                'pdf_url': report_metadata.get('pdf_url'),
+                'metrics': report_metadata.get('metrics', {}),  # Separate metrics column (Migration 015)
+                'metadata': {
+                    'report_date': report_metadata.get('report_date', datetime.now().date()).isoformat(),
+                    'file_url_docx': report_metadata.get('file_url_docx'),  # DOCX URL in metadata
+                    **report_metadata.get('metadata', {})
+                },
                 'created_at': datetime.now(timezone.utc).isoformat()
             }
 
