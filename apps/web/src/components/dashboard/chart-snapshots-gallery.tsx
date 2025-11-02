@@ -214,7 +214,7 @@ export function ChartSnapshotsGallery({
       {/* Fullscreen Dialog */}
       <Dialog
         open={!!selectedSnapshot}
-        onOpenChange={(open) => !open && setSelectedSnapshot(null)}
+        onOpenChange={(open: boolean) => !open && setSelectedSnapshot(null)}
       >
         <DialogContent className="max-w-6xl">
           <DialogHeader>
