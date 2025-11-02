@@ -85,7 +85,7 @@ export async function GET(request: Request) {
             name
           )
         `)
-        .order('date', { ascending: false })
+        .order('trade_date', { ascending: false })
         .limit(50) // Get recent data for all symbols
 
       if (eodError) {
@@ -114,8 +114,8 @@ export async function GET(request: Request) {
             exchange: null,
             currency: 'USD',
             isMarketOpen: false, // Markets are closed (using EOD data)
-            priceTimestamp: item.date,
-            updatedAt: item.date,
+            priceTimestamp: item.trade_date,
+            updatedAt: item.trade_date,
             trend: item.close && item.open ? (parseFloat(item.close) >= parseFloat(item.open) ? 'up' : 'down') : 'neutral'
           })
         }
