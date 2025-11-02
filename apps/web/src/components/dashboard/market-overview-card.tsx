@@ -43,7 +43,12 @@ export function MarketOverviewCard({ market }: MarketOverviewCardProps) {
     <Card>
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
         <CardTitle className="text-sm font-medium">{market.name}</CardTitle>
-        <MarketSparkline symbol={market.symbol} symbolId={market.symbolId} trend={market.trend} />
+        <MarketSparkline
+          symbol={market.symbol}
+          symbolId={market.symbolId}
+          symbolName={market.name}
+          trend={market.trend}
+        />
       </CardHeader>
       <CardContent>
         <div className="flex items-baseline justify-between">

@@ -2,16 +2,31 @@
 
 import { useEffect, useState } from 'react'
 import { createBrowserClient } from '@/lib/supabase/client'
+import { ChartModal } from './chart-modal'
 
 interface MarketSparklineProps {
   symbol: string
   symbolId?: string
+  symbolName?: string
   trend?: 'up' | 'down' | 'neutral'
 }
 
-export function MarketSparkline({ symbol, symbolId, trend = 'neutral' }: MarketSparklineProps) {
+// Map our symbols to TradingView symbols
+const symbolMapping: Record<string, string> = {
+  '^GDAXI': 'XETR:DAX',
+  '^NDX': 'NASDAQ:NDX',
+  '^DJI': 'DJ:DJI',
+  'EURUSD': 'FX:EURUSD',
+  'EURGBP': 'FX:EURGBP',
+  'GBPUSD': 'FX:GBPUSD',
+}
+
+export function MarketSparkline({ symbol, symbolId, symbolName, trend = 'neutral' }: MarketSparklineProps) {
   const [points, setPoints] = useState<number[]>([])
+  const [modalOpen, setModalOpen] = useState(false)
   const supabase = createBrowserClient()
+
+  const tvSymbol = symbolMapping[symbol] || symbol
 
   useEffect(() => {
     async function loadHistoricalData() {
@@ -62,19 +77,30 @@ export function MarketSparkline({ symbol, symbolId, trend = 'neutral' }: MarketS
   const strokeColor = priceChange > 0 ? '#22c55e' : priceChange < 0 ? '#ef4444' : '#6b7280'
 
   return (
-    <svg
-      width={width}
-      height={height}
-      className="flex-shrink-0"
-    >
-      <path
-        d={pathD}
-        fill="none"
-        stroke={strokeColor}
-        strokeWidth="1.5"
-        strokeLinecap="round"
-        strokeLinejoin="round"
+    <>
+      <svg
+        width={width}
+        height={height}
+        className="flex-shrink-0 cursor-pointer hover:opacity-80 transition-opacity"
+        onClick={() => setModalOpen(true)}
+      >
+        <path
+          d={pathD}
+          fill="none"
+          stroke={strokeColor}
+          strokeWidth="1.5"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+      </svg>
+
+      <ChartModal
+        open={modalOpen}
+        onOpenChange={setModalOpen}
+        symbol={symbol}
+        symbolName={symbolName || symbol}
+        tvSymbol={tvSymbol}
       />
-    </svg>
+    </>
   )
 }
