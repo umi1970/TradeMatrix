@@ -31,6 +31,13 @@ import httpx
 from supabase import Client
 from openai import OpenAI
 
+from chart_generator import ChartGenerator
+from exceptions.chart_errors import (
+    RateLimitError,
+    ChartGenerationError,
+    SymbolNotFoundError
+)
+
 # Setup logger
 logger = logging.getLogger(__name__)
 
@@ -57,7 +64,8 @@ class ChartWatcher:
         """
         self.supabase = supabase_client
         self.openai_client = OpenAI(api_key=openai_api_key)
-        logger.info("ChartWatcher initialized")
+        self.chart_generator = ChartGenerator()
+        logger.info("ChartWatcher initialized with ChartGenerator")
 
 
     def download_chart(self, chart_url: str) -> Optional[bytes]:
@@ -547,29 +555,45 @@ If no clear patterns are visible, return an empty patterns array but still provi
                 symbol_name = symbol_record['symbol']
 
                 try:
-                    # Check if chart URL exists for this symbol
-                    # (In production, you'd fetch this from a charts table or Storage)
-                    # For now, we'll skip if no chart URL is available
+                    # Generate chart via ChartGenerator
+                    logger.info(f"Generating chart for {symbol_name}...")
 
-                    # Placeholder: In real implementation, you'd fetch chart URLs from:
-                    # - Supabase Storage bucket 'charts'
-                    # - A separate 'chart_snapshots' table with URLs
-                    # - Generate charts on-demand from OHLC data
+                    snapshot = self.chart_generator.generate_chart(
+                        symbol_id=str(symbol_id),
+                        timeframe=timeframe,
+                        trigger_type='analysis'
+                    )
 
-                    logger.info(f"Skipping {symbol_name} - no chart URL configured (implement chart generation)")
+                    chart_url = snapshot['chart_url']
+                    logger.info(f"Chart generated: {chart_url}")
+
+                    # Analyze chart with OpenAI Vision API
+                    analysis_id = self.analyze_chart(
+                        symbol_id=symbol_id,
+                        symbol_name=symbol_name,
+                        chart_url=chart_url,
+                        timeframe=timeframe
+                    )
+
+                    if analysis_id:
+                        analyses.append({
+                            'symbol': symbol_name,
+                            'analysis_id': str(analysis_id),
+                            'timeframe': timeframe,
+                            'chart_snapshot_id': snapshot.get('snapshot_id')
+                        })
+                        logger.info(f"✅ Chart analyzed: {symbol_name} ({timeframe})")
+
+                except RateLimitError as e:
+                    logger.error(f"❌ Rate limit reached: {e.details}")
+                    # Stop processing more symbols to avoid hitting rate limit
+                    break
+                except SymbolNotFoundError:
+                    logger.warning(f"Symbol {symbol_name} not configured for charts - skipping")
                     continue
-
-                    # Example (when charts are available):
-                    # chart_url = f"https://your-storage.supabase.co/storage/v1/object/public/charts/{symbol_name}_{timeframe}.png"
-                    # analysis_id = self.analyze_chart(symbol_id, symbol_name, chart_url, timeframe)
-                    #
-                    # if analysis_id:
-                    #     analyses.append({
-                    #         'symbol': symbol_name,
-                    #         'analysis_id': str(analysis_id),
-                    #         'timeframe': timeframe
-                    #     })
-
+                except ChartGenerationError as e:
+                    logger.error(f"❌ Chart generation failed for {symbol_name}: {e}")
+                    continue
                 except Exception as e:
                     logger.error(f"Error analyzing chart for {symbol_name}: {e}", exc_info=True)
                     continue

@@ -14,6 +14,7 @@ import {
   User,
   Menu,
   Database,
+  Settings,
 } from 'lucide-react'
 
 const navigation = [
@@ -31,6 +32,11 @@ const navigation = [
     name: 'Charts',
     href: '/dashboard/charts',
     icon: BarChart3,
+  },
+  {
+    name: 'Symbols',
+    href: '/dashboard/symbols',
+    icon: Settings,
   },
   {
     name: 'EOD Data',

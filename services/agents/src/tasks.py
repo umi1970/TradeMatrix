@@ -20,6 +20,11 @@ from .liquidity_alert_engine import LiquidityAlertEngine
 from .price_fetcher import PriceFetcher
 from .push_notification_service import PushNotificationService
 
+# Import AI agents (ChartWatcher, MorningPlanner, JournalBot)
+from .chart_watcher import ChartWatcher
+from .morning_planner import MorningPlanner
+from .journal_bot import JournalBot
+
 # Configure logging
 logging.basicConfig(
     level=logging.INFO,
@@ -151,6 +156,114 @@ def check_liquidity_alerts(self):
 
 
 # ================================================
+# Celery Tasks - AI Agents
+# ================================================
+
+@celery.task(name='run_chart_analysis', bind=True)
+def run_chart_analysis_task(self):
+    """
+    ChartWatcher - runs every 6 hours
+    Analyzes chart images using OpenAI Vision API
+    """
+    try:
+        logger.info("=" * 70)
+        logger.info("📊 Starting ChartWatcher analysis")
+        logger.info("=" * 70)
+
+        # Initialize ChartWatcher
+        from config.supabase import get_supabase_admin
+        watcher = ChartWatcher(
+            supabase_client=get_supabase_admin(),
+            openai_api_key=os.getenv('OPENAI_API_KEY')
+        )
+
+        # Run chart analysis
+        result = watcher.run(timeframe='4h')
+
+        logger.info("=" * 70)
+        logger.info(f"✅ ChartWatcher completed: {result.get('analyses_created', 0)} analyses created")
+        logger.info("=" * 70)
+
+        return result
+
+    except Exception as e:
+        logger.error(f"❌ Fatal error in ChartWatcher: {str(e)}")
+        return {
+            'status': 'error',
+            'error': str(e)
+        }
+
+
+@celery.task(name='run_morning_planner', bind=True)
+def run_morning_planner_task(self):
+    """
+    MorningPlanner - runs daily at 08:25 MEZ
+    Analyzes overnight movements and generates trading setups
+    """
+    try:
+        logger.info("=" * 70)
+        logger.info("🌅 Starting MorningPlanner analysis")
+        logger.info("=" * 70)
+
+        # Initialize MorningPlanner
+        from config.supabase import get_supabase_admin
+        planner = MorningPlanner(
+            supabase_client=get_supabase_admin()
+        )
+
+        # Run morning analysis
+        result = planner.run()
+
+        logger.info("=" * 70)
+        logger.info(f"✅ MorningPlanner completed: {result.get('setups_generated', 0)} setups generated")
+        logger.info("=" * 70)
+
+        return result
+
+    except Exception as e:
+        logger.error(f"❌ Fatal error in MorningPlanner: {str(e)}")
+        return {
+            'status': 'error',
+            'error': str(e)
+        }
+
+
+@celery.task(name='run_journal_bot', bind=True)
+def run_journal_bot_task(self):
+    """
+    JournalBot - runs daily at 21:00 MEZ
+    Generates trading reports with AI insights
+    """
+    try:
+        logger.info("=" * 70)
+        logger.info("📓 Starting JournalBot report generation")
+        logger.info("=" * 70)
+
+        # Initialize JournalBot
+        from config.supabase import get_supabase_admin
+        bot = JournalBot(
+            supabase_client=get_supabase_admin(),
+            openai_api_key=os.getenv('OPENAI_API_KEY')
+        )
+
+        # Run report generation
+        result = bot.run()
+
+        logger.info("=" * 70)
+        logger.info(f"✅ JournalBot completed: {result.get('reports_generated', 0)} reports generated")
+        logger.info("=" * 70)
+
+        return result
+
+    except Exception as e:
+        logger.error(f"❌ Fatal error in JournalBot: {str(e)}")
+        return {
+            'status': 'error',
+            'error': str(e)
+        }
+
+
+# ================================================
 # Celery Beat Schedule
 # ================================================
 
@@ -162,5 +275,23 @@ celery.conf.beat_schedule = {
         'options': {
             'expires': 55,  # Task expires after 55 seconds (before next run)
         }
+    },
+
+    # ChartWatcher - runs every 6 hours
+    'chart-analysis-6h': {
+        'task': 'run_chart_analysis',
+        'schedule': crontab(hour='*/6'),  # Every 6 hours (0, 6, 12, 18)
+    },
+
+    # MorningPlanner - runs daily at 08:25 MEZ
+    'morning-planner-daily': {
+        'task': 'run_morning_planner',
+        'schedule': crontab(hour=8, minute=25),  # Daily at 08:25 UTC+1 (07:25 UTC in winter)
+    },
+
+    # JournalBot - runs daily at 21:00 MEZ
+    'journal-bot-daily': {
+        'task': 'run_journal_bot',
+        'schedule': crontab(hour=21, minute=0),  # Daily at 21:00 UTC+1 (20:00 UTC in winter)
     },
 }

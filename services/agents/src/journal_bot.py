@@ -28,6 +28,7 @@ from uuid import UUID
 import pytz
 import os
 import tempfile
+import io
 
 from supabase import Client
 from docx import Document
@@ -35,14 +36,22 @@ from docx.shared import Inches, Pt, RGBColor
 from docx.enum.text import WD_ALIGN_PARAGRAPH
 from reportlab.lib import colors
 from reportlab.lib.pagesizes import letter, A4
-from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer, PageBreak
+from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer, PageBreak, Image
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib.units import inch
 from reportlab.lib.enums import TA_CENTER, TA_LEFT, TA_RIGHT
+import httpx
 
 from langchain.chat_models import ChatOpenAI
 from langchain.prompts import ChatPromptTemplate
 from langchain.chains import LLMChain
+
+from chart_generator import ChartGenerator
+from exceptions.chart_errors import (
+    RateLimitError,
+    ChartGenerationError,
+    SymbolNotFoundError
+)
 
 # Setup logger
 logger = logging.getLogger(__name__)
@@ -72,6 +81,7 @@ class JournalBot:
         """
         self.supabase = supabase_client
         self.openai_api_key = openai_api_key
+        self.chart_generator = ChartGenerator()
 
         # Initialize LangChain LLM
         self.llm = ChatOpenAI(
@@ -80,7 +90,7 @@ class JournalBot:
             openai_api_key=openai_api_key
         )
 
-        logger.info("JournalBot initialized")
+        logger.info("JournalBot initialized with ChartGenerator")
 
 
     def fetch_trades(
@@ -520,6 +530,7 @@ class JournalBot:
             story.append(Paragraph('Trade Details', heading_style))
 
             trades = report_data.get('trades', [])
+            trade_charts = report_data.get('trade_charts', [])
 
             if trades:
                 trades_data = [['Time', 'Symbol', 'Side', 'Entry', 'Exit', 'P&L']]
@@ -553,6 +564,29 @@ class JournalBot:
                 ]))
 
                 story.append(trades_table)
+
+                # Add charts section if available
+                if trade_charts:
+                    story.append(Spacer(1, 0.3*inch))
+                    story.append(Paragraph('Trade Charts', heading_style))
+
+                    for chart_info in trade_charts[:5]:  # Limit to 5 charts in PDF
+                        try:
+                            # Download chart image
+                            img_data = self._download_chart_image(chart_info['chart_url'])
+                            if img_data:
+                                # Create image from bytes
+                                img = Image(io.BytesIO(img_data), width=5*inch, height=3*inch)
+
+                                # Add chart label
+                                chart_label = f"{chart_info['symbol']} - Entry: {chart_info.get('entry_price', 'N/A')}, P&L: {chart_info.get('pnl', 0):+.2f}"
+                                story.append(Paragraph(chart_label, styles['Normal']))
+                                story.append(img)
+                                story.append(Spacer(1, 0.2*inch))
+                        except Exception as e:
+                            logger.error(f"Error adding chart to PDF: {e}")
+                            continue
+
             else:
                 story.append(Paragraph("No trades for this period.", styles['Normal']))
 
@@ -673,6 +707,80 @@ class JournalBot:
             return None
 
 
+    def _download_chart_image(self, chart_url: str) -> Optional[bytes]:
+        """
+        Download chart image from URL
+
+        Args:
+            chart_url: URL of the chart image
+
+        Returns:
+            Image bytes or None on error
+        """
+        try:
+            with httpx.Client(timeout=30.0) as client:
+                response = client.get(chart_url)
+                response.raise_for_status()
+                return response.content
+        except Exception as e:
+            logger.error(f"Error downloading chart image: {e}")
+            return None
+
+    def _generate_trade_charts(self, trades: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+        """
+        Generate charts for all trades
+
+        Args:
+            trades: List of trade records
+
+        Returns:
+            List of dicts with trade_id, symbol, chart_url, entry_price
+        """
+        logger.info(f"Generating charts for {len(trades)} trades...")
+
+        report_charts = []
+
+        for trade in trades[:20]:  # Limit to 20 trades for reports
+            try:
+                symbol_id = trade.get('symbol_id')
+                if not symbol_id:
+                    logger.warning(f"Trade {trade.get('id')} missing symbol_id - skipping chart")
+                    continue
+
+                # Generate chart for this trade
+                snapshot = self.chart_generator.generate_chart(
+                    symbol_id=symbol_id,
+                    timeframe='4h',  # 4h for reports
+                    trigger_type='report'
+                )
+
+                report_charts.append({
+                    'trade_id': trade['id'],
+                    'symbol': trade.get('market_symbols', {}).get('symbol', 'N/A'),
+                    'chart_url': snapshot['chart_url'],
+                    'chart_snapshot_id': snapshot.get('snapshot_id'),
+                    'entry_price': trade.get('entry_price'),
+                    'exit_price': trade.get('exit_price'),
+                    'pnl': trade.get('pnl', 0)
+                })
+
+                logger.info(f"  ✅ Chart generated for {trade['id']}")
+
+            except RateLimitError as e:
+                logger.warning(f"Rate limit reached during chart generation: {e.details}")
+                # Stop generating more charts
+                break
+            except (ChartGenerationError, SymbolNotFoundError) as e:
+                logger.warning(f"Chart generation failed for trade {trade.get('id')}: {e}")
+                # Continue without chart
+                continue
+            except Exception as e:
+                logger.error(f"Unexpected error generating chart for trade {trade.get('id')}: {e}")
+                continue
+
+        logger.info(f"Generated {len(report_charts)} charts for report")
+        return report_charts
+
     def _get_eod_performance(self, trade_date: date) -> Dict[str, Any]:
         """
         Fetch yesterday's market performance from EOD data
@@ -785,19 +893,23 @@ class JournalBot:
                 'eod_performance': eod_performance  # Market context
             }
 
-            # Step 3 - Generate AI summary
+            # Step 3 - Generate charts for trades
+            trade_charts = self._generate_trade_charts(trades)
+
+            # Step 4 - Generate AI summary
             ai_summary = self.generate_ai_summary(trades)
 
-            # Step 4 - Prepare report data
+            # Step 5 - Prepare report data
             report_data = {
                 'title': f'Daily Trading Report - {today.strftime("%Y-%m-%d")}',
                 'date': today,
                 'metrics': metrics,
                 'ai_summary': ai_summary,
-                'trades': trades
+                'trades': trades,
+                'trade_charts': trade_charts  # Add charts to report data
             }
 
-            # Step 5 - Create reports
+            # Step 6 - Create reports
             filename_base = f"daily_report_{today.strftime('%Y%m%d')}"
             if user_id:
                 filename_base += f"_user_{str(user_id)[:8]}"
@@ -805,11 +917,11 @@ class JournalBot:
             pdf_path = self.create_pdf_report(report_data, filename_base)
             docx_path = self.create_docx_report(report_data, filename_base)
 
-            # Step 6 - Upload to storage
+            # Step 7 - Upload to storage
             pdf_url = self.upload_to_storage(pdf_path) if pdf_path else None
             docx_url = self.upload_to_storage(docx_path) if docx_path else None
 
-            # Step 7 - Save report metadata
+            # Step 8 - Save report metadata
             report_metadata = {
                 'user_id': user_id,
                 'title': report_data['title'],

@@ -23,6 +23,13 @@ import pytz
 
 from supabase import Client
 
+from chart_generator import ChartGenerator
+from exceptions.chart_errors import (
+    RateLimitError,
+    ChartGenerationError,
+    SymbolNotFoundError
+)
+
 # Setup logger
 logger = logging.getLogger(__name__)
 
@@ -46,7 +53,8 @@ class MorningPlanner:
             supabase_client: Supabase client instance (admin client for bypassing RLS)
         """
         self.supabase = supabase_client
-        logger.info("MorningPlanner initialized")
+        self.chart_generator = ChartGenerator()
+        logger.info("MorningPlanner initialized with ChartGenerator")
 
 
     def analyze_asia_sweep(
@@ -435,6 +443,25 @@ class MorningPlanner:
         logger.info(f"Generating setup for {symbol_name}: {setup_data['strategy']}")
 
         try:
+            # Generate chart for setup
+            chart_url = None
+            chart_snapshot_id = None
+
+            try:
+                logger.info(f"Generating chart for setup: {symbol_name}...")
+                snapshot = self.chart_generator.generate_chart(
+                    symbol_id=str(symbol_id),
+                    timeframe='1h',  # 1h for intraday setups
+                    trigger_type='setup'
+                )
+                chart_url = snapshot['chart_url']
+                chart_snapshot_id = snapshot.get('snapshot_id')
+                logger.info(f"📊 Setup chart generated: {chart_url}")
+
+            except (RateLimitError, ChartGenerationError, SymbolNotFoundError) as e:
+                logger.warning(f"Chart generation failed for setup: {e}")
+                # Continue without chart - setup is still valid
+
             # Prepare setup record for database insertion
             setup_record = {
                 "user_id": str(user_id) if user_id else None,
@@ -447,7 +474,11 @@ class MorningPlanner:
                 "take_profit": float(setup_data["take_profit"]),
                 "confidence": setup_data["confidence"],
                 "status": "pending",
-                "payload": setup_data  # Full JSON details including metadata
+                "payload": {
+                    **setup_data,  # Full JSON details including metadata
+                    "chart_url": chart_url,
+                    "chart_snapshot_id": chart_snapshot_id
+                }
             }
 
             # Insert into setups table

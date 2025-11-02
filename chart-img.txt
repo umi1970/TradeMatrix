@@ -1,0 +1,233 @@
+Pricing Plans
+14 days money back guarantee
+
+MEGA	$10/month	REST API	Daily Limit 1,000	Rate Limit 15/sec	Watermark:No Max Parameter 10	Max Resolution	1920 × 1600
+
+
+Chart-img-API-KEY=3pJTrvapkk9LQ7FwaUOmf6I354fSOeWa8VJifI2l
+
+
+
+
+https://doc.chart-img.com/#introduction
+Base API Endpoint 🔗
+https://api.chart-img.com
+Authentication 🔒
+API v1
+For authenticated requests, a personal API key must be included using one of two methods:
+
+Header Authorization: Bearer YOUR_API_KEY
+Query Parameter: ?key=YOUR_API_KEY
+API v2
+For authenticated requests, a personal API key must be included in the header.
+
+Header x-api-key: YOUR_API_KEY
+API v3
+For authenticated requests, a personal API key must be included in the POST request header x-api-key. For GET requests, the API key can be included in either the request header or as a query parameter named key.
+
+POST/GET Header x-api-key: YOUR_API_KEY
+GET Query Parameter: ?key=YOUR_API_KEY
+Request Limit ⚠️
+All requests follow typical HTTP response status codes for success, failure, and error.
+
+Rate Limit
+The API rate limit is dependent on your plan. If you need a higher request limit and customizations, please contact us for an Enterprise plan.
+
+Plan	req/sec	Burst	Daily max
+BASIC	1	3	50
+PRO	10	15	500
+MEGA	15	25	1,000
+ULTRA	35	50	3,000
+ENTERPRISE	35+	50+	5,000+
+A burst allows an API to temporarily exceed its request rate limit for a short period.
+
+Resolution Limit
+The maximum chart image size is dependent on your plan.
+
+Plan	Max width	Max height	Watermark	Custom Watermark
+BASIC	800	600	Yes	No
+PRO	1920	1080	No	No
+MEGA	1920	1600	No	No
+ULTRA	2048	1920	No	Yes
+ENTERPRISE	2048	1920	No	Yes
+Storage Limit
+The chart image saved in public storage will expire based on your plan.
+
+Plan	Expire days
+BASIC	14
+PRO	30
+MEGA	60
+ULTRA	90
+ENTERPRISE	120
+Parameter Limit
+Starting API v2, the maximum number of parameter objects per request for studies and drawings will depend on your plan.
+
+Plan	Max studies[] + drawings[]
+BASIC	3
+PRO	5
+MEGA	10
+ULTRA	25
+ENTERPRISE	50
+TradingView Symbols
+List of supported TradingView exchange symbols. EXCHANGE:SYMBOL
+
+❌ Chart is not available.
+✔️ Full & real-time chart is available.
+Delayed Full chart is available but may be delayed by a few minutes.
+Limited Chart interval availability is limited.
+Crypto Currency
+Please refer to API v3 Exchange List and Exchange Symbols endpoint to retrieve the latest updates.
+Name	API v1/v2	Example
+Binance	✔️	BINANCE:BTCUSDT
+Binance US	✔️	BINANCEUS:BTCUSD
+BingX	✔️	BINGX:BTCUSDT
+Biswap (BNB chain)	✔️	BISWAP:BFGUSDT_E06259
+Bitfinex	✔️	BITFINEX:BTCUSD
+bitFlyer	✔️	BITFLYER:BTCJPY
+Bitget	✔️	BITGET:BTCUSDT.P
+Bithumb	✔️	BITHUMB:BTCKRW
+BITKUB	✔️	BITKUB:KUBTHB
+Bitmart	✔️	BITMART:BTCUSDT
+BitMEX	✔️	BITMEX:XBTUSD
+Bitrue	✔️	BITRUE:FLRUSDT
+Bitstamp	✔️	BITSTAMP:BTCUSD
+Bittrex	✔️	BITTREX:DOGEUSD
+Blofin	✔️	BLOFIN:BTCUSDT.P
+Brave New Coin	✔️	BNC:BLX
+BTSE	✔️	BTSE:BTCUSD.P
+Bybit	✔️	BYBIT:BTCUSDT.P
+Coinbase	✔️	COINBASE:BTCUSD
+CoinEx	✔️	COINEX:BTCUSDT
+Delta	✔️	DELTA:BTCUSDT.P
+Derbit	✔️	DERIBIT:BTCUSD.P
+dYdX	✔️	DYDX:ETHUSD
+EXMO	✔️	EXMO:BTCUSD
+Gate.io	✔️	GATEIO:APTUSDT
+Gemini	✔️	GEMINI:BTCUSD
+Honeyswap (Polygon)	✔️	HONEYSWAPPOLYGON:DAIUSDC
+Honeyswap (xDai)	✔️	HONEYSWAP:WXDAIMLN
+HTX	✔️	HTX:BTCUSDT
+Kraken	✔️	KRAKEN:BTCUSD
+KuCoin	✔️	KUCOIN:BTCUSDT
+MEXC Global	✔️	MEXC:BTCUSDT.P
+OKCoin	✔️	OKCOIN:BTCUSD
+OKX	✔️	OKX:BTCUSDT.P
+Osmosis	✔️	OSMOSIS:USDTUSD
+PancakeSwap (BNB chain)	✔️	PANCAKESWAP:XRPCUSD_4314AC
+Pangolin (Avalance)	✔️	PANGOLIN:PNGUSDT.E
+Phemex	✔️	PHEMEX:BTCPERP
+Pionex	✔️	PIONEX:BTCUSDT.P
+Poloniex	✔️	POLONIEX:BTCUSDT
+Pyth	✔️	PYTH:BTCUSD
+QuickSwap (Polygon)	✔️	QUICKSWAP:OHMDAI
+SpookySwap (Fantom)	✔️	SPOOKYSWAP:BTCETH_EC454E
+SushiSwap (Ethereum)	✔️	SUSHISWAP:OHMDAI
+SushiSwap (Polygon)	✔️	SUSHISWAPPOLYGON:GDDYUSDC
+TimeX	✔️	TIMEX:QMALLUSDT
+Trader Joe (Avalanche)	✔️	TRADERJOE:STGUSDC
+TradeStation	✔️	TRADESTATION:BTCUSD
+Uniswap v2 (Ethereum)	✔️	UNISWAP:HEXUSDC
+Uniswap v3 (Arbitrum)	✔️	UNISWAP3ARBITRUM:GMXWETH
+Uniswap v3 (Ethereum)	✔️	UNISWAP3ETH:XENUSDC
+Uniswap v3 (Polygon)	✔️	UNISWAP3POLYGON:GNSDAI
+UpBit	✔️	UPBIT:BTCKRW
+Verse (Ethereum)	✔️	VERSEETH:WBTCUSDC_F3F82B
+Volmex	✔️	VOLMEX:BVIV
+Wagyuswap (Velas)	✔️	WAGYUSWAP:ETHBUSD_63BA88
+WhiteBIT	✔️	WHITEBIT:WBTUSDT
+WOO	✔️	WOONETWORK:WOOUSDT
+xExchange	✔️	XEXCHANGE:ASHUSDC
+Zoomex	✔️	ZOOMEX:BTCUSDT.P
+Name	API v1	API v2	Example
+CRYPTOCAP	✔️	✔️	CRYPTOCAP:TOTAL
+Coin Metrics	❌	Limited	COINMETRICS:BTC_FEEUSD
+Defi Llama	Limited	Limited	DEFILLAMA:SAUCE_TVL
+Glassnode	❌	Limited	GLASSNODE:BUSD_MARKETCAP
+IntoTheBlock	❌	Limited	INTOTHEBLOCK:BTC_HASHRATE
+Last updated: 2024-02-16
+
+Forex & CFD
+Please refer to API v3 Exchange List and Exchange Symbols endpoint to retrieve the latest updates.
+Name	API v1/v2	Example
+ActivTrades	✔️	ACTIVTRADES:EURUSD
+Afterprime	✔️	AFTERPRIME:EURUSD
+BlackBull Markets	✔️	BLACKBULL:EURUSD
+CAPITALCOM	✔️	CAPITALCOM:EURUSD
+City Index	✔️	CITYINDEX:EURUSD
+easyMarkets	✔️	EASYMARKETS:EURUSD
+Eightcap	✔️	EIGHTCAP:EURUSD
+FOREX.com	✔️	FOREXCOM:EURUSD
+FP Markets	✔️	FPMARKETS:EURUSD
+FXCM	✔️	FX:EURUSD
+FXOpen	✔️	FXOPEN:EURUSD
+GBE brokers	✔️	GBEBROKERS:EURUSD
+IC Markets	✔️	ICMARKETS:EURUSD
+ICE	✔️	ICE:EURUSD
+Interactive Brokers	✔️	IBKR:EURUSD
+JFX	✔️	JFX:EURUSD
+OANDA	✔️	OANDA:EURUSD
+Pepperstone	✔️	PEPPERSTONE:EURUSD
+Phillip Nova	✔️	PHILLIPNOVA:EURUSD
+Saxo	✔️	SAXO:EURUSD
+SKILLING	✔️	SKILLING:EURUSD
+Spreadex	✔️	SPREADEX:EURUSD
+Velocity Trade	✔️	VELOCITY:EURUSD
+Last updated: 2024-02-16
+
+Stocks - North America
+Please refer to API v3 Exchange List and Exchange Symbols endpoint to retrieve the latest updates.
+Name	Country	API v1	API v2	Example
+NASDAQ	US	Delayed	✔️	NASDAQ:AAPL
+NYSE	US	Delayed	✔️	NYSE:BABA
+NYSE Arca	US	Delayed	✔️	AMEX:SPY
+OTC	US	Delayed	✔️	OTC:GBTC
+CSE	CA	Limited	✔️	CSE:GTII
+NEO	CA	✔️	✔️	NEO:TSLA
+TSX	CA	Delayed	Delayed	TSX:SHOP
+TSXV	CA	Delayed	Delayed	TSXV:HIVE
+Last updated: 2024-02-16
+
+Stocks - Europe
+Please refer to API v3 Exchange List and Exchange Symbols endpoint to retrieve the latest updates.
+Name	Country	API v1	API v2	Example
+EURONEXT BRUSSELS	BE	❌	Delayed	EURONEXT:SOF
+SIX	CH	Limited	Delayed	SIX:NESN
+BX	CH	✔️	✔️	BX:AAVE
+BER	DE	Limited	✔️	BER:CH2A
+DUS	DE	Limited	✔️	DUS:Q11
+FWB	DE	Limited	Delayed	FWB:BY6
+GETTEX	DE	✔️	✔️	GETTEX:TL0
+HAM	DE	Limited	✔️	HAM:2HP
+HAN	DE	Limited	✔️	HAN:XS4
+MUN	DE	Limited	✔️	MUN:5MVW
+SWB	DE	Delayed	Delayed	SWB:LHA
+TRADEGATE	DE	Delayed	✔️	TRADEGATE:TL0
+XETR	DE	Limited	Delayed	XETR:ADS
+OMXCOP	DK	Delayed	Delayed	OMXCOP:NOVO_B
+OMXTSE	EE	Delayed	Delayed	OMXTSE:EGR1T
+BME	ES	❌	Delayed	BME:SAN
+OMXHEX	FI	Delayed	Delayed	OMXHEX:NOKIA
+EURONEXT PARIS	FR	❌	Delayed	EURONEXT:TTE
+ATHEX	GR	Delayed	Delayed	ATHEX:ALPHA
+LSE	GB	Limited	Delayed	LSE:RR.
+LSIN	GB	Limited	Delayed	LSIN:KAP
+TURQUOISE	GB	Delayed	✔️	TURQUOISE:RNOP
+BET	HU	Delayed	Delayed	BET:OTP
+OMXICE	IS	Delayed	Delayed	OMXICE:ICEAIR
+MIL	IT	Limited	✔️	MIL:JUVE
+OMXVSE	LT	Delayed	Delayed	OMXVSE:SAB1L
+LUXSE	LU	❌	Delayed	LUXSE:LU0006061336
+OMXRSE	LV	Delayed	Delayed	OMXRSE:DGR1R
+EURONEXT AMSTERDAM	NL	❌	Delayed	EURONEXT:ASML
+EURONEXT OSLO	NO	❌	Delayed	OSL:PGS
+GPW	PL	Limited	Delayed	GPW:ALE
+NEWCONNECT	PL	Limited	Delayed	NEWCONNECT:MPY
+EURONEXT LISBON	PT	❌	Delayed	EURONEXT:GALP
+BVB	RO	Delayed	Delayed	BVB:TLV
+BELEX	RS	❌	Limited	BELEX:KRPL
+MOEX	RU	❌	✔️	MOEX:SBER
+NGM	SE	❌	✔️	NGM:ESGR.B
+OMXSTO	SE	Delayed	Delayed	OMXSTO:SBB_B
+BSSE	SK	❌	❌	BSSE:1DRS099E
+BIST	TR	Limited	Delayed	BIST:THYAO
+Last updated: 2024-02-16
