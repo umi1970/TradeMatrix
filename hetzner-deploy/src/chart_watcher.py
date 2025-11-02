@@ -31,8 +31,8 @@ import httpx
 from supabase import Client
 from openai import OpenAI
 
-from chart_generator import ChartGenerator
-from exceptions.chart_errors import (
+from src.chart_generator import ChartGenerator
+from src.exceptions.chart_errors import (
     RateLimitError,
     ChartGenerationError,
     SymbolNotFoundError

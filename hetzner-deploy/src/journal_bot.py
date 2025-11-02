@@ -46,8 +46,8 @@ from langchain.chat_models import ChatOpenAI
 from langchain.prompts import ChatPromptTemplate
 from langchain.chains import LLMChain
 
-from chart_generator import ChartGenerator
-from exceptions.chart_errors import (
+from src.chart_generator import ChartGenerator
+from src.exceptions.chart_errors import (
     RateLimitError,
     ChartGenerationError,
     SymbolNotFoundError
