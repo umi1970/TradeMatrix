@@ -47,6 +47,8 @@ export async function GET(request: Request) {
       `)
       .order('updated_at', { ascending: false })
 
+    console.log(`Price cache query result: ${cacheData?.length || 0} records, error:`, cacheError)
+
     // If price_cache is empty or error, fallback to last EOD close prices
     let marketData: any[] = []
 
@@ -89,6 +91,8 @@ export async function GET(request: Request) {
         .order('trade_date', { ascending: false })
         .limit(50) // Get recent data for all symbols
 
+      console.log(`EOD Levels query result: ${eodLevels?.length || 0} records, error:`, eodError)
+
       if (eodLevels && eodLevels.length > 0) {
         // Group by symbol and get most recent close price for each
         const symbolMap = new Map()
@@ -117,6 +121,8 @@ export async function GET(request: Request) {
         marketData = Array.from(symbolMap.values())
       }
     }
+
+    console.log(`Returning ${marketData.length} market data records`)
 
     return NextResponse.json({
       data: marketData,

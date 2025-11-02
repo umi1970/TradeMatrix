@@ -1,7 +1,6 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { createBrowserClient } from '@/lib/supabase/client'
 import { MarketOverviewCard } from '@/components/dashboard/market-overview-card'
 import { AgentStatusCard } from '@/components/dashboard/agent-status-card'
 import { EODLevelsToday } from '@/components/dashboard/eod-levels-today'
@@ -64,48 +63,18 @@ export default function DashboardPage() {
   const [error, setError] = useState<string | null>(null)
   const [isRefreshing, setIsRefreshing] = useState(false)
 
-  const supabase = createBrowserClient()
-
-  // Fetch market data directly from eod_levels
+  // Fetch market data from API (live prices with EOD fallback)
   const fetchMarketData = async () => {
     try {
       setError(null)
+      const response = await fetch('/api/market-data/current')
 
-      // Fetch from eod_levels (same as EOD widget)
-      const { data, error } = await supabase
-        .from('eod_levels' as any)
-        .select(`
-          *,
-          symbols!inner(
-            symbol,
-            name,
-            is_active
-          )
-        `)
-        .eq('symbols.is_active', true)
-        .order('trade_date', { ascending: false })
-        .limit(100)
+      if (!response.ok) {
+        throw new Error(`Failed to fetch market data: ${response.statusText}`)
+      }
 
-      if (error) throw error
-
-      // Group by symbol and get latest for each
-      const symbolMap = new Map()
-      data?.forEach((item: any) => {
-        const symbol = item.symbols.symbol
-        if (!symbolMap.has(symbol)) {
-          symbolMap.set(symbol, {
-            symbol: symbol,
-            name: item.symbols.name,
-            price: item.yesterday_close ? parseFloat(item.yesterday_close) : null,
-            change: null,
-            changePercent: null,
-            isMarketOpen: false,
-            trend: 'neutral'
-          })
-        }
-      })
-
-      setMarketData(Array.from(symbolMap.values()))
+      const result = await response.json()
+      setMarketData(result.data || [])
     } catch (err: any) {
       console.error('Error fetching market data:', err)
       setError(err.message || 'Failed to load market data')
