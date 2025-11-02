@@ -94,12 +94,12 @@ def check_liquidity_alerts(self):
                 logger.info(f"\n📊 Checking {symbol_name} ({symbol_code})...")
 
                 # 1. Fetch current price
-                price_data = price_fetcher.fetch_realtime_price(symbol_code)
+                price_data = price_fetcher.fetch_price(symbol_code)
                 if not price_data:
                     logger.warning(f"  ⚠️  Could not fetch price for {symbol_name}")
                     continue
 
-                current_price = price_data['price']
+                current_price = price_data['current_price']
                 logger.info(f"  💰 Current price: {current_price}")
 
                 # 2. Check if any alerts were triggered
