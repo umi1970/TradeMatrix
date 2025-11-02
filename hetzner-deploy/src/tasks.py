@@ -95,12 +95,21 @@ def check_liquidity_alerts(self):
 
             for alert in triggered_alerts:
                 try:
-                    success = push_service.send_alert_notification(
+                    # Format notification using context from AlertEngine
+                    context = alert.get('context', {})
+                    title = f"{context.get('emoji', '🔔')} {alert['symbol']} Alert!"
+                    body = f"{context.get('title', 'Level crossed')}: {alert['level_price']} (Current: {alert['current_price']})"
+
+                    success = push_service.send_push_notification(
                         user_id=alert['user_id'],
-                        symbol_name=alert['symbol'],
-                        level_type=alert['level_type'],
-                        target_price=float(alert['level_price']),
-                        current_price=float(alert['current_price'])
+                        title=title,
+                        body=body,
+                        data={
+                            'symbol': alert['symbol'],
+                            'level_type': alert['level_type'],
+                            'level_price': str(alert['level_price']),
+                            'current_price': str(alert['current_price']),
+                        }
                     )
 
                     if success:
