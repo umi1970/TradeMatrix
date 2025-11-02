@@ -7,7 +7,7 @@ FastAPI Endpoints für die chart-img.com Integration. Diese Endpoints ermöglich
 ## Base URL
 
 **Local Development**: `http://localhost:8000`
-**Production (Hetzner)**: `http://135.191.195.241:8000`
+**Production (Hetzner)**: `http://135.181.195.241:8000`
 
 ## Authentication
 

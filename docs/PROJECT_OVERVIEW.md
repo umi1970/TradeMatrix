@@ -182,7 +182,7 @@ TradeMatrix/
 - [x] **Liquidity Alert Engine** - Real-time price monitoring every 60 seconds
 - [x] **Browser Push Notifications** - VAPID keys configured, Web Push API
 - [x] **Hetzner Production Deployment** - CX11 server running 24/7
-  - Server: 135.191.195.241 (2 vCPU, 4GB RAM, 40GB SSD)
+  - Server: 135.181.195.241 (2 vCPU, 4GB RAM, 40GB SSD)
   - Services: Redis 7-alpine, Celery Worker, Celery Beat
   - Repository: `hetzner-deploy/` (Docker Compose)
   - Latest commit: 6f952fb (JSON serialization fix)

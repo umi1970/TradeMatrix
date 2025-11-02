@@ -237,7 +237,7 @@ python3 monitor_dashboard.py
 
 ```bash
 # SSH to server
-ssh root@135.191.195.241
+ssh root@135.181.195.241
 
 # Navigate to project
 cd /root/tradematrix-agents
@@ -277,7 +277,7 @@ watch -n 300 ./health_check.sh  # Every 5 minutes
 
 - **Provider:** Hetzner Cloud
 - **Plan:** CX11 (2 vCPU, 4GB RAM, 40GB SSD)
-- **IP:** 135.191.195.241
+- **IP:** 135.181.195.241
 - **OS:** Ubuntu (latest)
 - **Location:** `/root/tradematrix-agents`
 
@@ -339,7 +339,7 @@ reportlab>=4.0.0     # NEW
 
 2. **Update .env on Server**
    ```bash
-   ssh root@135.191.195.241
+   ssh root@135.181.195.241
    cd /root/tradematrix-agents
    nano .env
    # Add: CHART_IMG_API_KEY=...

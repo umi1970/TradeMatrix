@@ -5,7 +5,7 @@
 Deployment der chart-img.com Integration auf Hetzner Production Server (CX11).
 
 **Server Details**:
-- IP: 135.191.195.241
+- IP: 135.181.195.241
 - CPU: 2 vCPU
 - RAM: 4 GB
 - Storage: 40 GB SSD
@@ -53,7 +53,7 @@ CHART_CACHE_TTL=3600  # 1 hour in seconds
 
 ```bash
 # SSH into Hetzner server
-ssh root@135.191.195.241
+ssh root@135.181.195.241
 
 # Navigate to deployment directory
 cd /root/tradematrix-agents
@@ -244,7 +244,7 @@ WHERE tablename IN ('market_symbols', 'chart_snapshots');
 
 ```bash
 # SSH into server
-ssh root@135.191.195.241
+ssh root@135.181.195.241
 
 # Navigate to deployment directory
 cd /root/tradematrix-agents
@@ -355,7 +355,7 @@ volumes:
 
 ```bash
 # SSH into server
-ssh root@135.191.195.241
+ssh root@135.181.195.241
 
 # Navigate to deployment directory
 cd /root/tradematrix-agents
@@ -475,7 +475,7 @@ git push origin main
 
 ```bash
 # SSH into server
-ssh root@135.191.195.241
+ssh root@135.181.195.241
 
 # Trigger ChartWatcher task manually
 docker-compose exec celery-worker celery -A src.tasks call chart_watcher.analyze_all_symbols
@@ -687,4 +687,4 @@ DEL chart_api:daily:2025-11-02
 
 **Last Updated**: 2025-11-02
 **Deployment Status**: Ready for production
-**Server**: Hetzner CX11 (135.191.195.241)
+**Server**: Hetzner CX11 (135.181.195.241)

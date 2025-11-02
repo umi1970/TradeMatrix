@@ -344,7 +344,7 @@ python example_chart_usage.py
 
 ```bash
 # SSH to server
-ssh root@135.191.195.241
+ssh root@135.181.195.241
 
 # Navigate to deployment directory
 cd /root/tradematrix

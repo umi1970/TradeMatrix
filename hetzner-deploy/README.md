@@ -2,7 +2,7 @@
 
 Complete deployment system for TradeMatrix on Hetzner CX11 server.
 
-**Server:** 135.191.195.241
+**Server:** 135.181.195.241
 **Services:** Redis, Celery Worker, Celery Beat
 **Location:** `/root/tradematrix-agents`
 
@@ -48,7 +48,7 @@ hetzner-deploy/
 
 ```bash
 # 1. SSH to Hetzner server
-ssh root@135.191.195.241
+ssh root@135.181.195.241
 
 # 2. Navigate to project
 cd /root/tradematrix-agents
@@ -576,4 +576,4 @@ python3 monitor_dashboard.py
 **Deployment System Version:** 1.0
 **Last Updated:** 2025-11-02
 **Maintainer:** umi1970
-**Server:** Hetzner CX11 (135.191.195.241)
+**Server:** Hetzner CX11 (135.181.195.241)

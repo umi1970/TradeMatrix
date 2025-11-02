@@ -1,6 +1,6 @@
 # TradeMatrix Hetzner Deployment Guide
 
-**Server:** 135.191.195.241 (Hetzner CX11)
+**Server:** 135.181.195.241 (Hetzner CX11)
 **Services:** Redis, Celery Worker, Celery Beat
 **Repository:** `/root/tradematrix-agents`
 
@@ -31,7 +31,7 @@ Before deploying, ensure all of the following are completed:
 
 ```bash
 # SSH to Hetzner
-ssh root@135.191.195.241
+ssh root@135.181.195.241
 
 # Navigate to project
 cd /root/tradematrix-agents
@@ -58,7 +58,7 @@ The script will:
 ### Step 1: SSH to Server
 
 ```bash
-ssh root@135.191.195.241
+ssh root@135.181.195.241
 ```
 
 ### Step 2: Navigate to Project

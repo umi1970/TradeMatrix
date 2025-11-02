@@ -2,7 +2,7 @@
 
 One-page reference for common deployment operations.
 
-**Server:** 135.191.195.241 | **Location:** `/root/tradematrix-agents`
+**Server:** 135.181.195.241 | **Location:** `/root/tradematrix-agents`
 
 ---
 

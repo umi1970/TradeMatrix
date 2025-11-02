@@ -2,7 +2,7 @@
 
 This checklist ensures all TradeMatrix services are working correctly after deployment.
 
-**Server:** 135.191.195.241 (Hetzner CX11)
+**Server:** 135.181.195.241 (Hetzner CX11)
 **Date:** _______________
 **Deployed By:** _______________
 **Git Commit:** _______________
@@ -13,7 +13,7 @@ This checklist ensures all TradeMatrix services are working correctly after depl
 
 ```bash
 # SSH to server
-ssh root@135.191.195.241
+ssh root@135.181.195.241
 
 # Navigate to project
 cd /root/tradematrix-agents

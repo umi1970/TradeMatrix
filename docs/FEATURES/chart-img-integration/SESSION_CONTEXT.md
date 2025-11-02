@@ -38,7 +38,7 @@ SELECT COUNT(*) FROM chart_snapshots;
 
 ```bash
 # SSH into Hetzner server
-ssh root@135.191.195.241
+ssh root@135.181.195.241
 
 # Check if ChartService exists
 ls -la /root/tradematrix-agents/src/chart_service.py
@@ -309,7 +309,7 @@ SELECT cleanup_expired_chart_snapshots();
 
 ```bash
 # SSH into server
-ssh root@135.191.195.241
+ssh root@135.181.195.241
 cd /root/tradematrix-agents
 
 # Check logs

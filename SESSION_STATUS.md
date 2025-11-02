@@ -7,7 +7,7 @@
 
 ## PRODUCTION DEPLOYMENT
 
-### Hetzner Cloud Server (IP: 135.191.195.241)
+### Hetzner Cloud Server (IP: 135.181.195.241)
 - **Specs:** CX11 (2 vCPU, 4GB RAM, 40GB SSD)
 - **Services Running:**
   - Redis 7-alpine (Docker)

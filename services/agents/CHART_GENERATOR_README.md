@@ -368,7 +368,7 @@ test_api_error_500 PASSED
 
 ### Hetzner (Production)
 
-The service is deployed on Hetzner CX11 server (135.191.195.241).
+The service is deployed on Hetzner CX11 server (135.181.195.241).
 
 **Docker Compose Services:**
 - `redis` - Redis 7-alpine
@@ -379,19 +379,19 @@ The service is deployed on Hetzner CX11 server (135.191.195.241).
 
 1. Copy files to Hetzner:
 ```bash
-scp hetzner-deploy/src/chart_generator.py root@135.191.195.241:/root/tradematrix/src/
-scp hetzner-deploy/src/config/chart_img.py root@135.191.195.241:/root/tradematrix/src/config/
-scp hetzner-deploy/src/exceptions/chart_errors.py root@135.191.195.241:/root/tradematrix/src/exceptions/
+scp hetzner-deploy/src/chart_generator.py root@135.181.195.241:/root/tradematrix/src/
+scp hetzner-deploy/src/config/chart_img.py root@135.181.195.241:/root/tradematrix/src/config/
+scp hetzner-deploy/src/exceptions/chart_errors.py root@135.181.195.241:/root/tradematrix/src/exceptions/
 ```
 
 2. Update requirements.txt:
 ```bash
-scp hetzner-deploy/requirements.txt root@135.191.195.241:/root/tradematrix/
+scp hetzner-deploy/requirements.txt root@135.181.195.241:/root/tradematrix/
 ```
 
 3. Rebuild and restart:
 ```bash
-ssh root@135.191.195.241
+ssh root@135.181.195.241
 cd /root/tradematrix
 docker-compose down
 docker-compose build

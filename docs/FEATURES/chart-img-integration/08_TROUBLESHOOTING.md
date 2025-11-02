@@ -21,7 +21,7 @@ Exception: Rate limit exceeded
 **Check Current Usage**:
 ```bash
 # SSH into server
-ssh root@135.191.195.241
+ssh root@135.181.195.241
 
 # Check Redis counter
 docker-compose exec redis redis-cli GET chart_api:daily:$(date +%Y-%m-%d)

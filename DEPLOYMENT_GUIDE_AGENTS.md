@@ -8,7 +8,7 @@ This guide covers deploying the newly integrated AI agents with ChartGenerator t
 
 ## Prerequisites
 
-- [x] Hetzner server running (135.191.195.241)
+- [x] Hetzner server running (135.181.195.241)
 - [x] Docker and Docker Compose installed
 - [x] Redis container running
 - [x] Environment variables configured
@@ -21,7 +21,7 @@ This guide covers deploying the newly integrated AI agents with ChartGenerator t
 SSH into Hetzner server and update `.env` file:
 
 ```bash
-ssh root@135.191.195.241
+ssh root@135.181.195.241
 cd /root/tradematrix-agents
 
 # Add ChartGenerator API key
@@ -81,10 +81,10 @@ git pull origin main
 
 ```bash
 # On local machine
-scp hetzner-deploy/src/chart_watcher.py root@135.191.195.241:/root/tradematrix-agents/src/
-scp hetzner-deploy/src/morning_planner.py root@135.191.195.241:/root/tradematrix-agents/src/
-scp hetzner-deploy/src/journal_bot.py root@135.191.195.241:/root/tradematrix-agents/src/
-scp hetzner-deploy/src/tasks.py root@135.191.195.241:/root/tradematrix-agents/src/
+scp hetzner-deploy/src/chart_watcher.py root@135.181.195.241:/root/tradematrix-agents/src/
+scp hetzner-deploy/src/morning_planner.py root@135.181.195.241:/root/tradematrix-agents/src/
+scp hetzner-deploy/src/journal_bot.py root@135.181.195.241:/root/tradematrix-agents/src/
+scp hetzner-deploy/src/tasks.py root@135.181.195.241:/root/tradematrix-agents/src/
 ```
 
 ---

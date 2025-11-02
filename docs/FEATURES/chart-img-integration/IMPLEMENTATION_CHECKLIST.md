@@ -340,7 +340,7 @@
 
 ### 6.3 Code Deployment (Hetzner)
 
-- [ ] SSH into server: `ssh root@135.191.195.241`
+- [ ] SSH into server: `ssh root@135.181.195.241`
 - [ ] Navigate to: `cd /root/tradematrix-agents`
 - [ ] Create `src/chart_service.py` (copy from local)
 - [ ] Update `src/chart_watcher.py` (fix lines 554-560)

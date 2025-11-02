@@ -333,7 +333,7 @@ docker-compose exec celery_beat celery -A src.tasks inspect scheduled
 
 ## Server Information
 
-- **IP:** 135.191.195.241
+- **IP:** 135.181.195.241
 - **OS:** Ubuntu (Hetzner CX11)
 - **Resources:** 2 vCores, 4GB RAM
 - **Docker:** 28.5.1

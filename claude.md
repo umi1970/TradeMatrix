@@ -135,7 +135,7 @@
 - [x] **Liquidity Alert Engine** - Real-time Price Monitoring every 60s
 - [x] **Browser Push Notifications** - VAPID Keys configured, Web Push API
 - [x] **Hetzner Production Deployment** - CX11 Server running 24/7 ⭐
-  - Server: 135.191.195.241 (2 vCPU, 4GB RAM, 40GB SSD)
+  - Server: 135.181.195.241 (2 vCPU, 4GB RAM, 40GB SSD)
   - Services: Redis 7-alpine, Celery Worker, Celery Beat
   - Repository: `hetzner-deploy/` (Docker Compose)
   - Latest Commit: 6f952fb (JSON serialization fix)

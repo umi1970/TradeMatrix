@@ -100,7 +100,7 @@ Phase 1: Foundation (Infrastructure & Auth) ✅ COMPLETED
 - [x] **Dashboard UI** - 8 widgets (EOD Levels, Market Sentiment, Trade Performance, etc.)
 - [x] **Liquidity Alert System** - Real-time price monitoring every 60s
 - [x] **Browser Push Notifications** - VAPID keys configured
-- [x] **Hetzner Production Deployment** - CX11 server (IP: 135.191.195.241)
+- [x] **Hetzner Production Deployment** - CX11 server (IP: 135.181.195.241)
 - [x] **Celery Workers** - Running 24/7 (Redis + Celery Beat + Worker)
 - [ ] Stripe integration (webhooks)
 - [ ] Subscription management
@@ -377,7 +377,7 @@ Phase 1: Foundation (Infrastructure & Auth) ✅ COMPLETED
 **✅ PHASE 5A: LIQUIDITY ALERT SYSTEM - DEPLOYED (Nov 2025)**
 
 **Hetzner Production Deployment:**
-- Server: CX11 (IP: 135.191.195.241, 2 vCPU, 4GB RAM, 40GB SSD)
+- Server: CX11 (IP: 135.181.195.241, 2 vCPU, 4GB RAM, 40GB SSD)
 - Services: Redis 7-alpine, Celery Worker, Celery Beat
 - Status: Running 24/7, monitoring 5 symbols every 60 seconds
 - Repository: `hetzner-deploy/` folder (Docker Compose setup)

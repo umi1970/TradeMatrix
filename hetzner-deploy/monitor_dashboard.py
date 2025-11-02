@@ -251,7 +251,7 @@ class MonitoringDashboard:
 
         # System Info
         print_header("6. System Information")
-        print(f"  Server: Hetzner CX11 (135.191.195.241)")
+        print(f"  Server: Hetzner CX11 (135.181.195.241)")
         print(f"  Services: Redis, Celery Worker, Celery Beat")
         print(f"  Repository: /root/tradematrix-agents")
 
