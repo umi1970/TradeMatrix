@@ -22,6 +22,7 @@ The public key should also be added to your frontend service worker registration
 
 import os
 import json
+import base64
 from typing import Dict, List, Optional
 from pywebpush import webpush, WebPushException
 from supabase import create_client, Client
@@ -40,8 +41,21 @@ class PushNotificationService:
         )
 
         # VAPID keys for Web Push
-        self.vapid_private_key = os.getenv('VAPID_PRIVATE_KEY')
-        self.vapid_public_key = os.getenv('VAPID_PUBLIC_KEY')
+        # Keys may be base64-encoded PEM files (from .env) - decode them
+        vapid_private_raw = os.getenv('VAPID_PRIVATE_KEY')
+        vapid_public_raw = os.getenv('VAPID_PUBLIC_KEY')
+
+        # Decode base64-encoded PEM if needed (starts with "LS0tLS1" = "-----BEGIN" in base64)
+        if vapid_private_raw and vapid_private_raw.startswith('LS0tLS1'):
+            self.vapid_private_key = base64.b64decode(vapid_private_raw).decode('utf-8')
+        else:
+            self.vapid_private_key = vapid_private_raw
+
+        if vapid_public_raw and vapid_public_raw.startswith('LS0tLS1'):
+            self.vapid_public_key = base64.b64decode(vapid_public_raw).decode('utf-8')
+        else:
+            self.vapid_public_key = vapid_public_raw
+
         self.vapid_claims = {
             "sub": os.getenv('VAPID_SUBJECT', 'mailto:info@tradematrix.ai')
         }
