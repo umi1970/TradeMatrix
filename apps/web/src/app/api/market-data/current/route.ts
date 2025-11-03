@@ -88,7 +88,7 @@ export async function GET(request: Request) {
     const cacheMap = new Map()
     cacheData?.forEach((item: any) => {
       cacheMap.set(item.symbol_id, {
-        price: item.price ? parseFloat(item.price) : null,
+        price: item.current_price ? parseFloat(item.current_price) : null,
         updated_at: item.updated_at
       })
     })
