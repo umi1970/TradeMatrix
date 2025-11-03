@@ -1,12 +1,18 @@
 #!/usr/bin/env python3
 """
 Realtime Price Fetcher for Liquidity Alert System
-Fetches prices from Finnhub (indices) and Alpha Vantage (forex)
+Fetches prices from Twelvedata API (Grow Plan)
+
+Twelvedata Grow Plan:
+- 55 API calls/minute
+- No daily limits
+- Real-time data for stocks, forex, indices
+- 8 WebSocket connections available
 """
 
 import os
 import requests
-from typing import Dict, Optional, Literal
+from typing import Dict, Optional
 from decimal import Decimal
 from datetime import datetime
 from supabase import create_client, Client
@@ -16,100 +22,108 @@ load_dotenv()
 
 
 class PriceFetcher:
-    """Fetch realtime prices from Finnhub and Alpha Vantage"""
+    """Fetch realtime prices from Twelvedata API"""
 
     def __init__(self):
-        self.finnhub_api_key = os.getenv('FINNHUB_API_KEY')
-        self.alpha_vantage_api_key = os.getenv('ALPHA_VANTAGE_API_KEY')
+        self.twelvedata_api_key = os.getenv('TWELVEDATA_API_KEY')
         self.supabase: Client = create_client(
             os.getenv('SUPABASE_URL'),
             os.getenv('SUPABASE_SERVICE_KEY')
         )
 
-        # Symbol mapping
-        # Note: Finnhub uses ^ prefix for indices (^GDAXI, ^NDX, ^DJI)
+        if not self.twelvedata_api_key:
+            raise ValueError("TWELVEDATA_API_KEY not set in environment")
+
+        # Symbol mapping for Twelvedata
+        # Twelvedata uses different ticker formats than Finnhub
         self.symbol_config = {
-            '^GDAXI': {'type': 'index', 'api': 'finnhub', 'ticker': '^GDAXI'},
-            '^NDX': {'type': 'index', 'api': 'finnhub', 'ticker': '^NDX'},
-            '^DJI': {'type': 'index', 'api': 'finnhub', 'ticker': '^DJI'},
-            'EURUSD': {'type': 'forex', 'api': 'alpha_vantage', 'pair': 'EUR/USD'},
-            'EURGBP': {'type': 'forex', 'api': 'alpha_vantage', 'pair': 'EUR/GBP'},
+            '^GDAXI': {'ticker': 'DAX', 'exchange': 'XETR'},  # DAX (Frankfurt)
+            '^NDX': {'ticker': 'NDX', 'exchange': 'NASDAQ'},   # NASDAQ 100
+            '^DJI': {'ticker': 'DJI', 'exchange': 'NYSE'},     # Dow Jones
+            'EURUSD': {'ticker': 'EUR/USD', 'exchange': 'Forex'},  # EUR/USD
+            'EURGBP': {'ticker': 'EUR/GBP', 'exchange': 'Forex'},  # EUR/GBP
         }
 
-    def fetch_finnhub_quote(self, ticker: str) -> Optional[Dict]:
-        """Fetch quote from Finnhub API"""
-        url = f"https://finnhub.io/api/v1/quote?symbol={ticker}&token={self.finnhub_api_key}"
+    def fetch_twelvedata_quote(self, symbol: str, exchange: str) -> Optional[Dict]:
+        """
+        Fetch real-time quote from Twelvedata API
+
+        Args:
+            symbol: Ticker symbol (e.g., 'DAX', 'EUR/USD')
+            exchange: Exchange name (e.g., 'XETR', 'Forex')
+
+        Returns:
+            Dict with price data or None if failed
+        """
+        # Twelvedata Quote endpoint
+        url = "https://api.twelvedata.com/quote"
+
+        params = {
+            'symbol': symbol,
+            'apikey': self.twelvedata_api_key,
+        }
+
+        # Add exchange for non-forex symbols
+        if exchange != 'Forex':
+            params['exchange'] = exchange
 
         try:
-            response = requests.get(url, timeout=10)
+            response = requests.get(url, params=params, timeout=10)
             response.raise_for_status()
             data = response.json()
 
-            if data.get('c'):  # Current price exists
+            # Check for API errors
+            if 'code' in data:
+                print(f"❌ Twelvedata API error for {symbol}: {data.get('message', 'Unknown error')}")
+                return None
+
+            # Extract price data
+            if 'close' in data:
                 return {
-                    'current_price': Decimal(str(data['c'])),
-                    'high_today': Decimal(str(data['h'])),
-                    'low_today': Decimal(str(data['l'])),
-                    'open_today': Decimal(str(data['o'])),
-                    'volume_today': None,  # Finnhub doesn't provide volume in quote
-                    'data_source': 'finnhub',
+                    'current_price': Decimal(str(data['close'])),
+                    'high_today': Decimal(str(data.get('high', data['close']))),
+                    'low_today': Decimal(str(data.get('low', data['close']))),
+                    'open_today': Decimal(str(data.get('open', data['close']))),
+                    'volume_today': int(data.get('volume', 0)) if data.get('volume') else None,
+                    'data_source': 'twelvedata',
+                    'change': Decimal(str(data.get('change', 0))),
+                    'change_percent': Decimal(str(data.get('percent_change', 0))),
+                    'previous_close': Decimal(str(data.get('previous_close', data['close']))),
                 }
+
+            print(f"⚠️  No price data returned for {symbol}")
             return None
 
+        except requests.exceptions.RequestException as e:
+            print(f"❌ Twelvedata network error for {symbol}: {e}")
+            return None
+        except (ValueError, KeyError) as e:
+            print(f"❌ Twelvedata parsing error for {symbol}: {e}")
+            return None
         except Exception as e:
-            print(f"❌ Finnhub error for {ticker}: {e}")
-            return None
-
-    def fetch_alpha_vantage_quote(self, pair: str) -> Optional[Dict]:
-        """Fetch forex quote from Alpha Vantage API"""
-        # Alpha Vantage expects format: EUR/USD → FROM=EUR, TO=USD
-        from_currency, to_currency = pair.split('/')
-
-        url = (
-            f"https://www.alphavantage.co/query"
-            f"?function=CURRENCY_EXCHANGE_RATE"
-            f"&from_currency={from_currency}"
-            f"&to_currency={to_currency}"
-            f"&apikey={self.alpha_vantage_api_key}"
-        )
-
-        try:
-            response = requests.get(url, timeout=10)
-            response.raise_for_status()
-            data = response.json()
-
-            rate_data = data.get('Realtime Currency Exchange Rate')
-            if rate_data:
-                return {
-                    'current_price': Decimal(rate_data['5. Exchange Rate']),
-                    'high_today': Decimal(rate_data.get('2. High', rate_data['5. Exchange Rate'])),
-                    'low_today': Decimal(rate_data.get('3. Low', rate_data['5. Exchange Rate'])),
-                    'open_today': Decimal(rate_data.get('1. Open', rate_data['5. Exchange Rate'])),
-                    'volume_today': None,
-                    'data_source': 'alpha_vantage',
-                }
-            return None
-
-        except Exception as e:
-            print(f"❌ Alpha Vantage error for {pair}: {e}")
+            print(f"❌ Unexpected error fetching {symbol}: {e}")
             return None
 
     def fetch_price(self, symbol: str) -> Optional[Dict]:
         """
         Fetch realtime price for a symbol
-        Routes to correct API based on symbol type
+        Maps internal symbol to Twelvedata ticker format
+
+        Args:
+            symbol: Internal symbol (e.g., '^GDAXI', 'EURUSD')
+
+        Returns:
+            Dict with price data or None if failed
         """
         config = self.symbol_config.get(symbol)
         if not config:
             print(f"⚠️  Unknown symbol: {symbol}")
             return None
 
-        if config['api'] == 'finnhub':
-            return self.fetch_finnhub_quote(config['ticker'])
-        elif config['api'] == 'alpha_vantage':
-            return self.fetch_alpha_vantage_quote(config['pair'])
-
-        return None
+        return self.fetch_twelvedata_quote(
+            symbol=config['ticker'],
+            exchange=config['exchange']
+        )
 
     def get_symbol_id(self, symbol: str) -> Optional[str]:
         """Get symbol UUID from database"""
@@ -148,45 +162,53 @@ class PriceFetcher:
             }
 
             # Upsert (insert or update)
-            self.supabase.table('price_cache')\
+            response = self.supabase.table('price_cache')\
                 .upsert(cache_record, on_conflict='symbol_id')\
                 .execute()
 
             return True
 
         except Exception as e:
-            print(f"❌ Error updating price cache for {symbol}: {e}")
+            print(f"❌ Database error updating price cache for {symbol}: {e}")
             return False
 
-    def fetch_all_prices(self) -> Dict[str, Dict]:
+    def fetch_all_prices(self) -> Dict[str, Optional[Dict]]:
         """
-        Fetch prices for all symbols and update cache
-        Returns dict of symbol -> price_data
+        Fetch prices for all configured symbols
+
+        Returns:
+            Dict mapping symbol to price data
         """
         results = {}
 
         for symbol in self.symbol_config.keys():
-            print(f"📊 Fetching {symbol}...", end=' ')
-
+            print(f"📊 Fetching {symbol}...")
             price_data = self.fetch_price(symbol)
+
             if price_data:
-                success = self.update_price_cache(symbol, price_data)
-                if success:
+                # Update cache in database
+                if self.update_price_cache(symbol, price_data):
                     results[symbol] = price_data
-                    print(f"✅ {price_data['current_price']} ({price_data['data_source']})")
+                    print(f"  ✓ {symbol}: ${price_data['current_price']}")
                 else:
-                    print(f"❌ Failed to update cache")
+                    results[symbol] = None
+                    print(f"  ❌ Failed to update cache")
             else:
-                print(f"❌ Failed to fetch price")
+                results[symbol] = None
+                print(f"  ❌ Failed to fetch price")
 
         return results
 
 
-# Usage example
-if __name__ == "__main__":
-    fetcher = PriceFetcher()
-    prices = fetcher.fetch_all_prices()
+# CLI for testing
+if __name__ == '__main__':
+    print("=" * 70)
+    print("🔄 Testing Twelvedata Price Fetcher")
+    print("=" * 70)
 
-    print(f"\n📊 Fetched {len(prices)}/{len(fetcher.symbol_config)} prices")
-    for symbol, data in prices.items():
-        print(f"  {symbol}: {data['current_price']}")
+    fetcher = PriceFetcher()
+    results = fetcher.fetch_all_prices()
+
+    print("\n" + "=" * 70)
+    print(f"✅ Fetched {len([r for r in results.values() if r])} / {len(results)} symbols")
+    print("=" * 70)
