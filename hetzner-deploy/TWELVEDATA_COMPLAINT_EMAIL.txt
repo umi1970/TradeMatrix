@@ -1,0 +1,84 @@
+Subject: Grow Plan - Indices Listed but Not Available via Quote API (Refund Request)
+
+Dear Twelvedata Support Team,
+
+I am writing to report a critical issue with my Grow Plan subscription ($29/month).
+
+PROBLEM:
+Several major indices are listed in your /indices endpoint but return 404 errors when attempting to fetch quotes via /quote endpoint.
+
+TECHNICAL DETAILS:
+
+1. DAX Performance Index (GDAXI):
+   - Listed in /indices endpoint: ✅
+     Symbol: GDAXI
+     Exchange: XETR
+     Country: Germany
+
+   - Quote API Response: ❌ 404 Error
+     Endpoint: /quote?symbol=GDAXI&exchange=XETR&apikey=XXX
+     Error: "symbol or figi parameter is missing or invalid"
+
+2. NASDAQ 100 & Dow Jones Industrial Average:
+   - NOT listed in /indices endpoint at all
+   - Total indices in response: 1,353
+   - US indices: 0
+
+EXPECTED BEHAVIOR:
+Major indices like DAX, NASDAQ 100, and Dow Jones should be:
+1. Listed in the /indices endpoint
+2. Available for quote retrieval via /quote endpoint
+3. Included in the Grow Plan as advertised
+
+BUSINESS IMPACT:
+I subscribed to the Grow Plan specifically to track these major market indices for my SaaS application (TradeMatrix.ai). Without access to these indices, the plan does not meet the advertised functionality.
+
+REQUESTED ACTIONS:
+
+Option 1 (Preferred):
+- Enable DAX (GDAXI/XETR), NASDAQ 100, and Dow Jones for quote retrieval on my Grow Plan account
+- Confirm which plan tier includes these indices if Grow Plan doesn't support them
+
+Option 2:
+- Full refund of my Grow Plan subscription ($29)
+- Cancel subscription immediately
+
+ACCOUNT DETAILS:
+- Plan: Grow Plan ($29/month)
+- API Key: c25b65a4f77c488ca9b318faf5b21ef7
+- Subscription Date: [Your subscription date]
+
+Please respond within 48 hours with:
+1. Confirmation of whether Grow Plan supports these indices
+2. If not, which plan tier does
+3. Refund timeline if indices are not available
+
+I would prefer to continue using Twelvedata if these indices can be made available, but I require a prompt resolution.
+
+Thank you for your immediate attention to this matter.
+
+Best regards,
+[Your Name]
+[Your Company: TradeMatrix.ai]
+[Your Email]
+
+---
+
+SUPPORTING DATA (for your reference):
+
+/indices Response (DAX found):
+{
+  "symbol": "GDAXI",
+  "name": "DAX PERFORMANCE-INDEX",
+  "country": "Germany",
+  "currency": "EUR",
+  "exchange": "XETR",
+  "mic_code": "XETR"
+}
+
+/quote Response (404 Error):
+{
+  "code": 404,
+  "message": "**symbol** or **figi** parameter is missing or invalid",
+  "status": "error"
+}
