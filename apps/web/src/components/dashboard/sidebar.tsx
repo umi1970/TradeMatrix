@@ -13,7 +13,6 @@ import {
   FileText,
   User,
   Menu,
-  Database,
   Settings,
 } from 'lucide-react'
 
@@ -37,11 +36,6 @@ const navigation = [
     name: 'Symbols',
     href: '/dashboard/symbols',
     icon: Settings,
-  },
-  {
-    name: 'EOD Data',
-    href: '/dashboard/eod',
-    icon: Database,
   },
   {
     name: 'Reports',

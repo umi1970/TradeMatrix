@@ -376,6 +376,7 @@ export interface Database {
           name: string
           asset_type: string
           exchange: string | null
+          tv_symbol: string | null
           is_active: boolean
           created_at: string
           updated_at: string
@@ -386,6 +387,7 @@ export interface Database {
           name: string
           asset_type: string
           exchange?: string | null
+          tv_symbol?: string | null
           is_active?: boolean
           created_at?: string
           updated_at?: string
@@ -396,11 +398,52 @@ export interface Database {
           name?: string
           asset_type?: string
           exchange?: string | null
+          tv_symbol?: string | null
           is_active?: boolean
           created_at?: string
           updated_at?: string
         }
         Relationships: []
+      }
+      user_watchlist: {
+        Row: {
+          id: string
+          user_id: string
+          symbol_id: string
+          position: number
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          symbol_id: string
+          position: number
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          symbol_id?: string
+          position?: number
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'user_watchlist_user_id_fkey'
+            columns: ['user_id']
+            referencedRelation: 'profiles'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'user_watchlist_symbol_id_fkey'
+            columns: ['symbol_id']
+            referencedRelation: 'symbols'
+            referencedColumns: ['id']
+          }
+        ]
       }
       eod_levels: {
         Row: {

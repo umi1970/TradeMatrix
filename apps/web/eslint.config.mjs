@@ -33,6 +33,11 @@ export default [
       globals: {
         React: "readonly",
         JSX: "readonly",
+        console: "readonly",
+        document: "readonly",
+        window: "readonly",
+        HTMLDivElement: "readonly",
+        alert: "readonly",
       },
     },
     plugins: {

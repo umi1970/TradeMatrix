@@ -117,7 +117,7 @@
 
 ---
 
-## 📊 Aktueller Status (2025-11-01)
+## 📊 Aktueller Status (2025-11-03)
 
 ### ✅ Phase 1-4: Foundation to Dashboard - COMPLETED (100%)
 - [x] Projekt-Struktur, Dokumentation, Supabase Integration
@@ -141,7 +141,41 @@
   - Latest Commit: 6f952fb (JSON serialization fix)
   - Status: LIVE, monitoring 5 symbols, 6 test subscriptions active
 
-### 🚧 Phase 5B: Stripe Integration & SaaS Features - PLANNED
+### ✅ Phase 5C: Editable Market Watchlist - READY FOR DEPLOYMENT (95%) ⭐ COMPLETED!
+**Feature:** User-customizable watchlist with TradingView Widgets
+
+**Architecture Decision (2025-11-03):**
+- 💡 **Hybrid Approach:** TradingView Widgets (free) für Display + Hetzner für Alerts
+- ❌ **KEIN WebSocket** - TradingView holt Live-Daten direkt, Backend nur für Alerts!
+- ✅ **Vorteile:** €0 Kosten, keine Komplexität, ~6h statt 2-3 Tage
+
+**Status:**
+- [x] **Database:** user_watchlist Tabelle (Migration 017) ✅
+- [x] **Database:** Migration 018 SQL ready (tv_symbol column) ✅
+- [x] **Dokumentation:** 7 Feature-Files komplett ✅
+- [x] **Frontend:** TradingView Widget Komponente ✅
+- [x] **Frontend:** Symbol Picker Modal ✅
+- [x] **Frontend:** Dashboard Integration ✅
+- [x] **Backend:** Dynamic Symbol Loading (price_fetcher.py) ✅
+- [ ] **Deployment:** Execute Migration 018 in Supabase ⚠️ BLOCKER
+- [ ] **Deployment:** Push to Netlify
+- [ ] **Deployment:** Deploy to Hetzner
+
+**📦 Deliverables:**
+- 2 new components, 6 modified files, 1 deleted file
+- TypeScript: 0 errors, ESLint: 0 errors
+- ~500 lines of code
+
+**📖 Dokumentation:**
+- **Feature Docs:** [docs/FEATURES/tradingview-watchlist/](./docs/FEATURES/tradingview-watchlist/)
+- **Deployment Guide:** [DEPLOYMENT_READY.md](./DEPLOYMENT_READY.md) 👈 **DEPLOY HERE!**
+- **Migration Guide:** [MIGRATION_018_INSTRUCTIONS.md](./MIGRATION_018_INSTRUCTIONS.md)
+
+**🎯 Nächster Schritt:** Execute Migration 018 in Supabase SQL Editor (2 min) → Then deploy!
+
+---
+
+### 📋 Phase 5B: Stripe Integration & SaaS Features - PLANNED
 - [ ] Stripe Subscription Billing
 - [ ] Subscription Management (upgrade/downgrade)
 - [ ] Usage Tracking & Limits
@@ -255,9 +289,9 @@ TradeMatrix/
 | Tier | Preis | Features |
 |------|-------|----------|
 | **Free** | €0/mo | Basic market overview, limited reports |
-| **Starter** | €29/mo | Daily reports, email alerts |
-| **Pro** | €79/mo | All features + backtesting, API access |
-| **Expert** | €199/mo | Custom strategies, priority support, WhatsApp alerts |
+| **Starter** | €9/mo | Daily reports, email alerts |
+| **Pro** | €39/mo | All features + backtesting, API access |
+| **Expert** | €79/mo | Custom strategies, priority support, WhatsApp alerts |
 
 ---
 

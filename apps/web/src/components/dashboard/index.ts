@@ -1,6 +1,7 @@
 export { Sidebar } from './sidebar'
 export { Header } from './header'
-export { MarketOverviewCard } from './market-overview-card'
+export { TradingViewWidget } from './tradingview-widget'
+export { SymbolPickerModal } from './symbol-picker-modal'
 export { TradeSummaryCard } from './trade-summary-card'
 export { AgentStatusCard } from './agent-status-card'
 export { TradingChart } from './trading-chart'

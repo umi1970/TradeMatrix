@@ -91,7 +91,6 @@
 ```bash
 ssh root@135.181.195.241
 cd /root/tradematrix/hetzner-deploy
-./QUICK_DEPLOY.sh
 ```
 
 #### Option B: Manual

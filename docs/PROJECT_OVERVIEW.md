@@ -187,6 +187,17 @@ TradeMatrix/
   - Repository: `hetzner-deploy/` (Docker Compose)
   - Latest commit: 6f952fb (JSON serialization fix)
 
+### 🚧 Phase 5C: Editable Market Watchlist - IN PROGRESS (15%)
+- [x] **Database:** user_watchlist table + RLS (Migration 017) ✅
+- [ ] **Frontend:** TradingView Widget component
+- [ ] **Frontend:** Symbol Picker modal (add/remove symbols)
+- [ ] **Frontend:** Dashboard integration (replace market cards)
+- [ ] **Backend:** Dynamic symbol loading (Hetzner alert_engine.py)
+- [ ] **Deployment:** Netlify + Hetzner updates
+
+**Architecture:** Hybrid approach (TradingView Widgets for display + Hetzner for alerts)
+**See:** [docs/FEATURES/tradingview-watchlist/README.md](./FEATURES/tradingview-watchlist/README.md)
+
 ### 🚧 Phase 5B: Stripe Integration & SaaS Features - PLANNED
 - [ ] Stripe subscription billing
 - [ ] Subscription management (upgrade/downgrade)

@@ -420,6 +420,48 @@ Phase 1: Foundation (Infrastructure & Auth) ✅ COMPLETED
 
 ---
 
+**🚧 PHASE 5C: EDITABLE MARKET WATCHLIST (In Progress - 15%)**
+
+**Architecture:** Hybrid approach - TradingView Widgets (free) + Hetzner Alerts
+
+**Key Features:**
+1. **User Watchlist** (✅ Complete - Migration 017)
+   - Database: user_watchlist table + RLS policies
+   - Users can customize up to 10 symbols
+   - Default watchlist (5 symbols) on signup
+
+2. **TradingView Widgets** (⏳ Pending)
+   - Replace market overview cards with TradingView widgets
+   - Live prices (free, no API costs!)
+   - No WebSocket server needed
+
+3. **Symbol Picker UI** (⏳ Pending)
+   - Modal to add/remove symbols
+   - Search functionality
+   - Max 10 symbols per user
+
+4. **Backend Updates** (⏳ Pending)
+   - Hetzner: Dynamic symbol loading from user_watchlist
+   - Alert system monitors all unique symbols
+   - Minimal changes (~30 lines of code)
+
+**Benefits:**
+- ✅ **€0 cost** for live price display
+- ✅ **No WebSocket** complexity
+- ✅ **Fast implementation** (~6 hours total)
+- ✅ **Scalable** (unlimited symbols possible)
+
+**Documentation:** [docs/FEATURES/tradingview-watchlist/](./FEATURES/tradingview-watchlist/)
+
+**Next Steps:**
+- [ ] Add symbols.tv_symbol column (Migration 018)
+- [ ] Create TradingView Widget component
+- [ ] Create Symbol Picker modal
+- [ ] Update dashboard page
+- [ ] Deploy to Netlify + Hetzner
+
+---
+
 **🚧 PHASE 5B: STRIPE INTEGRATION & SAAS FEATURES (Upcoming)**
 
 **Key Deliverables:**

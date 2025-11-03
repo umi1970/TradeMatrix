@@ -419,7 +419,56 @@ celery -A tasks worker --loglevel=info
 
 ---
 
+## Market Data Architecture (Updated 2025-11-03)
+
+### Display Layer: TradingView Widgets 🆕
+
+**Decision:** Use TradingView Widgets for live price display (free, no backend needed)
+
+**Architecture:**
+```
+User Dashboard
+    ↓
+Fetch user_watchlist from Supabase (max 10 symbols)
+    ↓
+Render TradingView Widgets (one per symbol)
+    ↓
+TradingView fetches live prices directly (no backend!)
+```
+
+**Benefits:**
+- ✅ **€0 cost** for live prices
+- ✅ **No WebSocket** server needed
+- ✅ **Unlimited symbols** (no API limits)
+- ✅ **Auto-updates** (TradingView handles)
+
+### Alert Layer: Hetzner Backend
+
+**Decision:** Keep Hetzner server ONLY for liquidity alerts (not for price display)
+
+**Architecture:**
+```
+Celery Beat (every 60s)
+    ↓
+Query user_watchlist (get unique symbols)
+    ↓
+Fetch prices:
+  - Indices: yfinance (HTTP, free)
+  - Forex: Twelvedata (HTTP, $29/mo)
+    ↓
+Check liquidity levels (Yesterday High/Low, Pivot Points)
+    ↓
+Send push notifications if triggered
+```
+
+**No WebSocket Needed:** HTTP polling sufficient for alerts (60s latency acceptable)
+
+**See:** [docs/FEATURES/tradingview-watchlist/01_ARCHITECTURE.md](./FEATURES/tradingview-watchlist/01_ARCHITECTURE.md)
+
+---
+
 **Fragen? Siehe:**
 - [Supabase Setup](../services/api/supabase/README.md)
 - [Edge Functions](../services/api/supabase/functions/README.md)
 - [FastAPI Endpoints](../services/api/src/main.py)
+- [TradingView Watchlist Feature](./FEATURES/tradingview-watchlist/README.md) 🆕

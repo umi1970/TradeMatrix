@@ -1,9 +1,9 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { MarketOverviewCard } from '@/components/dashboard/market-overview-card'
+import { TradingViewWidget } from '@/components/dashboard/tradingview-widget'
+import { SymbolPickerModal } from '@/components/dashboard/symbol-picker-modal'
 import { AgentStatusCard } from '@/components/dashboard/agent-status-card'
-import { EODLevelsToday } from '@/components/dashboard/eod-levels-today'
 import { TradePerformanceCard } from '@/components/dashboard/trade-performance-card'
 import { MarketSentimentCard } from '@/components/dashboard/market-sentiment-card'
 import { TopPerformersCard } from '@/components/dashboard/top-performers-card'
@@ -14,17 +14,19 @@ import { AlertSettingsCard } from '@/components/dashboard/alert-settings-card'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Alert, AlertDescription } from '@/components/ui/alert'
-import { Plus, RefreshCw, Loader2 } from 'lucide-react'
+import { Plus, RefreshCw, Loader2, Settings } from 'lucide-react'
+import { createBrowserClient } from '@/lib/supabase/client'
 
-interface MarketData {
-  symbol: string
-  symbolId?: string
-  name: string
-  price: number
-  change: number | null
-  changePercent: number | null
-  trend: 'up' | 'down' | 'neutral'
-  updatedAt: string
+interface WatchlistItem {
+  id: string
+  position: number
+  symbols: {
+    id: string
+    symbol: string
+    name: string
+    tv_symbol: string | null
+    asset_type: string
+  }
 }
 
 const mockAgents = [
@@ -59,26 +61,40 @@ const mockAgents = [
 ]
 
 export default function DashboardPage() {
-  const [marketData, setMarketData] = useState<MarketData[]>([])
+  const [watchlist, setWatchlist] = useState<WatchlistItem[]>([])
+  const [showSymbolPicker, setShowSymbolPicker] = useState(false)
+  const [userId, setUserId] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [isRefreshing, setIsRefreshing] = useState(false)
 
-  // Fetch market data from API (live prices with EOD fallback)
-  const fetchMarketData = async () => {
+  // Fetch user's watchlist with symbol details
+  const fetchWatchlist = async () => {
     try {
       setError(null)
-      const response = await fetch('/api/market-data/current')
+      const supabase = createBrowserClient()
+      const { data: { session } } = await supabase.auth.getSession()
 
-      if (!response.ok) {
-        throw new Error(`Failed to fetch market data: ${response.statusText}`)
+      if (!session) {
+        setError('Please sign in to view your watchlist')
+        setIsLoading(false)
+        return
       }
 
-      const result = await response.json()
-      setMarketData(result.data || [])
-    } catch (err: any) {
-      console.error('Error fetching market data:', err)
-      setError(err.message || 'Failed to load market data')
+      setUserId(session.user.id)
+
+      const { data, error: watchlistError } = await supabase
+        .from('user_watchlist')
+        .select('id, position, symbols(*)')
+        .eq('user_id', session.user.id)
+        .order('position')
+
+      if (watchlistError) throw watchlistError
+
+      setWatchlist(data || [])
+    } catch (err: unknown) {
+      console.error('Error fetching watchlist:', err)
+      setError(err instanceof Error ? err.message : 'Failed to load watchlist')
     } finally {
       setIsLoading(false)
       setIsRefreshing(false)
@@ -87,18 +103,13 @@ export default function DashboardPage() {
 
   // Initial fetch on mount
   useEffect(() => {
-    fetchMarketData()
-
-    // Poll every 30 seconds for updates
-    const interval = setInterval(fetchMarketData, 30000)
-
-    return () => clearInterval(interval)
+    fetchWatchlist()
   }, [])
 
   // Manual refresh handler
   const handleRefresh = () => {
     setIsRefreshing(true)
-    fetchMarketData()
+    fetchWatchlist()
   }
 
   return (
@@ -145,14 +156,21 @@ export default function DashboardPage() {
         </Alert>
       )}
 
-      {/* EOD Levels Today */}
-      <section>
-        <EODLevelsToday />
-      </section>
-
       {/* Market Overview */}
       <section>
-        <h2 className="text-xl font-semibold mb-4">Market Overview</h2>
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-xl font-semibold">Market Overview</h2>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setShowSymbolPicker(true)}
+            disabled={!userId}
+          >
+            <Settings className="h-4 w-4 mr-2" />
+            Edit Watchlist
+          </Button>
+        </div>
+
         {isLoading ? (
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
             {[1, 2, 3].map((i) => (
@@ -163,36 +181,44 @@ export default function DashboardPage() {
               </Card>
             ))}
           </div>
-        ) : marketData.length > 0 ? (
+        ) : watchlist.length > 0 ? (
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-            {marketData.map((market) => (
-              <MarketOverviewCard key={market.symbol} market={market} />
-            ))}
+            {watchlist
+              .filter((item) => item.symbols.tv_symbol)
+              .map((item) => (
+                <TradingViewWidget
+                  key={item.id}
+                  symbol={item.symbols.tv_symbol!}
+                  height={200}
+                />
+              ))}
           </div>
         ) : (
           <Card>
             <CardContent className="flex items-center justify-center py-12">
               <div className="text-center">
-                <p className="text-muted-foreground">
-                  No market data available
+                <p className="text-muted-foreground mb-4">
+                  No symbols in your watchlist
                 </p>
-                <p className="text-sm text-muted-foreground mt-2">
-                  Make sure the Celery worker is running to fetch live data
-                </p>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={handleRefresh}
-                  className="mt-4"
-                >
-                  <RefreshCw className="h-4 w-4 mr-2" />
-                  Retry
+                <Button onClick={() => setShowSymbolPicker(true)} disabled={!userId}>
+                  <Plus className="h-4 w-4 mr-2" />
+                  Add Symbols
                 </Button>
               </div>
             </CardContent>
           </Card>
         )}
       </section>
+
+      {/* Symbol Picker Modal */}
+      {userId && (
+        <SymbolPickerModal
+          open={showSymbolPicker}
+          onOpenChange={setShowSymbolPicker}
+          userId={userId}
+          onSaved={fetchWatchlist}
+        />
+      )}
 
       {/* Performance Cards Row */}
       <section>
@@ -244,7 +270,9 @@ export default function DashboardPage() {
             <AgentStatusCard
               key={agent.name}
               agent={agent}
-              onAction={() => console.log(`Running ${agent.name}`)}
+              onAction={() => {
+                console.log(`Running ${agent.name}`)
+              }}
             />
           ))}
         </div>
