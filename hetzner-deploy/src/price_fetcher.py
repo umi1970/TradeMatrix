@@ -1,17 +1,20 @@
 #!/usr/bin/env python3
 """
-Realtime Price Fetcher for Liquidity Alert System
-Fetches prices from Twelvedata API (Grow Plan)
+Hybrid Price Fetcher for Liquidity Alert System
 
-Twelvedata Grow Plan:
-- 55 API calls/minute
-- No daily limits
-- Real-time data for stocks, forex, indices
-- 8 WebSocket connections available
+Data Sources:
+- Indices (DAX, NASDAQ, DOW): yfinance (free, no API key required)
+- Forex (EUR/USD, EUR/GBP): Twelvedata Grow Plan ($29/mo)
+
+Rationale:
+- Twelvedata Grow Plan does NOT support major indices despite listing them
+- yfinance provides accurate, real-time index data for free
+- Twelvedata works perfectly for forex pairs
 """
 
 import os
 import requests
+import yfinance as yf
 from typing import Dict, Optional
 from decimal import Decimal
 from datetime import datetime
@@ -22,7 +25,7 @@ load_dotenv()
 
 
 class PriceFetcher:
-    """Fetch realtime prices from Twelvedata API"""
+    """Hybrid price fetcher using yfinance (indices) and Twelvedata (forex)"""
 
     def __init__(self):
         self.twelvedata_api_key = os.getenv('TWELVEDATA_API_KEY')
@@ -31,43 +34,75 @@ class PriceFetcher:
             os.getenv('SUPABASE_SERVICE_KEY')
         )
 
-        if not self.twelvedata_api_key:
-            raise ValueError("TWELVEDATA_API_KEY not set in environment")
-
-        # Symbol mapping for Twelvedata Grow Plan
-        # NOTE: Twelvedata Grow Plan does not include major indices directly
-        # Using industry-standard ETF proxies that track the indices:
-        # - EXS1: iShares Core DAX ETF (tracks DAX index, EUR-denominated)
-        # - QQQ: Invesco QQQ Trust (tracks NASDAQ 100 with 99.9% correlation)
-        # - DIA: SPDR Dow Jones Industrial Average ETF (tracks Dow Jones)
+        # Symbol configuration
+        # Indices: Use yfinance (symbol with ^)
+        # Forex: Use Twelvedata
         self.symbol_config = {
-            '^GDAXI': {'ticker': 'EXS1', 'exchange': 'XETR'},    # DAX proxy (iShares Core DAX ETF)
-            '^NDX': {'ticker': 'QQQ', 'exchange': 'NASDAQ'},     # NASDAQ 100 proxy (Invesco QQQ ETF)
-            '^DJI': {'ticker': 'DIA', 'exchange': 'NYSE'},       # Dow Jones proxy (SPDR DIA ETF)
-            'EURUSD': {'ticker': 'EUR/USD', 'exchange': None},   # Forex (no exchange needed)
-            'EURGBP': {'ticker': 'EUR/GBP', 'exchange': None},   # Forex (no exchange needed)
+            '^GDAXI': {'provider': 'yfinance'},     # DAX Performance Index
+            '^NDX': {'provider': 'yfinance'},       # NASDAQ 100 Index
+            '^DJI': {'provider': 'yfinance'},       # Dow Jones Industrial Average
+            'EURUSD': {'provider': 'twelvedata', 'ticker': 'EUR/USD', 'exchange': None},
+            'EURGBP': {'provider': 'twelvedata', 'ticker': 'EUR/GBP', 'exchange': None},
         }
 
-    def fetch_twelvedata_quote(self, symbol: str, exchange: str) -> Optional[Dict]:
+    def fetch_yfinance_quote(self, symbol: str) -> Optional[Dict]:
         """
-        Fetch real-time quote from Twelvedata API
+        Fetch real-time quote from Yahoo Finance via yfinance
 
         Args:
-            symbol: Ticker symbol (e.g., 'DAX', 'EUR/USD')
-            exchange: Exchange name (e.g., 'XETR', 'Forex')
+            symbol: Yahoo symbol (e.g., '^GDAXI', '^NDX', '^DJI')
 
         Returns:
             Dict with price data or None if failed
         """
-        # Twelvedata Quote endpoint
-        url = "https://api.twelvedata.com/quote"
+        try:
+            ticker = yf.Ticker(symbol)
+            # Get today's data
+            hist = ticker.history(period='1d')
 
+            if hist.empty:
+                print(f"❌ yfinance: No data returned for {symbol}")
+                return None
+
+            latest = hist.iloc[-1]
+
+            return {
+                'current_price': Decimal(str(latest['Close'])),
+                'high_today': Decimal(str(latest['High'])),
+                'low_today': Decimal(str(latest['Low'])),
+                'open_today': Decimal(str(latest['Open'])),
+                'volume_today': int(latest['Volume']) if latest['Volume'] > 0 else None,
+                'data_source': 'yfinance',
+                'change': Decimal('0'),  # yfinance doesn't provide change directly
+                'change_percent': Decimal('0'),
+                'previous_close': Decimal(str(latest['Close'])),  # Use close as fallback
+            }
+
+        except Exception as e:
+            print(f"❌ yfinance error for {symbol}: {e}")
+            return None
+
+    def fetch_twelvedata_quote(self, symbol: str, exchange: Optional[str]) -> Optional[Dict]:
+        """
+        Fetch real-time quote from Twelvedata API
+
+        Args:
+            symbol: Ticker symbol (e.g., 'EUR/USD')
+            exchange: Exchange name (optional for forex)
+
+        Returns:
+            Dict with price data or None if failed
+        """
+        if not self.twelvedata_api_key:
+            print("❌ TWELVEDATA_API_KEY not set")
+            return None
+
+        url = "https://api.twelvedata.com/quote"
         params = {
             'symbol': symbol,
             'apikey': self.twelvedata_api_key,
         }
 
-        # Add exchange if specified (not needed for Forex)
         if exchange:
             params['exchange'] = exchange
 
@@ -101,17 +136,13 @@ class PriceFetcher:
         except requests.exceptions.RequestException as e:
             print(f"❌ Twelvedata network error for {symbol}: {e}")
             return None
-        except (ValueError, KeyError) as e:
-            print(f"❌ Twelvedata parsing error for {symbol}: {e}")
-            return None
         except Exception as e:
             print(f"❌ Unexpected error fetching {symbol}: {e}")
             return None
 
     def fetch_price(self, symbol: str) -> Optional[Dict]:
         """
-        Fetch realtime price for a symbol
-        Maps internal symbol to Twelvedata ticker format
+        Fetch realtime price for a symbol using appropriate provider
 
         Args:
             symbol: Internal symbol (e.g., '^GDAXI', 'EURUSD')
@@ -124,10 +155,18 @@ class PriceFetcher:
             print(f"⚠️  Unknown symbol: {symbol}")
             return None
 
-        return self.fetch_twelvedata_quote(
-            symbol=config['ticker'],
-            exchange=config['exchange']
-        )
+        provider = config['provider']
+
+        if provider == 'yfinance':
+            return self.fetch_yfinance_quote(symbol)
+        elif provider == 'twelvedata':
+            return self.fetch_twelvedata_quote(
+                symbol=config['ticker'],
+                exchange=config.get('exchange')
+            )
+        else:
+            print(f"❌ Unknown provider: {provider}")
+            return None
 
     def get_symbol_id(self, symbol: str) -> Optional[str]:
         """Get symbol UUID from database"""
@@ -193,7 +232,7 @@ class PriceFetcher:
                 # Update cache in database
                 if self.update_price_cache(symbol, price_data):
                     results[symbol] = price_data
-                    print(f"  ✓ {symbol}: ${price_data['current_price']}")
+                    print(f"  ✓ {symbol}: ${price_data['current_price']} ({price_data['data_source']})")
                 else:
                     results[symbol] = None
                     print(f"  ❌ Failed to update cache")
@@ -207,12 +246,21 @@ class PriceFetcher:
 # CLI for testing
 if __name__ == '__main__':
     print("=" * 70)
-    print("🔄 Testing Twelvedata Price Fetcher")
+    print("🔄 Testing Hybrid Price Fetcher (yfinance + Twelvedata)")
     print("=" * 70)
 
     fetcher = PriceFetcher()
     results = fetcher.fetch_all_prices()
 
     print("\n" + "=" * 70)
-    print(f"✅ Fetched {len([r for r in results.values() if r])} / {len(results)} symbols")
+    success_count = len([r for r in results.values() if r])
+    print(f"✅ Fetched {success_count} / {len(results)} symbols")
+
+    # Show data sources
+    yfinance_symbols = [s for s, r in results.items() if r and r.get('data_source') == 'yfinance']
+    twelvedata_symbols = [s for s, r in results.items() if r and r.get('data_source') == 'twelvedata']
+
+    print(f"\nData Sources:")
+    print(f"  yfinance: {len(yfinance_symbols)} symbols")
+    print(f"  Twelvedata: {len(twelvedata_symbols)} symbols")
     print("=" * 70)
