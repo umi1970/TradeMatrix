@@ -63,10 +63,12 @@ export default function ReportsPage() {
         }
 
         // Fetch reports from Supabase
+        // Show: System reports (user_id = NULL) + User's own reports
         const { data: reportsData, error: reportsError } = await (supabase as any)
           .from('reports')
           .select('*')
-          .eq('user_id', user.id)
+          .or(`user_id.is.null,user_id.eq.${user.id}`)
+          .eq('status', 'completed')
           .order('created_at', { ascending: false })
 
         if (reportsError) {
