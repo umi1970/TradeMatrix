@@ -35,13 +35,14 @@ class PriceFetcher:
             raise ValueError("TWELVEDATA_API_KEY not set in environment")
 
         # Symbol mapping for Twelvedata
-        # Twelvedata uses different ticker formats than Finnhub
+        # Note: Twelvedata doesn't support all indices in free/grow plans
+        # Using CFDs as alternative for indices
         self.symbol_config = {
-            '^GDAXI': {'ticker': 'DAX', 'exchange': 'XETR'},  # DAX (Frankfurt)
-            '^NDX': {'ticker': 'NDX', 'exchange': 'NASDAQ'},   # NASDAQ 100
-            '^DJI': {'ticker': 'DJI', 'exchange': 'NYSE'},     # Dow Jones
-            'EURUSD': {'ticker': 'EUR/USD', 'exchange': 'Forex'},  # EUR/USD
-            'EURGBP': {'ticker': 'EUR/GBP', 'exchange': 'Forex'},  # EUR/GBP
+            '^GDAXI': {'ticker': 'DE40', 'exchange': 'CFD'},  # DAX CFD
+            '^NDX': {'ticker': 'NDX', 'exchange': 'INDEX'},   # NASDAQ 100 Index
+            '^DJI': {'ticker': 'DJI', 'exchange': 'INDEX'},     # Dow Jones Index
+            'EURUSD': {'ticker': 'EUR/USD', 'exchange': None},  # Forex (no exchange needed)
+            'EURGBP': {'ticker': 'EUR/GBP', 'exchange': None},  # Forex (no exchange needed)
         }
 
     def fetch_twelvedata_quote(self, symbol: str, exchange: str) -> Optional[Dict]:
@@ -63,8 +64,8 @@ class PriceFetcher:
             'apikey': self.twelvedata_api_key,
         }
 
-        # Add exchange for non-forex symbols
-        if exchange != 'Forex':
+        # Add exchange if specified (not needed for Forex)
+        if exchange:
             params['exchange'] = exchange
 
         try:
