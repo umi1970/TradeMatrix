@@ -6,9 +6,16 @@ Provides admin and client instances for backend services
 import os
 from supabase import create_client, Client
 from dotenv import load_dotenv
+from pathlib import Path
 
-# Load environment variables
-load_dotenv()
+# Load environment variables from .env file (if it exists)
+# In Docker containers, env vars are injected by docker-compose via env_file
+env_file = Path(__file__).parent.parent.parent / '.env'
+if env_file.exists():
+    load_dotenv(env_file)
+else:
+    # Running in Docker - env vars already injected by docker-compose
+    pass
 
 
 def get_supabase_admin() -> Client:
