@@ -24,6 +24,7 @@ python-dotenv==1.0.1             # Environment variable management
 
 # Market Data APIs
 finnhub-python==2.4.20           # Stock/index prices (DAX, NDX, DJI)
+yfinance>=0.2.40                 # Yahoo Finance (indices: DAX, NASDAQ, DOW - FREE, no API key)
 requests>=2.31.0                 # HTTP library (Alpha Vantage, general API calls)
 aiohttp>=3.9.0                   # Async HTTP for concurrent EOD data fetching
 httpx==0.27.0                    # Modern HTTP client (chart images, async support)
