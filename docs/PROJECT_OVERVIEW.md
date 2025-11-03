@@ -1,8 +1,8 @@
 # TradeMatrix.ai - Project Overview
 
-**Version:** 1.2.0
-**Status:** ✅ Phase 1-4 Complete - Phase 5 Liquidity Alerts DEPLOYED TO PRODUCTION
-**Last Updated:** 2025-11-01
+**Version:** 1.3.0
+**Status:** ✅ Phase 1-4 Complete - Phase 5A Deployed - Phase 5C Ready for Deployment
+**Last Updated:** 2025-11-03
 
 ---
 
@@ -187,16 +187,23 @@ TradeMatrix/
   - Repository: `hetzner-deploy/` (Docker Compose)
   - Latest commit: 6f952fb (JSON serialization fix)
 
-### 🚧 Phase 5C: Editable Market Watchlist - IN PROGRESS (15%)
+### ✅ Phase 5C: Editable Market Watchlist - READY FOR DEPLOYMENT (95%)
 - [x] **Database:** user_watchlist table + RLS (Migration 017) ✅
-- [ ] **Frontend:** TradingView Widget component
-- [ ] **Frontend:** Symbol Picker modal (add/remove symbols)
-- [ ] **Frontend:** Dashboard integration (replace market cards)
-- [ ] **Backend:** Dynamic symbol loading (Hetzner alert_engine.py)
-- [ ] **Deployment:** Netlify + Hetzner updates
+- [x] **Database:** Migration 018 SQL ready (tv_symbol column + default watchlist function) ✅
+- [x] **Frontend:** TradingView Widget component ✅
+- [x] **Frontend:** Symbol Picker modal (add/remove symbols) ✅
+- [x] **Frontend:** Dashboard integration (replace market cards) ✅
+- [x] **Backend:** Dynamic symbol loading (price_fetcher.py) ✅
+- [x] **Git:** Committed & pushed to GitHub (commit: 307a92c) ✅
+- [ ] **Deployment:** Execute Migration 018 in Supabase ⚠️ BLOCKER
+- [ ] **Deployment:** Netlify auto-deploying (triggered by git push)
+- [ ] **Deployment:** Hetzner backend deployment (git pull + restart)
 
+**Implementation Complete:** 2 new components, 6 modified files, ~500 lines of code
+**Code Quality:** TypeScript: 0 errors, ESLint: 0 errors
 **Architecture:** Hybrid approach (TradingView Widgets for display + Hetzner for alerts)
-**See:** [docs/FEATURES/tradingview-watchlist/README.md](./FEATURES/tradingview-watchlist/README.md)
+**See:** [DEPLOYMENT_READY.md](../DEPLOYMENT_READY.md) | [MIGRATION_018_INSTRUCTIONS.md](../MIGRATION_018_INSTRUCTIONS.md)
+**Feature Docs:** [docs/FEATURES/tradingview-watchlist/](./FEATURES/tradingview-watchlist/)
 
 ### 🚧 Phase 5B: Stripe Integration & SaaS Features - PLANNED
 - [ ] Stripe subscription billing
