@@ -157,7 +157,7 @@ def run_chart_analysis_task(self):
         logger.info("=" * 70)
 
         # Initialize ChartWatcher
-        from config.supabase import get_supabase_admin
+        from src.config.supabase import get_supabase_admin
         watcher = ChartWatcher(
             supabase_client=get_supabase_admin(),
             openai_api_key=os.getenv('OPENAI_API_KEY')
@@ -192,7 +192,7 @@ def run_morning_planner_task(self):
         logger.info("=" * 70)
 
         # Initialize MorningPlanner
-        from config.supabase import get_supabase_admin
+        from src.config.supabase import get_supabase_admin
         planner = MorningPlanner(
             supabase_client=get_supabase_admin()
         )
@@ -226,7 +226,7 @@ def run_journal_bot_task(self):
         logger.info("=" * 70)
 
         # Initialize JournalBot
-        from config.supabase import get_supabase_admin
+        from src.config.supabase import get_supabase_admin
         bot = JournalBot(
             supabase_client=get_supabase_admin(),
             openai_api_key=os.getenv('OPENAI_API_KEY')
