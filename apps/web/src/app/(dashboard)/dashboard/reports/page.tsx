@@ -171,6 +171,7 @@ export default function ReportsPage() {
           metrics: r.metrics || {},
           generated_at: r.created_at,
           file_url: r.pdf_url,
+          docx_url: r.metadata?.file_url_docx || null,
         }))
         setReports(transformedReports)
       }
