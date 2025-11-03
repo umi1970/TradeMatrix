@@ -34,15 +34,18 @@ class PriceFetcher:
         if not self.twelvedata_api_key:
             raise ValueError("TWELVEDATA_API_KEY not set in environment")
 
-        # Symbol mapping for Twelvedata
-        # Note: Twelvedata doesn't support all indices in free/grow plans
-        # Using CFDs as alternative for indices
+        # Symbol mapping for Twelvedata Grow Plan
+        # NOTE: Twelvedata Grow Plan does not include major indices directly
+        # Using industry-standard ETF proxies that track the indices:
+        # - EXS1: iShares Core DAX ETF (tracks DAX index, EUR-denominated)
+        # - QQQ: Invesco QQQ Trust (tracks NASDAQ 100 with 99.9% correlation)
+        # - DIA: SPDR Dow Jones Industrial Average ETF (tracks Dow Jones)
         self.symbol_config = {
-            '^GDAXI': {'ticker': 'DE40', 'exchange': 'CFD'},  # DAX CFD
-            '^NDX': {'ticker': 'NDX', 'exchange': 'INDEX'},   # NASDAQ 100 Index
-            '^DJI': {'ticker': 'DJI', 'exchange': 'INDEX'},     # Dow Jones Index
-            'EURUSD': {'ticker': 'EUR/USD', 'exchange': None},  # Forex (no exchange needed)
-            'EURGBP': {'ticker': 'EUR/GBP', 'exchange': None},  # Forex (no exchange needed)
+            '^GDAXI': {'ticker': 'EXS1', 'exchange': 'XETR'},    # DAX proxy (iShares Core DAX ETF)
+            '^NDX': {'ticker': 'QQQ', 'exchange': 'NASDAQ'},     # NASDAQ 100 proxy (Invesco QQQ ETF)
+            '^DJI': {'ticker': 'DIA', 'exchange': 'NYSE'},       # Dow Jones proxy (SPDR DIA ETF)
+            'EURUSD': {'ticker': 'EUR/USD', 'exchange': None},   # Forex (no exchange needed)
+            'EURGBP': {'ticker': 'EUR/GBP', 'exchange': None},   # Forex (no exchange needed)
         }
 
     def fetch_twelvedata_quote(self, symbol: str, exchange: str) -> Optional[Dict]:
