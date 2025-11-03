@@ -68,7 +68,7 @@ export default function ReportsPage() {
         const { data: reportsData, error: reportsError } = await (supabase as any)
           .from('reports')
           .select('*')
-          .or(`user_id.is.null,user_id.eq.${user.id}`)
+          .or('user_id.is.null,user_id.eq.' + user.id)
           .in('status', ['completed', 'published'])
           .order('created_at', { ascending: false })
 
