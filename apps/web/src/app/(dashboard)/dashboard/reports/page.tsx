@@ -33,6 +33,7 @@ interface Report {
   metrics?: Record<string, any>
   generated_at: string
   file_url?: string
+  docx_url?: string
 }
 
 export default function ReportsPage() {
@@ -90,6 +91,7 @@ export default function ReportsPage() {
           metrics: r.metrics || {},
           generated_at: r.created_at,
           file_url: r.pdf_url,
+          docx_url: r.metadata?.file_url_docx || null,
         }))
 
         setReports(transformedReports)
@@ -224,9 +226,12 @@ export default function ReportsPage() {
         setError('PDF not available for this report')
       }
     } else if (format === 'docx') {
-      // Download DOCX from Supabase Storage (stored in metadata)
-      // Note: DOCX URL would be in metadata.file_url_docx
-      setError('DOCX download not yet implemented')
+      // Download DOCX from Supabase Storage
+      if (report.docx_url) {
+        window.open(report.docx_url, '_blank')
+      } else {
+        setError('DOCX not available for this report')
+      }
     }
   }
 
@@ -469,7 +474,12 @@ export default function ReportsPage() {
                   {/* Actions */}
                   <div className="flex items-center justify-between pt-4 border-t">
                     <div className="flex gap-2">
-                      <Button variant="outline" size="sm">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => report.docx_url ? window.open(report.docx_url, '_blank') : setError('Report file not available')}
+                        disabled={!report.docx_url && !report.file_url}
+                      >
                         <Eye className="h-4 w-4 mr-2" />
                         View Full
                       </Button>
@@ -491,8 +501,8 @@ export default function ReportsPage() {
                             variant="ghost"
                             size="sm"
                             onClick={() => downloadReport(report, 'docx')}
-                            disabled={true}
-                            title="DOCX download coming soon"
+                            disabled={!report.docx_url}
+                            title={report.docx_url ? 'Download as DOCX' : 'DOCX not available'}
                           >
                             <FileText className="h-4 w-4 mr-2" />
                             DOCX
