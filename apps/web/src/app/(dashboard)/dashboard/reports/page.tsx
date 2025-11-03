@@ -27,7 +27,7 @@ interface Report {
   user_id: string
   title: string
   type: 'daily' | 'weekly' | 'monthly' | 'trade_analysis' | 'risk_assessment'
-  status: 'completed' | 'processing' | 'failed'
+  status: 'completed' | 'published' | 'processing' | 'failed'
   ai_insights: string
   summary?: string
   metrics?: Record<string, any>
@@ -69,7 +69,7 @@ export default function ReportsPage() {
           .from('reports')
           .select('*')
           .or(`user_id.is.null,user_id.eq.${user.id}`)
-          .eq('status', 'completed')
+          .in('status', ['completed', 'published'])
           .order('created_at', { ascending: false })
 
         if (reportsError) {
@@ -273,6 +273,7 @@ export default function ReportsPage() {
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'completed':
+      case 'published':
         return 'bg-green-100 text-green-800'
       case 'processing':
         return 'bg-yellow-100 text-yellow-800'
@@ -486,7 +487,7 @@ export default function ReportsPage() {
                       </Button>
                     </div>
                     <div className="flex gap-2">
-                      {report.status === 'completed' && (
+                      {(report.status === 'completed' || report.status === 'published') && (
                         <>
                           <Button
                             variant="ghost"
@@ -552,7 +553,7 @@ export default function ReportsPage() {
               <div className="bg-muted/50 rounded-lg p-4">
                 <p className="text-sm font-medium text-muted-foreground">Completed</p>
                 <p className="text-2xl font-bold mt-2">
-                  {reports.filter((r) => r.status === 'completed').length}
+                  {reports.filter((r) => r.status === 'completed' || r.status === 'published').length}
                 </p>
               </div>
               <div className="bg-muted/50 rounded-lg p-4">
