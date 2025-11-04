@@ -31,7 +31,7 @@ export function TradingViewWidget({
     try {
       // Create widget configuration
       const widgetConfig = {
-        symbols: [[symbol, '|1D']], // Symbol + timeframe
+        symbols: [[symbol]], // Just the symbol (no timeframe needed)
         chartOnly: false,
         width,
         height,
