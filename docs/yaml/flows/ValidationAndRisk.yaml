@@ -1,0 +1,72 @@
+# TradeMatrix.ai – Validation & Risk Flow
+# Aktiviert durch SignalBot oder MorningPlanner (bei Trade-Vorschlag)
+
+flow:
+  name: ValidationAndRisk
+  version: 1.0
+  description: >
+    Bewertet vorgeschlagene Trades, berechnet Risiko, überprüft Marktereignisse,
+    erzeugt finale Entscheidung und meldet an JournalBot/Publisher.
+
+trigger:
+  source: "signal_bot"
+  condition: "trade_proposal.generated == true"
+
+modules:
+  - name: EventWatcher
+    path: "src/event_watcher.py"
+    outputs: ["risk_events", "high_risk"]
+    params:
+      country: "United States"
+      importance: "high"
+
+  - name: TradeValidationEngine
+    path: "src/trade_validation_engine.py"
+    inputs: ["trade_proposal"]
+    outputs: ["validation_result"]
+    params:
+      risk_per_trade: 1.0
+
+  - name: RiskManager
+    path: "src/risk_manager.py"
+    inputs: ["validation_result"]
+    outputs: ["position_size", "adjusted_sl"]
+
+  - name: RiskContextEvaluator
+    path: "src/risk_context_evaluator.py"
+    description: "Checkt Account-Exposure, MaxDrawdown, RiskMode"
+    params:
+      max_daily_loss_pct: 3.0
+      max_open_trades: 5
+
+  - name: TradeDecisionEngine
+    path: "src/trade_decision_engine.py"
+    description: "Kombiniert technische Bewertung + Risiko-Kontext + Event-Watcher"
+    inputs:
+      - validation_result
+      - position_size
+      - event_watcher.high_risk
+      - risk_context
+    outputs: ["final_decision"]
+
+  - name: ReportBridge
+    path: "src/report_bridge.py"
+    description: "Leitet Resultate an JournalBot und Publisher weiter"
+    inputs: ["final_decision"]
+    outputs: ["journal_entry", "publish_packet"]
+
+sequence:
+  - EventWatcher
+  - TradeValidationEngine
+  - RiskManager
+  - RiskContextEvaluator
+  - TradeDecisionEngine
+  - ReportBridge
+
+on_success:
+  - log: "✅ Trade validated and risk-managed successfully"
+  - send_to: "journal_bot"
+
+on_fail:
+  - log: "❌ Validation or Risk check failed"
+  - send_to: "monitoring"

@@ -23,12 +23,7 @@ import pytz
 
 from supabase import Client
 
-from src.chart_generator import ChartGenerator
-from src.exceptions.chart_errors import (
-    RateLimitError,
-    ChartGenerationError,
-    SymbolNotFoundError
-)
+from src.chart_service import ChartService
 
 # Setup logger
 logger = logging.getLogger(__name__)
@@ -53,8 +48,8 @@ class MorningPlanner:
             supabase_client: Supabase client instance (admin client for bypassing RLS)
         """
         self.supabase = supabase_client
-        self.chart_generator = ChartGenerator()
-        logger.info("MorningPlanner initialized with ChartGenerator")
+        self.chart_service = ChartService(supabase_client=supabase_client)
+        logger.info("MorningPlanner initialized with ChartService")
 
 
     def analyze_asia_sweep(
@@ -421,7 +416,7 @@ class MorningPlanner:
             return None
 
 
-    def generate_setup(
+    async def generate_setup(
         self,
         symbol_id: UUID,
         symbol_name: str,
@@ -443,22 +438,54 @@ class MorningPlanner:
         logger.info(f"Generating setup for {symbol_name}: {setup_data['strategy']}")
 
         try:
-            # Generate chart for setup
-            chart_url = None
+            # Generate charts for setup (1h for structure, 15m for entry, 1D for context)
+            chart_url_1h = None
+            chart_url_15m = None
+            chart_url_1d = None
             chart_snapshot_id = None
 
             try:
-                logger.info(f"Generating chart for setup: {symbol_name}...")
-                snapshot = self.chart_generator.generate_chart(
-                    symbol_id=str(symbol_id),
-                    timeframe='1h',  # 1h for intraday setups
-                    trigger_type='setup'
-                )
-                chart_url = snapshot['chart_url']
-                chart_snapshot_id = snapshot.get('snapshot_id')
-                logger.info(f"📊 Setup chart generated: {chart_url}")
+                logger.info(f"Generating charts for setup: {symbol_name}...")
 
-            except (RateLimitError, ChartGenerationError, SymbolNotFoundError) as e:
+                # 1h chart (intraday profile - structure)
+                chart_url_1h = await self.chart_service.generate_chart_url(
+                    symbol=symbol_name,
+                    timeframe='1h',
+                    agent_name='MorningPlanner',
+                    symbol_id=str(symbol_id)
+                )
+
+                # 15m chart (intraday profile - entry)
+                chart_url_15m = await self.chart_service.generate_chart_url(
+                    symbol=symbol_name,
+                    timeframe='15m',
+                    agent_name='MorningPlanner',
+                    symbol_id=str(symbol_id)
+                )
+
+                # 1D chart (swing profile - context with prev high/low)
+                chart_url_1d = await self.chart_service.generate_chart_url(
+                    symbol=symbol_name,
+                    timeframe='1D',
+                    agent_name='MorningPlanner',
+                    symbol_id=str(symbol_id)
+                )
+
+                # Save snapshot for primary timeframe (1h)
+                if chart_url_1h:
+                    chart_snapshot_id = await self.chart_service.save_snapshot(
+                        symbol_id=str(symbol_id),
+                        chart_url=chart_url_1h,
+                        timeframe='1h',
+                        agent_name='MorningPlanner',
+                        metadata={
+                            'strategy': setup_data['strategy'],
+                            'confidence': setup_data['confidence']
+                        }
+                    )
+                    logger.info(f"📊 Setup charts generated: 1h, 15m, 1D")
+
+            except Exception as e:
                 logger.warning(f"Chart generation failed for setup: {e}")
                 # Continue without chart - setup is still valid
 
@@ -476,8 +503,10 @@ class MorningPlanner:
                 "status": "pending",
                 "payload": {
                     **setup_data,  # Full JSON details including metadata
-                    "chart_url": chart_url,
-                    "chart_snapshot_id": chart_snapshot_id
+                    "chart_url_1h": chart_url_1h,
+                    "chart_url_15m": chart_url_15m,
+                    "chart_url_1d": chart_url_1d,
+                    "chart_snapshot_id": str(chart_snapshot_id) if chart_snapshot_id else None
                 }
             }
 
@@ -498,7 +527,7 @@ class MorningPlanner:
             return None
 
 
-    def run(self, symbols: Optional[List[str]] = None) -> Dict[str, Any]:
+    async def run(self, symbols: Optional[List[str]] = None) -> Dict[str, Any]:
         """
         Main execution method - Called by Celery scheduler at 08:25 MEZ daily
 
@@ -572,7 +601,7 @@ class MorningPlanner:
                     )
 
                     if asia_sweep_setup:
-                        setup_id = self.generate_setup(
+                        setup_id = await self.generate_setup(
                             symbol_id=symbol_id,
                             symbol_name=symbol_name,
                             setup_data=asia_sweep_setup
@@ -597,7 +626,7 @@ class MorningPlanner:
                     )
 
                     if y_low_setup:
-                        setup_id = self.generate_setup(
+                        setup_id = await self.generate_setup(
                             symbol_id=symbol_id,
                             symbol_name=symbol_name,
                             setup_data=y_low_setup

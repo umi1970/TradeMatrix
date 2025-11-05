@@ -14,6 +14,7 @@ import {
   User,
   Menu,
   Settings,
+  Bot,
 } from 'lucide-react'
 
 const navigation = [
@@ -21,6 +22,11 @@ const navigation = [
     name: 'Dashboard',
     href: '/dashboard',
     icon: LayoutDashboard,
+  },
+  {
+    name: 'AI Agents',
+    href: '/agents',
+    icon: Bot,
   },
   {
     name: 'Trades',

@@ -26,6 +26,8 @@ import numpy as np
 
 from supabase import Client
 
+from src.chart_service import ChartService
+
 # Setup logger
 logger = logging.getLogger(__name__)
 
@@ -50,7 +52,8 @@ class SignalBot:
             supabase_client: Supabase client instance (admin client for bypassing RLS)
         """
         self.supabase = supabase_client
-        logger.info("SignalBot initialized")
+        self.chart_service = ChartService(supabase_client=supabase_client)
+        logger.info("SignalBot initialized with ChartService")
 
 
     def analyze_market_structure(
@@ -240,7 +243,7 @@ class SignalBot:
             return None
 
 
-    def generate_entry_signals(
+    async def generate_entry_signals(
         self,
         symbol_id: UUID,
         symbol_name: str
@@ -340,6 +343,36 @@ class SignalBot:
                         f"setup={setup_id}, confidence={validation_result.confidence:.2f}"
                     )
 
+                    # Generate chart for valid signal (15m and 1h)
+                    chart_url_15m = await self.chart_service.generate_chart_url(
+                        symbol=symbol_name,
+                        timeframe='15m',
+                        agent_name='SignalBot',
+                        symbol_id=str(symbol_id)
+                    )
+
+                    chart_url_1h = await self.chart_service.generate_chart_url(
+                        symbol=symbol_name,
+                        timeframe='1h',
+                        agent_name='SignalBot',
+                        symbol_id=str(symbol_id)
+                    )
+
+                    # Save snapshot for primary timeframe (15m)
+                    snapshot_id = None
+                    if chart_url_15m:
+                        snapshot_id = await self.chart_service.save_snapshot(
+                            symbol_id=str(symbol_id),
+                            chart_url=chart_url_15m,
+                            timeframe='15m',
+                            agent_name='SignalBot',
+                            metadata={
+                                'setup_id': str(setup_id),
+                                'strategy': strategy,
+                                'confidence': validation_result.confidence
+                            }
+                        )
+
                     entry_signals.append({
                         'setup_id': setup_id,
                         'strategy': strategy,
@@ -350,7 +383,9 @@ class SignalBot:
                         'validation_breakdown': validation_result.breakdown,
                         'priority_override': validation_result.priority_override,
                         'notes': validation_result.notes,
-                        'timestamp': market_structure['timestamp']
+                        'timestamp': market_structure['timestamp'],
+                        'chart_url': chart_url_15m,
+                        'chart_snapshot_id': str(snapshot_id) if snapshot_id else None
                     })
                 else:
                     logger.debug(
@@ -575,7 +610,7 @@ class SignalBot:
             return None
 
 
-    def run(self, symbols: Optional[List[str]] = None) -> Dict[str, Any]:
+    async def run(self, symbols: Optional[List[str]] = None) -> Dict[str, Any]:
         """
         Main execution method - Called by Celery scheduler every 60 seconds
 
@@ -652,7 +687,7 @@ class SignalBot:
 
             try:
                 # Generate entry signals
-                entry_signals = self.generate_entry_signals(
+                entry_signals = await self.generate_entry_signals(
                     symbol_id=symbol_id,
                     symbol_name=symbol_name
                 )

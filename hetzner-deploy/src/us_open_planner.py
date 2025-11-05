@@ -23,6 +23,8 @@ from uuid import UUID
 from supabase import Client
 from config.supabase import get_supabase_admin, settings
 
+from src.chart_service import ChartService
+
 
 class USOpenPlanner:
     """
@@ -44,6 +46,7 @@ class USOpenPlanner:
             supabase_client: Optional Supabase client (defaults to admin client)
         """
         self.supabase = supabase_client or get_supabase_admin()
+        self.chart_service = ChartService(supabase_client=self.supabase)
         self.symbols = ['DJI', 'NDX']  # Dow Jones, NASDAQ
         self.orb_start = time(15, 30)  # 15:30 MEZ
         self.orb_end = time(15, 45)    # 15:45 MEZ
@@ -386,6 +389,49 @@ class USOpenPlanner:
             # 4. Calculate confidence score
             confidence = await self._calculate_confidence(orb_range, breakout, daily_levels)
 
+            # 4b. Generate charts for setup (5m + 15m)
+            chart_url_5m = None
+            chart_url_15m = None
+            chart_snapshot_id = None
+
+            try:
+                logger.info(f"Generating charts for US Open setup: {symbol}...")
+
+                # 5m chart (scalping profile - entry timing)
+                chart_url_5m = await self.chart_service.generate_chart_url(
+                    symbol=symbol,
+                    timeframe='5m',
+                    agent_name='USOpenPlanner',
+                    symbol_id=str(symbol_id)
+                )
+
+                # 15m chart (intraday profile - structure)
+                chart_url_15m = await self.chart_service.generate_chart_url(
+                    symbol=symbol,
+                    timeframe='15m',
+                    agent_name='USOpenPlanner',
+                    symbol_id=str(symbol_id)
+                )
+
+                # Save snapshot for primary timeframe (5m)
+                if chart_url_5m:
+                    chart_snapshot_id = await self.chart_service.save_snapshot(
+                        symbol_id=str(symbol_id),
+                        chart_url=chart_url_5m,
+                        timeframe='5m',
+                        agent_name='USOpenPlanner',
+                        metadata={
+                            'strategy': 'orb',
+                            'side': breakout['direction'],
+                            'confidence': confidence
+                        }
+                    )
+                    logger.info(f"📊 US Open charts generated: 5m, 15m")
+
+            except Exception as e:
+                logger.warning(f"Chart generation failed for US Open setup: {e}")
+                # Continue without chart - setup is still valid
+
             # 5. Build setup payload
             setup_data = {
                 'module': 'usopen',
@@ -415,7 +461,10 @@ class USOpenPlanner:
                     },
                     'risk_reward': 2.0,
                     'risk_amount': float(risk),
-                    'daily_levels': daily_levels if daily_levels else None
+                    'daily_levels': daily_levels if daily_levels else None,
+                    'chart_url_5m': chart_url_5m,
+                    'chart_url_15m': chart_url_15m,
+                    'chart_snapshot_id': str(chart_snapshot_id) if chart_snapshot_id else None
                 }
             }
 

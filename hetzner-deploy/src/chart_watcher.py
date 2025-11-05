@@ -31,7 +31,7 @@ import httpx
 from supabase import Client
 from openai import OpenAI
 
-from src.chart_generator import ChartGenerator
+from src.chart_service import ChartService
 from src.exceptions.chart_errors import (
     RateLimitError,
     ChartGenerationError,
@@ -64,8 +64,8 @@ class ChartWatcher:
         """
         self.supabase = supabase_client
         self.openai_client = OpenAI(api_key=openai_api_key)
-        self.chart_generator = ChartGenerator()
-        logger.info("ChartWatcher initialized with ChartGenerator")
+        self.chart_service = ChartService(supabase_client=supabase_client)
+        logger.info("ChartWatcher initialized with ChartService")
 
 
     def download_chart(self, chart_url: str) -> Optional[bytes]:
@@ -493,7 +493,7 @@ If no clear patterns are visible, return an empty patterns array but still provi
         return round(avg_confidence, 2)
 
 
-    def run(
+    async def run(
         self,
         symbols: Optional[List[str]] = None,
         timeframe: str = '1h'
@@ -555,23 +555,48 @@ If no clear patterns are visible, return an empty patterns array but still provi
                 symbol_name = symbol_record['symbol']
 
                 try:
-                    # Generate chart via ChartGenerator
-                    logger.info(f"Generating chart for {symbol_name}...")
+                    # Generate chart via ChartService (5m for scalping, 15m for intraday)
+                    logger.info(f"Generating charts for {symbol_name}...")
 
-                    snapshot = self.chart_generator.generate_chart(
-                        symbol_id=str(symbol_id),
-                        timeframe=timeframe,
-                        trigger_type='analysis'
+                    # Generate 5m chart (scalping profile)
+                    chart_url_5m = await self.chart_service.generate_chart_url(
+                        symbol=symbol_name,
+                        timeframe='5m',
+                        agent_name='ChartWatcher',
+                        symbol_id=str(symbol_id)
                     )
 
-                    chart_url = snapshot['chart_url']
-                    logger.info(f"Chart generated: {chart_url}")
+                    # Generate 15m chart (intraday profile)
+                    chart_url_15m = await self.chart_service.generate_chart_url(
+                        symbol=symbol_name,
+                        timeframe='15m',
+                        agent_name='ChartWatcher',
+                        symbol_id=str(symbol_id)
+                    )
+
+                    # Use primary timeframe for analysis (from parameter)
+                    primary_chart_url = chart_url_15m if timeframe == '15m' else chart_url_5m
+
+                    if not primary_chart_url:
+                        logger.warning(f"Failed to generate chart for {symbol_name}")
+                        continue
+
+                    # Save snapshot for primary timeframe
+                    snapshot_id = await self.chart_service.save_snapshot(
+                        symbol_id=str(symbol_id),
+                        chart_url=primary_chart_url,
+                        timeframe=timeframe,
+                        agent_name='ChartWatcher',
+                        metadata={'analysis_type': 'pattern_detection'}
+                    )
+
+                    logger.info(f"Chart generated: {primary_chart_url}")
 
                     # Analyze chart with OpenAI Vision API
                     analysis_id = self.analyze_chart(
                         symbol_id=symbol_id,
                         symbol_name=symbol_name,
-                        chart_url=chart_url,
+                        chart_url=primary_chart_url,
                         timeframe=timeframe
                     )
 
@@ -580,20 +605,14 @@ If no clear patterns are visible, return an empty patterns array but still provi
                             'symbol': symbol_name,
                             'analysis_id': str(analysis_id),
                             'timeframe': timeframe,
-                            'chart_snapshot_id': snapshot.get('snapshot_id')
+                            'chart_snapshot_id': str(snapshot_id) if snapshot_id else None
                         })
                         logger.info(f"✅ Chart analyzed: {symbol_name} ({timeframe})")
 
                 except RateLimitError as e:
-                    logger.error(f"❌ Rate limit reached: {e.details}")
+                    logger.error(f"❌ Rate limit reached: {e.details if hasattr(e, 'details') else str(e)}")
                     # Stop processing more symbols to avoid hitting rate limit
                     break
-                except SymbolNotFoundError:
-                    logger.warning(f"Symbol {symbol_name} not configured for charts - skipping")
-                    continue
-                except ChartGenerationError as e:
-                    logger.error(f"❌ Chart generation failed for {symbol_name}: {e}")
-                    continue
                 except Exception as e:
                     logger.error(f"Error analyzing chart for {symbol_name}: {e}", exc_info=True)
                     continue

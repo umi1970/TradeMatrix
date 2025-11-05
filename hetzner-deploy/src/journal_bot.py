@@ -44,12 +44,7 @@ import httpx
 
 from openai import OpenAI
 
-from src.chart_generator import ChartGenerator
-from src.exceptions.chart_errors import (
-    RateLimitError,
-    ChartGenerationError,
-    SymbolNotFoundError
-)
+from src.chart_service import ChartService
 
 # Setup logger
 logger = logging.getLogger(__name__)
@@ -79,12 +74,12 @@ class JournalBot:
         """
         self.supabase = supabase_client
         self.openai_api_key = openai_api_key
-        self.chart_generator = ChartGenerator()
+        self.chart_service = ChartService(supabase_client=supabase_client)
 
         # Initialize OpenAI client (direct API, no LangChain)
         self.openai_client = OpenAI(api_key=openai_api_key)
 
-        logger.info("JournalBot initialized with ChartGenerator")
+        logger.info("JournalBot initialized with ChartService")
 
 
     def fetch_trades(
@@ -726,7 +721,7 @@ Format as JSON with keys: summary, insights, recommendations"""
             logger.error(f"Error downloading chart image: {e}")
             return None
 
-    def _generate_trade_charts(self, trades: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    async def _generate_trade_charts(self, trades: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
         """
         Generate charts for all trades
 
@@ -743,22 +738,41 @@ Format as JSON with keys: summary, insights, recommendations"""
         for trade in trades[:20]:  # Limit to 20 trades for reports
             try:
                 symbol_id = trade.get('symbol_id')
+                symbol_name = trade.get('market_symbols', {}).get('symbol', 'N/A')
                 if not symbol_id:
                     logger.warning(f"Trade {trade.get('id')} missing symbol_id - skipping chart")
                     continue
 
-                # Generate chart for this trade
-                snapshot = self.chart_generator.generate_chart(
+                # Generate 1D chart with swing profile (context + prev high/low levels)
+                chart_url = await self.chart_service.generate_chart_url(
+                    symbol=symbol_name,
+                    timeframe='1D',
+                    agent_name='JournalBot',
+                    symbol_id=symbol_id
+                )
+
+                if not chart_url:
+                    logger.warning(f"Failed to generate chart for trade {trade.get('id')}")
+                    continue
+
+                # Save snapshot
+                snapshot_id = await self.chart_service.save_snapshot(
                     symbol_id=symbol_id,
-                    timeframe='4h',  # 4h for reports
-                    trigger_type='report'
+                    chart_url=chart_url,
+                    timeframe='1D',
+                    agent_name='JournalBot',
+                    metadata={
+                        'trade_id': trade['id'],
+                        'entry_price': float(trade.get('entry_price', 0)),
+                        'pnl': float(trade.get('pnl', 0))
+                    }
                 )
 
                 report_charts.append({
                     'trade_id': trade['id'],
-                    'symbol': trade.get('market_symbols', {}).get('symbol', 'N/A'),
-                    'chart_url': snapshot['chart_url'],
-                    'chart_snapshot_id': snapshot.get('snapshot_id'),
+                    'symbol': symbol_name,
+                    'chart_url': chart_url,
+                    'chart_snapshot_id': str(snapshot_id) if snapshot_id else None,
                     'entry_price': trade.get('entry_price'),
                     'exit_price': trade.get('exit_price'),
                     'pnl': trade.get('pnl', 0)
@@ -766,14 +780,6 @@ Format as JSON with keys: summary, insights, recommendations"""
 
                 logger.info(f"  ✅ Chart generated for {trade['id']}")
 
-            except RateLimitError as e:
-                logger.warning(f"Rate limit reached during chart generation: {e.details}")
-                # Stop generating more charts
-                break
-            except (ChartGenerationError, SymbolNotFoundError) as e:
-                logger.warning(f"Chart generation failed for trade {trade.get('id')}: {e}")
-                # Continue without chart
-                continue
             except Exception as e:
                 logger.error(f"Unexpected error generating chart for trade {trade.get('id')}: {e}")
                 continue
@@ -836,7 +842,7 @@ Format as JSON with keys: summary, insights, recommendations"""
                 'symbols': []
             }
 
-    def generate_daily_report(self, user_id: Optional[UUID] = None) -> Dict[str, Any]:
+    async def generate_daily_report(self, user_id: Optional[UUID] = None) -> Dict[str, Any]:
         """
         Generate daily trading report
 
@@ -894,7 +900,7 @@ Format as JSON with keys: summary, insights, recommendations"""
             }
 
             # Step 3 - Generate charts for trades
-            trade_charts = self._generate_trade_charts(trades)
+            trade_charts = await self._generate_trade_charts(trades)
 
             # Step 4 - Generate AI summary
             ai_summary = self.generate_ai_summary(trades)
@@ -968,7 +974,7 @@ Format as JSON with keys: summary, insights, recommendations"""
             }
 
 
-    def run(self) -> Dict[str, Any]:
+    async def run(self) -> Dict[str, Any]:
         """
         Main execution method - Called by Celery scheduler at 21:00 MEZ daily
 
@@ -992,7 +998,7 @@ Format as JSON with keys: summary, insights, recommendations"""
             # For now, generate a single global report (all users combined)
             # In production, you would fetch users and generate per-user reports
 
-            report_result = self.generate_daily_report(user_id=None)
+            report_result = await self.generate_daily_report(user_id=None)
 
             reports = []
             if report_result.get('success'):
