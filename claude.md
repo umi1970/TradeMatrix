@@ -141,37 +141,50 @@
   - Latest Commit: 6f952fb (JSON serialization fix)
   - Status: LIVE, monitoring 5 symbols, 6 test subscriptions active
 
-### ✅ Phase 5C: Editable Market Watchlist - READY FOR DEPLOYMENT (95%) ⭐ COMPLETED!
+### ⏸️ Phase 5C: TradingView Watchlist - ON HOLD (Replaced by Phase 5D)
 **Feature:** User-customizable watchlist with TradingView Widgets
 
-**Architecture Decision (2025-11-03):**
-- 💡 **Hybrid Approach:** TradingView Widgets (free) für Display + Hetzner für Alerts
-- ❌ **KEIN WebSocket** - TradingView holt Live-Daten direkt, Backend nur für Alerts!
-- ✅ **Vorteile:** €0 Kosten, keine Komplexität, ~6h statt 2-3 Tage
+**Problem gefunden (2025-11-05):**
+- ❌ TradingView FREE Widgets haben KEINE echten Index-Daten (TVC:DJI nur Premium)
+- ❌ ETF Proxies (DIA, QQQ) funktionieren, aber User will echte Indices
+- ✅ **Entscheidung:** chart-img.com stattdessen nutzen (Phase 5D)
+
+**Status:** Code existiert, aber nicht deployed (wartet auf chart-img Integration)
+
+---
+
+### 🚧 Phase 5D: chart-img.com Integration - IN PROGRESS (5%) ⭐ CURRENT!
+**Feature:** AI-Powered Chart Analysis mit echten Index-Daten
+
+**Architecture Decision (2025-11-05):**
+- 💡 **chart-img.com API:** Generiert JPG/PNG Charts von TradingView
+- ✅ **Echte Index-Daten:** TVC:DJI, NASDAQ:NDX, XETR:DAX funktionieren!
+- ✅ **MEGA Plan:** $10/Monat, 1000 requests/day, alle Indicators
+- ✅ **Perfect für AI Agents:** ChartWatcher, MorningPlanner, JournalBot
 
 **Status:**
-- [x] **Database:** user_watchlist Tabelle (Migration 017) ✅
-- [x] **Database:** Migration 018 SQL ready (tv_symbol column) ✅
-- [x] **Dokumentation:** 7 Feature-Files komplett ✅
-- [x] **Frontend:** TradingView Widget Komponente ✅
-- [x] **Frontend:** Symbol Picker Modal ✅
-- [x] **Frontend:** Dashboard Integration ✅
-- [x] **Backend:** Dynamic Symbol Loading (price_fetcher.py) ✅
-- [ ] **Deployment:** Execute Migration 018 in Supabase ⚠️ BLOCKER
-- [ ] **Deployment:** Push to Netlify
-- [ ] **Deployment:** Deploy to Hetzner
-
-**📦 Deliverables:**
-- 2 new components, 6 modified files, 1 deleted file
-- TypeScript: 0 errors, ESLint: 0 errors
-- ~500 lines of code
+- [x] **API Tests:** DAX + DJI funktionieren ✅
+- [x] **MEGA Plan:** Aktiviert ($10/mo) ✅
+- [ ] **BLOCKER 1:** Indicator-Namen für v2 API finden (RSI, MACD)
+- [ ] **BLOCKER 2:** DAX real-time Exchange finden (aktuell 15min delay)
+- [ ] **Phase 1:** Database (1h) - chart_config, chart_snapshots
+- [ ] **Phase 2:** Backend (2h) - ChartService, API endpoints
+- [ ] **Phase 3:** Frontend (3h) - Chart config modal, gallery
+- [ ] **Phase 4:** Agents (3h) - ChartWatcher, MorningPlanner, JournalBot
+- [ ] **Phase 5:** Testing (2h)
+- [ ] **Phase 6:** Deployment (1h)
 
 **📖 Dokumentation:**
-- **Feature Docs:** [docs/FEATURES/tradingview-watchlist/](./docs/FEATURES/tradingview-watchlist/)
-- **Deployment Guide:** [DEPLOYMENT_READY.md](./DEPLOYMENT_READY.md) 👈 **DEPLOY HERE!**
-- **Migration Guide:** [MIGRATION_018_INSTRUCTIONS.md](./MIGRATION_018_INSTRUCTIONS.md)
+- **Feature Docs:** [docs/FEATURES/chart-img-integration/](./docs/FEATURES/chart-img-integration/) (11 Files!)
+- **Implementation:** [IMPLEMENTATION_CHECKLIST.md](./docs/FEATURES/chart-img-integration/IMPLEMENTATION_CHECKLIST.md)
+- **Session Handoff:** [SESSION_HANDOFF_CHART_IMG.md](./SESSION_HANDOFF_CHART_IMG.md) 👈 **START HERE!**
 
-**🎯 Nächster Schritt:** Execute Migration 018 in Supabase SQL Editor (2 min) → Then deploy!
+**🎯 Nächster Schritt:**
+1. Fix Blocker 1: Indicator-Namen (30 min)
+2. Fix Blocker 2: DAX real-time Exchange (15 min)
+3. Start Phase 1: Database Setup (1h)
+
+**Estimated Time:** 13h total (1h Blockers + 12h Implementation)
 
 ---
 
