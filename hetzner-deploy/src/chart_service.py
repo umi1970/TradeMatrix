@@ -463,14 +463,27 @@ class ChartService:
             Snapshot ID (UUID) or None if failed
         """
         try:
+            # Map agent_name to trigger_type (existing table schema from migration 013)
+            trigger_type_map = {
+                "ChartWatcher": "analysis",
+                "SignalBot": "setup",
+                "MorningPlanner": "report",
+                "JournalBot": "report",
+                "USOpenPlanner": "setup"
+            }
+            trigger_type = trigger_type_map.get(agent_name, "analysis")
+
             snapshot_data = {
                 "symbol_id": symbol_id,
                 "chart_url": chart_url,
                 "timeframe": timeframe,
-                "created_by_agent": agent_name,
-                "metadata": metadata or {},
-                "created_at": datetime.utcnow().isoformat(),
-                "expires_at": (datetime.utcnow() + timedelta(days=7)).isoformat()
+                "trigger_type": trigger_type,  # Uses existing column from migration 013
+                "metadata": {
+                    **(metadata or {}),
+                    "agent_name": agent_name  # Store agent name in metadata
+                },
+                "expires_at": (datetime.utcnow() + timedelta(days=60)).isoformat()
+                # generated_at is set automatically by database DEFAULT NOW()
             }
 
             response = self.supabase.table('chart_snapshots')\
