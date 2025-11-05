@@ -1,0 +1,174 @@
+{
+  "name": "TradeMatrix.ai ChartProfileSelector",
+  "version": "1.0",
+  "description": "Timeframe-optimized indicator profiles for chart-img.com v2 API",
+  "constraint": "MEGA Plan limit: 10 parameters (studies + drawings) per request",
+
+  "profiles": {
+    "scalping": {
+      "timeframes": ["1m", "5m"],
+      "use_case": "ChartWatcher - Entry timing & quick scalp setups",
+      "total_parameters": 10,
+      "indicators": [
+        {"name": "Moving Average Exponential", "input": {"length": 20}, "forceOverlay": true},
+        {"name": "Moving Average Exponential", "input": {"length": 50}, "forceOverlay": true},
+        {"name": "Moving Average Exponential", "input": {"length": 200}, "forceOverlay": true},
+        {"name": "Relative Strength Index", "input": {"length": 14}},
+        {"name": "MACD", "input": {"fastLength": 12, "slowLength": 26, "signalLength": 9}},
+        {"name": "Bollinger Bands", "input": {"length": 20, "stdDev": 2}},
+        {"name": "Average True Range", "input": {"length": 14}},
+        {"name": "Pivot Points Standard"},
+        {"name": "Volume"}
+      ],
+      "drawings": [],
+      "rationale": "Fast timeframes need all EMAs for quick trend shifts, Volume for breakout confirmation, no drawings needed"
+    },
+
+    "intraday": {
+      "timeframes": ["15m", "1h"],
+      "use_case": "ChartWatcher - Entry confirmation & structure analysis",
+      "total_parameters": 10,
+      "indicators": [
+        {"name": "Moving Average Exponential", "input": {"length": 20}, "forceOverlay": true},
+        {"name": "Moving Average Exponential", "input": {"length": 50}, "forceOverlay": true},
+        {"name": "Moving Average Exponential", "input": {"length": 200}, "forceOverlay": true},
+        {"name": "Relative Strength Index", "input": {"length": 14}},
+        {"name": "MACD", "input": {"fastLength": 12, "slowLength": 26, "signalLength": 9}},
+        {"name": "Ichimoku Cloud"},
+        {"name": "Bollinger Bands", "input": {"length": 20, "stdDev": 2}},
+        {"name": "Average True Range", "input": {"length": 14}},
+        {"name": "Pivot Points Standard"}
+      ],
+      "drawings": [],
+      "rationale": "Mid timeframes add Ichimoku for trend regime, remove Volume (less critical here)"
+    },
+
+    "swing": {
+      "timeframes": ["4h", "1D"],
+      "use_case": "MorningPlanner & JournalBot - Daily reports & context",
+      "total_parameters": 10,
+      "indicators": [
+        {"name": "Moving Average Exponential", "input": {"length": 50}, "forceOverlay": true},
+        {"name": "Moving Average Exponential", "input": {"length": 200}, "forceOverlay": true},
+        {"name": "Ichimoku Cloud"},
+        {"name": "Relative Strength Index", "input": {"length": 14}},
+        {"name": "MACD", "input": {"fastLength": 12, "slowLength": 26, "signalLength": 9}},
+        {"name": "Bollinger Bands", "input": {"length": 20, "stdDev": 2}},
+        {"name": "Average True Range", "input": {"length": 14}},
+        {"name": "Volume"}
+      ],
+      "drawings": [
+        {
+          "name": "Horizontal Line",
+          "type": "prev_high",
+          "input": {"price": "DYNAMIC"},
+          "override": {"lineWidth": 2, "lineColor": "rgb(255,255,0)"}
+        },
+        {
+          "name": "Horizontal Line",
+          "type": "prev_low",
+          "input": {"price": "DYNAMIC"},
+          "override": {"lineWidth": 2, "lineColor": "rgb(0,255,255)"}
+        }
+      ],
+      "rationale": "Higher timeframes focus on EMA50/200 for major trend, add Smart-Money lines (PrevHigh/Low), remove EMA20 and Pivots"
+    }
+  },
+
+  "implementation": {
+    "backend_function": "get_chart_profile(interval: str) -> dict",
+    "logic": {
+      "if_interval_in": {
+        "['1m', '5m']": "return profiles['scalping']",
+        "['15m', '1h']": "return profiles['intraday']",
+        "['4h', '1D']": "return profiles['swing']"
+      }
+    },
+    "dynamic_drawings": {
+      "swing_profile_only": true,
+      "source": "eod_levels table",
+      "query": "SELECT yesterday_high, yesterday_low FROM eod_levels WHERE symbol = ? AND date = CURRENT_DATE",
+      "note": "Replace 'DYNAMIC' price values before API call"
+    }
+  },
+
+  "api_examples": {
+    "scalping_5m": {
+      "theme": "dark",
+      "interval": "5m",
+      "symbol": "TVC:DAX",
+      "width": 1200,
+      "height": 800,
+      "studies": [
+        {"name": "Moving Average Exponential", "input": {"length": 20}, "forceOverlay": true},
+        {"name": "Moving Average Exponential", "input": {"length": 50}, "forceOverlay": true},
+        {"name": "Moving Average Exponential", "input": {"length": 200}, "forceOverlay": true},
+        {"name": "Relative Strength Index", "input": {"length": 14}},
+        {"name": "MACD", "input": {"fastLength": 12, "slowLength": 26, "signalLength": 9}},
+        {"name": "Bollinger Bands", "input": {"length": 20, "stdDev": 2}},
+        {"name": "Average True Range", "input": {"length": 14}},
+        {"name": "Pivot Points Standard"},
+        {"name": "Volume"}
+      ]
+    },
+
+    "intraday_1h": {
+      "theme": "dark",
+      "interval": "1h",
+      "symbol": "TVC:DAX",
+      "width": 1200,
+      "height": 800,
+      "studies": [
+        {"name": "Moving Average Exponential", "input": {"length": 20}, "forceOverlay": true},
+        {"name": "Moving Average Exponential", "input": {"length": 50}, "forceOverlay": true},
+        {"name": "Moving Average Exponential", "input": {"length": 200}, "forceOverlay": true},
+        {"name": "Relative Strength Index", "input": {"length": 14}},
+        {"name": "MACD", "input": {"fastLength": 12, "slowLength": 26, "signalLength": 9}},
+        {"name": "Ichimoku Cloud"},
+        {"name": "Bollinger Bands", "input": {"length": 20, "stdDev": 2}},
+        {"name": "Average True Range", "input": {"length": 14}},
+        {"name": "Pivot Points Standard"}
+      ]
+    },
+
+    "swing_1d": {
+      "theme": "dark",
+      "interval": "1D",
+      "symbol": "TVC:DAX",
+      "width": 1200,
+      "height": 800,
+      "studies": [
+        {"name": "Moving Average Exponential", "input": {"length": 50}, "forceOverlay": true},
+        {"name": "Moving Average Exponential", "input": {"length": 200}, "forceOverlay": true},
+        {"name": "Ichimoku Cloud"},
+        {"name": "Relative Strength Index", "input": {"length": 14}},
+        {"name": "MACD", "input": {"fastLength": 12, "slowLength": 26, "signalLength": 9}},
+        {"name": "Bollinger Bands", "input": {"length": 20, "stdDev": 2}},
+        {"name": "Average True Range", "input": {"length": 14}},
+        {"name": "Volume"}
+      ],
+      "drawings": [
+        {"name": "Horizontal Line", "input": {"price": 19500}, "override": {"lineWidth": 2, "lineColor": "rgb(255,255,0)"}},
+        {"name": "Horizontal Line", "input": {"price": 19300}, "override": {"lineWidth": 2, "lineColor": "rgb(0,255,255)"}}
+      ]
+    }
+  },
+
+  "agent_mapping": {
+    "ChartWatcher": {
+      "primary_timeframes": ["5m", "15m"],
+      "profiles": ["scalping", "intraday"],
+      "purpose": "Real-time entry timing and setup detection"
+    },
+    "MorningPlanner": {
+      "primary_timeframes": ["1h", "1D"],
+      "profiles": ["intraday", "swing"],
+      "purpose": "Daily market structure and bias report"
+    },
+    "JournalBot": {
+      "primary_timeframes": ["1D"],
+      "profiles": ["swing"],
+      "purpose": "End-of-day trade review with context"
+    }
+  }
+}

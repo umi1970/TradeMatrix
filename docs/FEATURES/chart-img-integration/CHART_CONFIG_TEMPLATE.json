@@ -1,0 +1,183 @@
+{
+  "name": "TradeMatrix.ai Baseline Chart Configuration",
+  "version": "1.0",
+  "description": "Complete chart-img.com v2 API configuration for AI Analyzer Pipeline",
+  "limits": {
+    "mega_plan_max_parameters": 10,
+    "note": "studies + drawings combined must be <= 10"
+  },
+  "symbol_mapping": {
+    "^GDAXI": "TVC:DAX",
+    "^DJI": "TVC:DJI",
+    "^NDX": "NASDAQ:NDX",
+    "EURUSD": "FX:EURUSD",
+    "EURGBP": "FX:EURGBP"
+  },
+  "timeframes": {
+    "chart_watcher": ["5m", "15m"],
+    "morning_planner": ["1h", "1D"],
+    "journal_bot": ["1D"]
+  },
+  "baseline_config": {
+    "theme": "dark",
+    "width": 1200,
+    "height": 800,
+    "studies": [
+      {
+        "name": "Moving Average Exponential",
+        "input": {"length": 20},
+        "forceOverlay": true,
+        "purpose": "Short-term trend (Cross-Detection)"
+      },
+      {
+        "name": "Moving Average Exponential",
+        "input": {"length": 50},
+        "forceOverlay": true,
+        "purpose": "Mid-term trend"
+      },
+      {
+        "name": "Bollinger Bands",
+        "input": {"length": 20, "stdDev": 2},
+        "purpose": "Volatility Range / Mean-Reversion"
+      },
+      {
+        "name": "Relative Strength Index",
+        "input": {"length": 14},
+        "purpose": "Momentum / Overbought-Oversold Filter"
+      },
+      {
+        "name": "MACD",
+        "input": {
+          "fastLength": 12,
+          "slowLength": 26,
+          "signalLength": 9
+        },
+        "purpose": "Trend Continuation / Divergence Detection"
+      },
+      {
+        "name": "Ichimoku Cloud",
+        "input": {
+          "conversionLinePeriod": 9,
+          "baseLinePeriod": 26,
+          "laggingSpan2Period": 52,
+          "displacement": 26
+        },
+        "purpose": "Trend Regime / Support-Resistance"
+      },
+      {
+        "name": "Volume",
+        "purpose": "Breakout Confirmation"
+      }
+    ],
+    "drawings": [
+      {
+        "name": "Horizontal Line",
+        "type": "prev_high",
+        "input": {"price": "DYNAMIC"},
+        "override": {
+          "lineWidth": 2,
+          "lineColor": "rgb(255,255,0)"
+        },
+        "purpose": "Previous Day High - Smart Money Sweep Zone"
+      },
+      {
+        "name": "Horizontal Line",
+        "type": "prev_low",
+        "input": {"price": "DYNAMIC"},
+        "override": {
+          "lineWidth": 2,
+          "lineColor": "rgb(0,255,255)"
+        },
+        "purpose": "Previous Day Low - Smart Money Sweep Zone"
+      },
+      {
+        "name": "Horizontal Line",
+        "type": "daily_open",
+        "input": {"price": "DYNAMIC"},
+        "override": {
+          "lineWidth": 2,
+          "lineColor": "rgb(255,255,255)"
+        },
+        "purpose": "Daily Open - Directional Bias Reference"
+      }
+    ]
+  },
+  "removed_from_baseline": {
+    "reason": "MEGA Plan 10 parameter limit",
+    "studies": [
+      {
+        "name": "Moving Average Exponential",
+        "input": {"length": 200},
+        "reason": "Less important for 5m/15m charts"
+      },
+      {
+        "name": "Average True Range",
+        "input": {"length": 14},
+        "reason": "Backend calculation only, not visually critical"
+      },
+      {
+        "name": "Pivot Points Standard",
+        "reason": "Replaced by custom PrevHigh/Low/Open lines"
+      }
+    ],
+    "backend_calculation": [
+      "ATR(14) - calculated separately for SL/TP sizing",
+      "EMA200 - calculated for long-term trend bias"
+    ]
+  },
+  "example_request_5m": {
+    "method": "POST",
+    "url": "https://api.chart-img.com/v2/tradingview/advanced-chart",
+    "headers": {
+      "x-api-key": "3pJTrvapkk9LQ7FwaUOmf6I354fSOeWa8VJifI2l",
+      "content-type": "application/json"
+    },
+    "body": {
+      "theme": "dark",
+      "interval": "5m",
+      "symbol": "TVC:DAX",
+      "width": 1200,
+      "height": 800,
+      "studies": [
+        {"name": "Moving Average Exponential", "input": {"length": 20}, "forceOverlay": true},
+        {"name": "Moving Average Exponential", "input": {"length": 50}, "forceOverlay": true},
+        {"name": "Bollinger Bands", "input": {"length": 20, "stdDev": 2}},
+        {"name": "Relative Strength Index", "input": {"length": 14}},
+        {"name": "MACD", "input": {"fastLength": 12, "slowLength": 26, "signalLength": 9}},
+        {"name": "Ichimoku Cloud"},
+        {"name": "Volume"}
+      ],
+      "drawings": [
+        {"name": "Horizontal Line", "input": {"price": 19500}, "override": {"lineWidth": 2, "lineColor": "rgb(255,255,0)"}},
+        {"name": "Horizontal Line", "input": {"price": 19300}, "override": {"lineWidth": 2, "lineColor": "rgb(0,255,255)"}},
+        {"name": "Horizontal Line", "input": {"price": 19400}, "override": {"lineWidth": 2, "lineColor": "rgb(255,255,255)"}}
+      ]
+    },
+    "note": "Replace drawing prices with dynamic values from eod_levels table"
+  },
+  "dynamic_price_levels": {
+    "source": "eod_levels table in Supabase",
+    "query": "SELECT yesterday_high, yesterday_low, pivot_point FROM eod_levels WHERE symbol = ? AND date = CURRENT_DATE",
+    "mapping": {
+      "prev_high": "yesterday_high",
+      "prev_low": "yesterday_low",
+      "daily_open": "pivot_point OR first candle open"
+    }
+  },
+  "analyzer_modules": {
+    "TrendClassifier": "Uses EMA20/50 stack for trend direction",
+    "VolatilityEngine": "Uses BB + ATR (backend) for range breakout",
+    "MomentumFilter": "RSI + MACD for entry quality",
+    "KumoCheck": "Ichimoku Cloud for trend confirmation",
+    "RiskManager": "ATR (backend) for SL/TP calculation",
+    "SmartMoneyZones": "PrevHigh/Low/Open for liquidity grab detection"
+  },
+  "generated_files": {
+    "test_charts": [
+      "dax_baseline_full.png (173KB) - 10 studies only",
+      "dji_baseline_full.png (177KB) - 10 studies only",
+      "dax_optimized_10.png (166KB) - 7 studies + 3 drawings"
+    ],
+    "location": "TradeMatrix root directory"
+  }
+}
