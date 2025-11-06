@@ -262,24 +262,6 @@ export default function DashboardPage() {
         <AlertSettingsCard />
       </section>
 
-      {/* AI Agents Status */}
-      <section>
-        <h2 className="text-xl font-semibold mb-4">AI Agents (Coming Soon)</h2>
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-          {mockAgents.map((agent) => (
-            <AgentStatusCard
-              key={agent.name}
-              agent={agent}
-              onAction={() => {
-                console.log(`Running ${agent.name}`)
-              }}
-            />
-          ))}
-        </div>
-        <p className="text-sm text-muted-foreground mt-4 text-center">
-          AI agents are currently in development. Stay tuned for automated trading analysis!
-        </p>
-      </section>
     </div>
   )
 }

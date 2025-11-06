@@ -8,6 +8,24 @@
 
 Integration der chart-img.com API zur dynamischen Generierung von TradingView-Charts für alle AI Agents (ChartWatcher, MorningPlanner, JournalBot, TradeMonitor).
 
+### ⚠️ Important: Database Architecture Decision
+
+**This feature uses `market_symbols` table (NOT `symbols` table):**
+
+- ✅ **`market_symbols`** = Primary table for all AI Agents
+  - Symbols: `DAX`, `NDX`, `DJI`, `EUR/USD`, `XAG/USD`
+  - Used by: ChartWatcher, MorningPlanner, SignalBot, RiskManager, etc.
+  - Source: Migration 003 (market_data_schema.sql)
+
+- ℹ️ **`symbols`** = EOD Data Layer only
+  - Symbols: `^GDAXI`, `^NDX`, `^DJI`, `EURUSD`, `GBPUSD`
+  - Used by: eod_data_fetcher, eod_levels calculations
+  - Source: Migration 010 (eod_data_layer.sql)
+
+**Why?** All existing AI Agents query `market_symbols`, so chart_snapshots must reference `market_symbols.id` for proper foreign key relationships.
+
+**Note:** `ChartService.SYMBOL_MAPPING` supports BOTH formats for backward compatibility.
+
 ### Key Features
 
 - **Flexible Symbol Configuration**: User können Symbole, Timeframes und Indikatoren konfigurieren

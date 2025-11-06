@@ -3,8 +3,11 @@ import { createServerClient } from '@/lib/supabase/server'
 import { AgentFilter } from '@/components/agents/agent-filter'
 import { SetupStats } from '@/components/agents/setup-stats'
 import { TradingSetupCard } from '@/components/agents/trading-setup-card'
-import { Card, CardContent } from '@/components/ui/card'
-import { Loader2 } from 'lucide-react'
+import { AgentControlPanel } from '@/components/agents/agent-control-panel'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
+import { Loader2, Clock, Play } from 'lucide-react'
 
 interface SearchParams {
   agents?: string
@@ -124,10 +127,11 @@ async function getSetups(agentFilter?: string[]): Promise<TradingSetup[]> {
 export default async function AgentsPage({
   searchParams,
 }: {
-  searchParams: SearchParams
+  searchParams: Promise<SearchParams>
 }) {
-  // Parse agent filter from URL params
-  const agentFilter = searchParams.agents?.split(',').filter(Boolean)
+  // Parse agent filter from URL params (Next.js 15: searchParams is now a Promise)
+  const params = await searchParams
+  const agentFilter = params.agents?.split(',').filter(Boolean)
 
   const setups = await getSetups(agentFilter)
 
@@ -142,6 +146,9 @@ export default async function AgentsPage({
           </p>
         </div>
       </div>
+
+      {/* Agent Control Panel */}
+      <AgentControlPanel />
 
       {/* Stats Section */}
       <SetupStats setups={setups} />

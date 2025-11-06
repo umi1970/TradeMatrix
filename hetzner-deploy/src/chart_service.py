@@ -8,8 +8,15 @@ Features:
 - Profile selection based on timeframe (scalping/intraday/swing)
 - Rate limiting (1000/day, 15/second)
 - Redis caching (1 hour TTL)
+- Supabase Storage upload (persistent chart images)
 - Database persistence (chart_snapshots table)
 - Dynamic drawing integration (prev_high/prev_low from eod_levels)
+
+Workflow:
+1. Generate chart via chart-img.com API
+2. Download PNG image bytes
+3. Upload to Supabase Storage (bucket: charts)
+4. Return public Storage URL (no expiration, no 403 errors)
 
 Usage:
     service = ChartService()
@@ -18,6 +25,7 @@ Usage:
         timeframe="1h",
         agent_name="ChartWatcher"
     )
+    # Returns: https://htnlhazqzpwfyhnngfsn.supabase.co/storage/v1/object/public/charts/agents/...
 """
 
 import os
@@ -53,33 +61,52 @@ class ChartService:
     Responsibilities:
     - Map Yahoo Finance symbols to TradingView symbols
     - Select appropriate indicator profile based on timeframe
-    - Generate chart URLs with full configuration
+    - Generate chart images via chart-img.com API
+    - Upload chart images to Supabase Storage
     - Enforce rate limits (daily & per-second)
     - Cache chart URLs in Redis
     - Save snapshots to database
+
+    Storage Structure:
+    - Bucket: charts
+    - Path: agents/{agent_name}/{YYYY}/{MM}/{DD}/{symbol}_{timeframe}_{timestamp}.png
+    - URL: https://htnlhazqzpwfyhnngfsn.supabase.co/storage/v1/object/public/charts/agents/...
     """
 
-    # Symbol mapping: Yahoo Finance → TradingView
+    # Symbol mapping: market_symbols.symbol → TradingView
+    # Supports BOTH market_symbols (DAX, EUR/USD) AND symbols table (^GDAXI, EURUSD=X)
     SYMBOL_MAPPING = {
-        "^GDAXI": "TVC:DAX",        # Real-time composite (not XETR:DAX with 15min delay)
-        "^DJI": "TVC:DJI",          # Dow Jones
-        "^NDX": "NASDAQ:NDX",       # NASDAQ 100
+        # market_symbols format (PRIMARY - used by all AI Agents)
+        "DAX": "TVC:DAX",           # DAX 40 Index (Real-time composite)
+        "NDX": "NASDAQ:NDX",        # NASDAQ 100 Index
+        "DJI": "TVC:DJI",           # Dow Jones Industrial Average
+        "EUR/USD": "FX:EURUSD",     # Euro / US Dollar
+        "XAG/USD": "FX:XAGUSD",     # Silver Spot
+
+        # symbols table format (for EOD Data Layer compatibility)
+        "^GDAXI": "TVC:DAX",        # DAX (Yahoo Finance format)
+        "^DJI": "TVC:DJI",          # Dow Jones (Yahoo Finance format)
+        "^NDX": "NASDAQ:NDX",       # NASDAQ 100 (Yahoo Finance format)
         "^IXIC": "NASDAQ:IXIC",     # NASDAQ Composite
-        "EURUSD=X": "FX:EURUSD",    # EUR/USD
-        "EURGBP=X": "FX:EURGBP",    # EUR/GBP
-        "GBPUSD=X": "FX:GBPUSD",    # GBP/USD
+        "EURUSD": "FX:EURUSD",      # EUR/USD (EOD format)
+        "EURUSD=X": "FX:EURUSD",    # EUR/USD (Yahoo Finance format)
+        "EURGBP": "FX:EURGBP",      # EUR/GBP (EOD format)
+        "EURGBP=X": "FX:EURGBP",    # EUR/GBP (Yahoo Finance format)
+        "GBPUSD": "FX:GBPUSD",      # GBP/USD (EOD format)
+        "GBPUSD=X": "FX:GBPUSD",    # GBP/USD (Yahoo Finance format)
         "BTC-USD": "BINANCE:BTCUSDT",  # Bitcoin
         "ETH-USD": "BINANCE:ETHUSDT",  # Ethereum
     }
 
-    # Timeframe mapping: Internal → TradingView API
+    # Timeframe mapping: Internal → TradingView API v2
+    # API v2 accepts: 1m, 3m, 5m, 15m, 30m, 45m, 1h, 2h, 3h, 4h, 1D, 1W, 1M
     TIMEFRAME_MAPPING = {
-        "1m": "1",
-        "5m": "5",
-        "15m": "15",
-        "30m": "30",
-        "1h": "60",
-        "4h": "240",
+        "1m": "1m",
+        "5m": "5m",     # v2 API needs "5m" not "5"
+        "15m": "15m",   # v2 API needs "15m" not "15"
+        "30m": "30m",
+        "1h": "1h",
+        "4h": "4h",
         "1D": "1D",
         "1W": "1W",
     }
@@ -366,6 +393,13 @@ class ChartService:
         """
         Generate chart URL (with caching and rate limiting)
 
+        Process:
+        1. Check Redis cache
+        2. Generate chart via chart-img.com API
+        3. Download image bytes
+        4. Upload to Supabase Storage (bucket: charts)
+        5. Return Supabase Storage public URL
+
         Args:
             symbol: Yahoo Finance symbol (e.g., "^GDAXI")
             timeframe: Timeframe string (e.g., "1h")
@@ -374,7 +408,7 @@ class ChartService:
             force_refresh: Skip cache and generate new chart
 
         Returns:
-            Chart URL string or None if failed
+            Supabase Storage URL string or None if failed
         """
         logger.info(f"Generating chart: {symbol} {timeframe} (agent={agent_name})")
 
@@ -401,9 +435,10 @@ class ChartService:
         # Build payload
         payload = self.build_chart_payload(tv_symbol, timeframe, symbol_id)
 
-        # Call API
+        # Call API and upload to Supabase Storage
         try:
             async with httpx.AsyncClient(timeout=30.0) as client:
+                # Step 1: Generate chart via chart-img.com API
                 response = await client.post(
                     f"{self.base_url}/v2/tradingview/advanced-chart",
                     headers={
@@ -415,21 +450,33 @@ class ChartService:
 
                 response.raise_for_status()
 
-                # chart-img.com returns the PNG directly, we need to store it
-                # For now, we'll use the API URL as the "chart_url"
-                # In production, you might want to upload to Supabase Storage
-                chart_url = f"{self.base_url}/v2/tradingview/advanced-chart"
+                # Step 2: Download image bytes (chart-img.com returns PNG directly)
+                image_bytes = response.content
+                logger.info(f"Downloaded chart image: {len(image_bytes)} bytes")
+
+                # Step 3: Upload to Supabase Storage
+                storage_url = self._upload_to_storage(
+                    image_bytes=image_bytes,
+                    symbol=symbol,
+                    timeframe=timeframe,
+                    agent_name=agent_name
+                )
+
+                if not storage_url:
+                    logger.error(f"❌ Failed to upload chart to Supabase Storage")
+                    return None
 
                 # Increment counters
                 self.increment_request_count()
 
-                # Cache URL
-                self.redis_client.setex(cache_key, self.cache_ttl, chart_url)
+                # Cache Supabase Storage URL
+                self.redis_client.setex(cache_key, self.cache_ttl, storage_url)
 
-                logger.info(f"✅ Chart generated: {symbol} {timeframe}")
+                logger.info(f"✅ Chart generated and uploaded: {symbol} {timeframe}")
+                logger.info(f"📊 Storage URL: {storage_url}")
                 logger.info(f"📊 API Usage: {self.get_daily_request_count()}/{self.daily_limit}")
 
-                return chart_url
+                return storage_url
 
         except httpx.HTTPStatusError as e:
             logger.error(f"❌ Chart API error {e.response.status_code}: {e.response.text}")
@@ -439,6 +486,55 @@ class ChartService:
             return None
         except Exception as e:
             logger.error(f"❌ Unexpected error generating chart: {e}")
+            return None
+
+    def _upload_to_storage(
+        self,
+        image_bytes: bytes,
+        symbol: str,
+        timeframe: str,
+        agent_name: str
+    ) -> Optional[str]:
+        """
+        Upload chart image to Supabase Storage
+
+        Args:
+            image_bytes: PNG image bytes
+            symbol: Symbol name (e.g., "DAX")
+            timeframe: Timeframe (e.g., "1h")
+            agent_name: Agent name for path organization
+
+        Returns:
+            Public URL of uploaded image or None if failed
+        """
+        try:
+            bucket = "charts"
+
+            # Generate storage path: agents/agent_name/YYYY/MM/DD/symbol_timeframe_timestamp.png
+            now = datetime.utcnow()
+            date_path = now.strftime('%Y/%m/%d')
+            timestamp = now.strftime('%Y%m%d_%H%M%S')
+            filename = f"{symbol}_{timeframe}_{timestamp}.png"
+            storage_path = f"agents/{agent_name}/{date_path}/{filename}"
+
+            # Upload to Supabase Storage
+            result = self.supabase.storage.from_(bucket).upload(
+                storage_path,
+                image_bytes,
+                file_options={"content-type": "image/png"}
+            )
+
+            # Get public URL
+            public_url = self.supabase.storage.from_(bucket).get_public_url(storage_path)
+
+            # Remove trailing '?' if present (Supabase SDK bug)
+            public_url = public_url.rstrip('?')
+
+            logger.info(f"✅ Chart uploaded to storage: {storage_path}")
+            return public_url
+
+        except Exception as e:
+            logger.error(f"❌ Error uploading chart to storage: {e}")
             return None
 
     async def save_snapshot(

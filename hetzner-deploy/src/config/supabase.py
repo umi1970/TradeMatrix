@@ -1,62 +1,82 @@
 """
-Supabase Client Configuration
-Provides admin and client instances for backend services
+Supabase client configuration
+Simplified database, auth, and storage access
 """
 
-import os
 from supabase import create_client, Client
-from dotenv import load_dotenv
-from pathlib import Path
-
-# Load environment variables from .env file (if it exists)
-# In Docker containers, env vars are injected by docker-compose via env_file
-env_file = Path(__file__).parent.parent.parent / '.env'
-if env_file.exists():
-    load_dotenv(env_file)
-else:
-    # Running in Docker - env vars already injected by docker-compose
-    pass
+from pydantic_settings import BaseSettings
+from functools import lru_cache
+import os as _os
 
 
-def get_supabase_admin() -> Client:
-    """
-    Get Supabase admin client with service role key
-    Use this for backend operations that bypass RLS
-    """
-    supabase_url = os.getenv("SUPABASE_URL")
-    supabase_service_key = os.getenv("SUPABASE_SERVICE_KEY")
+class Settings(BaseSettings):
+    """Application settings"""
 
-    if not supabase_url or not supabase_service_key:
-        raise ValueError(
-            "Missing Supabase credentials. Set SUPABASE_URL and SUPABASE_SERVICE_KEY in .env"
-        )
+    # Supabase
+    SUPABASE_URL: str
+    SUPABASE_KEY: str = ""  # anon/public key for client-side
+    SUPABASE_SERVICE_KEY: str = ""  # service role key for admin operations
 
-    return create_client(supabase_url, supabase_service_key)
+    # Redis (for Celery & caching)
+    REDIS_URL: str = "redis://localhost:6379"
+
+    # AI Services
+    OPENAI_API_KEY: str = ""
+
+    # Twelve Data API
+    TWELVEDATA_API_KEY: str = ""
+
+    # Stripe (optional)
+    STRIPE_SECRET_KEY: str = ""
+    STRIPE_WEBHOOK_SECRET: str = ""
+
+    # Email (optional)
+    SENDGRID_API_KEY: str = ""
+    FROM_EMAIL: str = "noreply@tradematrix.ai"
+
+    # Celery
+    CELERY_BROKER_URL: str = "redis://localhost:6379/0"
+    CELERY_RESULT_BACKEND: str = "redis://localhost:6379/0"
+
+    # Environment
+    ENVIRONMENT: str = "development"
+    DEBUG: bool = True
+
+    class Config:
+        env_file = ".env"
+        case_sensitive = True
+        extra = "allow"  # Allow extra env vars without validation errors
+
+
+@lru_cache()
+def get_settings() -> Settings:
+    """Get cached settings instance"""
+    return Settings()
 
 
 def get_supabase_client() -> Client:
     """
-    Get Supabase client with anon key
-    Use this for operations that respect RLS policies
+    Get Supabase client for regular operations (RLS enabled)
+    Uses anon key - respects Row Level Security
     """
-    supabase_url = os.getenv("SUPABASE_URL")
-    supabase_anon_key = os.getenv("SUPABASE_ANON_KEY")
-
-    if not supabase_url:
-        raise ValueError("Missing SUPABASE_URL in .env")
-
-    # Fall back to service key if anon key not available
-    key = supabase_anon_key or os.getenv("SUPABASE_SERVICE_KEY")
-
-    if not key:
-        raise ValueError("Missing SUPABASE_ANON_KEY or SUPABASE_SERVICE_KEY in .env")
-
-    return create_client(supabase_url, key)
+    settings = get_settings()
+    return create_client(settings.SUPABASE_URL, settings.SUPABASE_KEY)
 
 
-class Settings:
-    """Settings placeholder for compatibility"""
-    pass
+def get_supabase_admin() -> Client:
+    """
+    Get Supabase admin client (bypasses RLS)
+    Uses service role key - use carefully!
+    """
+    # Read directly from env to avoid pydantic validation issues
+    supabase_url = _os.getenv('SUPABASE_URL')
+    service_key = _os.getenv('SUPABASE_SERVICE_KEY') or _os.getenv('SUPABASE_SERVICE_ROLE_KEY')
+
+    if not supabase_url or not service_key:
+        raise ValueError("SUPABASE_URL and SUPABASE_SERVICE_KEY/SUPABASE_SERVICE_ROLE_KEY are required")
+
+    return create_client(supabase_url, service_key)
 
 
-settings = Settings()
+# Convenience exports (lazy - don't initialize on import)
+# Use get_supabase_client() or get_supabase_admin() directly

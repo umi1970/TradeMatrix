@@ -10,6 +10,8 @@ Architecture:
 
 from fastapi import FastAPI, Depends, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from pydantic import BaseModel
+from typing import Literal
 from config import supabase, settings
 
 # Create FastAPI app
@@ -65,14 +67,53 @@ async def health():
 # Note: Most CRUD operations go through Supabase auto-generated APIs
 # These endpoints are ONLY for AI agent orchestration
 
-@app.post("/api/agents/chart-analysis")
-async def analyze_chart():
+class TriggerAgentRequest(BaseModel):
+    agent_name: Literal["chart_watcher", "morning_planner", "journal_bot"]
+
+@app.post("/api/agents/trigger")
+async def trigger_agent(request: TriggerAgentRequest):
     """
-    Trigger ChartWatcher agent to analyze a chart
-    Runs as background Celery task
+    Manually trigger an AI agent task
+
+    Available agents:
+    - chart_watcher: ChartWatcher (analyzes charts with OpenAI Vision)
+    - morning_planner: MorningPlanner (generates morning setups)
+    - journal_bot: JournalBot (generates daily reports)
     """
-    # TODO: Implement ChartWatcher agent trigger
-    raise HTTPException(status_code=501, detail="ChartWatcher not implemented yet")
+    try:
+        # Import Celery app
+        import sys
+        import os
+
+        # Add hetzner-deploy/src to path
+        hetzner_src = os.path.join(os.path.dirname(__file__), '../../..', 'hetzner-deploy/src')
+        sys.path.insert(0, os.path.abspath(hetzner_src))
+
+        from tasks import celery, run_chart_analysis_task, run_morning_planner_task, run_journal_bot_task
+
+        # Map agent names to Celery tasks
+        task_map = {
+            "chart_watcher": run_chart_analysis_task,
+            "morning_planner": run_morning_planner_task,
+            "journal_bot": run_journal_bot_task,
+        }
+
+        task = task_map.get(request.agent_name)
+        if not task:
+            raise HTTPException(status_code=400, detail=f"Unknown agent: {request.agent_name}")
+
+        # Trigger Celery task asynchronously
+        result = task.apply_async()
+
+        return {
+            "success": True,
+            "agent": request.agent_name,
+            "task_id": result.id,
+            "message": f"{request.agent_name} started successfully"
+        }
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to trigger agent: {str(e)}")
 
 
 @app.post("/api/agents/generate-signals")
