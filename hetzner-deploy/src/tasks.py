@@ -3,6 +3,7 @@ Celery Background Tasks for Liquidity Alert System
 Simplified version - only includes liquidity level monitoring
 """
 
+import asyncio
 import logging
 import os
 from pathlib import Path
@@ -163,8 +164,8 @@ def run_chart_analysis_task(self):
             openai_api_key=os.getenv('OPENAI_API_KEY')
         )
 
-        # Run chart analysis
-        result = watcher.run(timeframe='4h')
+        # Run chart analysis (async method - use asyncio.run)
+        result = asyncio.run(watcher.run(timeframe='4h'))
 
         logger.info("=" * 70)
         logger.info(f"✅ ChartWatcher completed: {result.get('analyses_created', 0)} analyses created")
@@ -197,8 +198,8 @@ def run_morning_planner_task(self):
             supabase_client=get_supabase_admin()
         )
 
-        # Run morning analysis
-        result = planner.run()
+        # Run morning analysis (async method - use asyncio.run)
+        result = asyncio.run(planner.run())
 
         logger.info("=" * 70)
         logger.info(f"✅ MorningPlanner completed: {result.get('setups_generated', 0)} setups generated")
@@ -232,8 +233,8 @@ def run_journal_bot_task(self):
             openai_api_key=os.getenv('OPENAI_API_KEY')
         )
 
-        # Run report generation
-        result = bot.run()
+        # Run report generation (async method - use asyncio.run)
+        result = asyncio.run(bot.run())
 
         logger.info("=" * 70)
         logger.info(f"✅ JournalBot completed: {result.get('reports_generated', 0)} reports generated")
