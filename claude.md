@@ -394,9 +394,9 @@ gh pr create --title "feat: [name]" --body "[description]" --base main
 21. **Environment Variables** - Nie Secrets committen
 
 ### Dokumentation
-17. **Update während Entwicklung** - Nicht nachträglich
-18. **Checklists nutzen** - TodoWrite tool für Tracking
-19. **Status aktualisieren** - PROJECT_OVERVIEW.md Status immer aktuell
+22. **Update während Entwicklung** - Nicht nachträglich
+23. **Checklists nutzen** - TodoWrite tool für Tracking
+24. **Status aktualisieren** - PROJECT_OVERVIEW.md Status immer aktuell
 
 ---
 
