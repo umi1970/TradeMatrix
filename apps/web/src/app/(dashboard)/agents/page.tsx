@@ -211,7 +211,7 @@ export default async function AgentsPage({
       {/* Filters Section */}
       <AgentFilter currentFilter={agentFilter} />
 
-      {/* Setups Grid */}
+      {/* Setups Grid - Grouped by Agent */}
       <section>
         {setups.length === 0 ? (
           <Card>
@@ -227,9 +227,27 @@ export default async function AgentsPage({
             </CardContent>
           </Card>
         ) : (
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-            {setups.map((setup) => (
-              <TradingSetupCard key={setup.id} setup={setup} />
+          <div className="space-y-8">
+            {/* Group setups by agent_name */}
+            {Object.entries(
+              setups.reduce((groups, setup) => {
+                const agent = setup.agent_name
+                if (!groups[agent]) groups[agent] = []
+                groups[agent].push(setup)
+                return groups
+              }, {} as Record<string, typeof setups>)
+            ).map(([agentName, agentSetups]) => (
+              <div key={agentName}>
+                <div className="flex items-center gap-3 mb-4 pb-2 border-b">
+                  <h3 className="text-xl font-bold">{agentName}</h3>
+                  <Badge variant="secondary" className="text-xs">{agentSetups.length}</Badge>
+                </div>
+                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                  {agentSetups.map((setup) => (
+                    <TradingSetupCard key={setup.id} setup={setup} />
+                  ))}
+                </div>
+              </div>
             ))}
           </div>
         )}
