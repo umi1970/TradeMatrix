@@ -364,7 +364,7 @@ export interface Database {
           {
             foreignKeyName: 'alerts_symbol_id_fkey'
             columns: ['symbol_id']
-            referencedRelation: 'symbols'
+            referencedRelation: 'market_symbols'
             referencedColumns: ['id']
           }
         ]
@@ -492,7 +492,7 @@ export interface Database {
           {
             foreignKeyName: 'eod_levels_symbol_id_fkey'
             columns: ['symbol_id']
-            referencedRelation: 'symbols'
+            referencedRelation: 'market_symbols'
             referencedColumns: ['id']
           }
         ]
@@ -526,7 +526,7 @@ export interface Database {
           {
             foreignKeyName: 'price_cache_symbol_id_fkey'
             columns: ['symbol_id']
-            referencedRelation: 'symbols'
+            referencedRelation: 'market_symbols'
             referencedColumns: ['id']
           }
         ]
@@ -575,7 +575,7 @@ export interface Database {
           {
             foreignKeyName: 'alert_subscriptions_symbol_id_fkey'
             columns: ['symbol_id']
-            referencedRelation: 'symbols'
+            referencedRelation: 'market_symbols'
             referencedColumns: ['id']
           }
         ]
