@@ -317,7 +317,7 @@ class PriceFetcher:
             }
 
             # Upsert (insert or update)
-            response = self.supabase.table('price_cache')\
+            response = self.supabase.table('current_prices')\
                 .upsert(cache_record, on_conflict='symbol_id')\
                 .execute()
 

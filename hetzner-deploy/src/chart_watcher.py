@@ -398,21 +398,21 @@ If no clear patterns are visible, return an empty patterns array but still provi
                 logger.error(f"Failed to download chart for {symbol_name}")
                 return None
 
-            # Step 2 - Get recent price context from database
+            # Step 2 - Get current price from current_prices table (filled by PriceFetcher every 60s)
             try:
-                result = self.supabase.table('ohlc')\
-                    .select('close')\
+                result = self.supabase.table('current_prices')\
+                    .select('price')\
                     .eq('symbol_id', str(symbol_id))\
-                    .eq('timeframe', timeframe)\
-                    .order('ts', desc=True)\
+                    .order('updated_at', desc=True)\
                     .limit(1)\
                     .execute()
 
                 current_price = None
                 if result.data and len(result.data) > 0:
-                    current_price = float(result.data[0]['close'])
+                    current_price = float(result.data[0]['price'])
+                    logger.info(f"Fetched current_price from current_prices table: {current_price}")
             except Exception as e:
-                logger.warning(f"Could not fetch current price: {e}")
+                logger.warning(f"Could not fetch current price from current_prices table: {e}")
                 current_price = None
 
             context = {
