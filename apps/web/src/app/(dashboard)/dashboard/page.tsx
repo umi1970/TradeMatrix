@@ -20,7 +20,7 @@ import { createBrowserClient } from '@/lib/supabase/client'
 interface WatchlistItem {
   id: string
   position: number
-  symbols: {
+  market_symbols: {
     id: string
     symbol: string
     name: string
@@ -85,7 +85,7 @@ export default function DashboardPage() {
 
       const { data, error: watchlistError } = await supabase
         .from('user_watchlist')
-        .select('id, position, symbols(*)')
+        .select('id, position, market_symbols(*)')
         .eq('user_id', session.user.id)
         .order('position')
 
@@ -184,11 +184,11 @@ export default function DashboardPage() {
         ) : watchlist.length > 0 ? (
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
             {watchlist
-              .filter((item) => item.symbols.tv_symbol)
+              .filter((item) => item.market_symbols.tv_symbol)
               .map((item) => (
                 <TradingViewWidget
                   key={item.id}
-                  symbol={item.symbols.tv_symbol!}
+                  symbol={item.market_symbols.tv_symbol!}
                   height={200}
                 />
               ))}

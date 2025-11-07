@@ -36,9 +36,9 @@ export async function GET(request: Request) {
 
     // Step 1: Get all active symbols (simpler, more dynamic)
     const { data: symbols, error: symbolsError } = await (supabase as any)
-      .from('symbols')
+      .from('market_symbols')
       .select('id, symbol, name')
-      .eq('is_active', true)
+      .eq('active', true)
 
     console.log(`Symbols query result: ${symbols?.length || 0} records, error:`, symbolsError)
 

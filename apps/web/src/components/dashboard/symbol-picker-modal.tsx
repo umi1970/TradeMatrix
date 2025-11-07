@@ -63,15 +63,15 @@ export function SymbolPickerModal({
     try {
       // Fetch all active symbols
       const { data: symbols } = await supabase
-        .from('symbols')
+        .from('market_symbols')
         .select('*')
-        .eq('is_active', true)
+        .eq('active', true)
         .order('symbol')
 
       // Fetch user's current watchlist
       const { data: watchlistData } = await supabase
         .from('user_watchlist')
-        .select('id, position, symbols(*)')
+        .select('id, position, market_symbols(*)')
         .eq('user_id', userId)
         .order('position')
 
@@ -80,7 +80,7 @@ export function SymbolPickerModal({
         (watchlistData || []).map(item => ({
           id: item.id,
           position: item.position,
-          symbol: (item.symbols as unknown) as Symbol
+          symbol: (item.market_symbols as unknown) as Symbol
         }))
       )
     } catch (err) {

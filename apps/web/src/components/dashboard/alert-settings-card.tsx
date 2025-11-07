@@ -47,9 +47,9 @@ export function AlertSettingsCard() {
     try {
       // Fetch symbols
       const { data: symbolsData } = await supabase
-        .from('symbols')
+        .from('market_symbols')
         .select('id, symbol, name')
-        .eq('is_active', true)
+        .eq('active', true)
         .order('symbol')
 
       setSymbols(symbolsData || [])
