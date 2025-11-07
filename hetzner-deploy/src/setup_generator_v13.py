@@ -218,7 +218,7 @@ class SetupGeneratorV13:
         valid = (
             (side == "long" and stop_loss < entry < take_profit) or
             (side == "short" and stop_loss > entry > take_profit)
-        ) and (risk_reward >= 2.0)
+        ) and (risk_reward >= 2.5)
 
         # Confidence Score (ChatGPT formula)
         confidence = 0.0
@@ -230,7 +230,7 @@ class SetupGeneratorV13:
             confidence += 0.1
         elif (trend == "bullish" and rsi > 55) or (trend == "bearish" and rsi < 45):
             confidence += 0.2
-        if risk_reward >= 2.0:
+        if risk_reward >= 2.5:
             confidence += 0.15
         if valid:
             confidence += 0.1
