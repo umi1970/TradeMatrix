@@ -373,16 +373,23 @@ gh pr create --title "feat: [name]" --body "[description]" --base main
 6. **Nie Tabellen/Spalten raten** - Glob migrations, Read relevante SQL-Datei, dann Code schreiben
 7. **Schema-Dokumentation nutzen** - Siehe `services/api/supabase/README.md` für Migrations-Übersicht
 
+### Trading Data Integrity (KRITISCH!)
+8. **NIEMALS Preise schätzen** - NO estimation, NO guessing, NO approximation
+9. **Datenfluss befolgen** - PriceFetcher → current_prices → ChartWatcher → SetupGenerator
+10. **Validierung vor Setup** - Setup Generation MUSS fehlschlagen wenn current_price fehlt
+11. **Erlaubte Datenquellen** - Nur: PriceFetcher (yfinance/Twelvedata), ChartWatcher, MarketDataFetcher
+12. **System Integrity Rules** - Siehe `config/system_integrity_rules.yaml` - KEINE Ausnahmen!
+
 ### Code
-8. **Keine Redundanz** - Wenn Supabase es kann, nutze Supabase
-9. **Server Components bevorzugen** - Next.js (weniger Client JS)
-10. **TypeScript strikt** - Keine `any` types
-11. **Environment Variables** - Nie Secrets committen
+13. **Keine Redundanz** - Wenn Supabase es kann, nutze Supabase
+14. **Server Components bevorzugen** - Next.js (weniger Client JS)
+15. **TypeScript strikt** - Keine `any` types
+16. **Environment Variables** - Nie Secrets committen
 
 ### Dokumentation
-12. **Update während Entwicklung** - Nicht nachträglich
-13. **Checklists nutzen** - TodoWrite tool für Tracking
-14. **Status aktualisieren** - PROJECT_OVERVIEW.md Status immer aktuell
+17. **Update während Entwicklung** - Nicht nachträglich
+18. **Checklists nutzen** - TodoWrite tool für Tracking
+19. **Status aktualisieren** - PROJECT_OVERVIEW.md Status immer aktuell
 
 ---
 
