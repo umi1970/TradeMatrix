@@ -37,6 +37,7 @@ from src.exceptions.chart_errors import (
     ChartGenerationError,
     SymbolNotFoundError
 )
+from src.utils.ai_budget import check_ai_budget, log_ai_usage, AIBudgetError
 
 # Setup logger
 logger = logging.getLogger(__name__)
@@ -54,18 +55,22 @@ class ChartWatcher:
     - Store analysis results in database
     """
 
-    def __init__(self, supabase_client: Client, openai_api_key: str):
+    def __init__(self, supabase_client: Client, openai_api_key: str, user_id: Optional[str] = None, tier: str = "free"):
         """
         Initialize ChartWatcher agent
 
         Args:
             supabase_client: Supabase client instance (admin client for bypassing RLS)
             openai_api_key: OpenAI API key for Vision API access
+            user_id: Optional user ID who triggered this analysis (None for system-triggered)
+            tier: User's subscription tier (free, starter, pro, expert)
         """
         self.supabase = supabase_client
         self.openai_client = OpenAI(api_key=openai_api_key)
         self.chart_service = ChartService(supabase_client=supabase_client)
-        logger.info("ChartWatcher initialized with ChartService")
+        self.user_id = user_id
+        self.tier = tier
+        logger.info(f"ChartWatcher initialized (user_id={user_id}, tier={tier})")
 
 
     def download_chart(self, chart_url: str) -> Optional[bytes]:
@@ -123,6 +128,9 @@ class ChartWatcher:
         logger.info(f"Extracting price values for {symbol_name}")
 
         try:
+            # Check AI budget before making OpenAI call
+            check_ai_budget(self.user_id, self.tier, self.supabase)
+
             # Convert image bytes to base64 for OpenAI API
             import base64
             image_b64 = base64.b64encode(image_bytes).decode('utf-8')
@@ -173,6 +181,16 @@ If you cannot clearly read a value, use null. Only include levels you are confid
             # Parse response
             result_text = response.choices[0].message.content
             logger.debug(f"OpenAI response: {result_text}")
+
+            # Log AI usage
+            log_ai_usage(
+                supabase=self.supabase,
+                agent_name='chart_watcher',
+                model='gpt-4o',
+                user_id=self.user_id,
+                symbol=symbol_name,
+                tokens=response.usage.total_tokens if hasattr(response, 'usage') else None
+            )
 
             # Extract JSON from response
             import json
@@ -241,6 +259,9 @@ If you cannot clearly read a value, use null. Only include levels you are confid
         logger.info(f"Detecting patterns for {symbol_name}")
 
         try:
+            # Check AI budget before making OpenAI call
+            check_ai_budget(self.user_id, self.tier, self.supabase)
+
             # Convert image bytes to base64
             import base64
             image_b64 = base64.b64encode(image_bytes).decode('utf-8')
@@ -339,6 +360,16 @@ If no clear patterns are visible, return an empty patterns array but still provi
             # Parse response
             result_text = response.choices[0].message.content
             logger.debug(f"OpenAI pattern detection response: {result_text}")
+
+            # Log AI usage
+            log_ai_usage(
+                supabase=self.supabase,
+                agent_name='chart_watcher',
+                model='gpt-4o',
+                user_id=self.user_id,
+                symbol=symbol_name,
+                tokens=response.usage.total_tokens if hasattr(response, 'usage') else None
+            )
 
             # Extract JSON from response
             import json

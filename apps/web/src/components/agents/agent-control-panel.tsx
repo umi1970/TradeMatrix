@@ -74,8 +74,8 @@ export function AgentControlPanel() {
     const selectedSymbol = selectedSymbols[agentName] || 'all'
 
     try {
-      // Use Netlify Function as proxy to avoid HTTPS->HTTP mixed content issues
-      const response = await fetch('/.netlify/functions/trigger-agent', {
+      // Use Next.js API Route (works both locally and in production)
+      const response = await fetch('/api/agents/trigger', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -83,6 +83,8 @@ export function AgentControlPanel() {
         body: JSON.stringify({
           agent_name: backendAgentName,
           symbol: selectedSymbol === 'all' ? null : selectedSymbol,  // Pass symbol or null
+          user_id: 'demo_user',  // TODO: Get from Supabase session
+          tier: 'free',  // TODO: Get from user profile
         }),
       })
 

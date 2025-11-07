@@ -73,6 +73,8 @@ async def health():
 class TriggerAgentRequest(BaseModel):
     agent_name: Literal["chart_watcher", "morning_planner", "journal_bot"]
     symbol: Optional[str] = None  # Optional: Single symbol to analyze (e.g., "DAX", "NDX")
+    user_id: Optional[str] = None  # Optional: User ID who triggered this (for rate limiting)
+    tier: str = "free"  # User's subscription tier (free, starter, pro, expert)
 
 @app.post("/api/agents/trigger")
 async def trigger_agent(request: TriggerAgentRequest):
@@ -102,13 +104,26 @@ async def trigger_agent(request: TriggerAgentRequest):
         if not task:
             raise HTTPException(status_code=400, detail=f"Unknown agent: {request.agent_name}")
 
-        # Trigger Celery task asynchronously (pass symbol if provided)
-        if request.symbol:
+        # Trigger Celery task asynchronously
+        # For chart_watcher: pass symbol, user_id, tier
+        # For other agents: only pass user_id, tier if they support it
+        if request.agent_name == "chart_watcher":
+            # ChartWatcher supports user_id + tier for rate limiting
+            result = task.apply_async(kwargs={
+                'symbol': request.symbol,
+                'user_id': request.user_id,
+                'tier': request.tier
+            })
+        elif request.symbol:
             result = task.apply_async(args=[request.symbol])
-            message = f"{request.agent_name} started for {request.symbol}"
         else:
             result = task.apply_async()
-            message = f"{request.agent_name} started for all symbols"
+
+        message = f"{request.agent_name} started"
+        if request.symbol:
+            message += f" for {request.symbol}"
+        if request.user_id:
+            message += f" (user: {request.user_id}, tier: {request.tier})"
 
         return {
             "success": True,

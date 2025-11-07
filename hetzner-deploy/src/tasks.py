@@ -147,14 +147,16 @@ def check_liquidity_alerts(self):
 # ================================================
 
 @celery.task(name='run_chart_analysis', bind=True)
-def run_chart_analysis_task(self, symbol: str = None):
+def run_chart_analysis_task(self, symbol: str = None, user_id: str = None, tier: str = "free"):
     """
-    ChartWatcher - runs every 6 hours
+    ChartWatcher - runs every 6 hours (or on-demand via /api/agents/trigger)
     Analyzes chart images using OpenAI Vision API
 
     Args:
         symbol: Optional single symbol to analyze (e.g., "DAX", "NDX")
                 If None, analyzes all active symbols
+        user_id: Optional user ID who triggered this (None for system-triggered)
+        tier: User's subscription tier (free, starter, pro, expert)
     """
     try:
         logger.info("=" * 70)
@@ -162,13 +164,19 @@ def run_chart_analysis_task(self, symbol: str = None):
             logger.info(f"📊 Starting ChartWatcher analysis for {symbol}")
         else:
             logger.info("📊 Starting ChartWatcher analysis for all symbols")
+        if user_id:
+            logger.info(f"   Triggered by user: {user_id} (tier: {tier})")
+        else:
+            logger.info("   System-triggered (scheduled)")
         logger.info("=" * 70)
 
         # Initialize ChartWatcher
         from src.config.supabase import get_supabase_admin
         watcher = ChartWatcher(
             supabase_client=get_supabase_admin(),
-            openai_api_key=os.getenv('OPENAI_API_KEY')
+            openai_api_key=os.getenv('OPENAI_API_KEY'),
+            user_id=user_id,
+            tier=tier
         )
 
         # Run chart analysis (async method - use asyncio.run)
