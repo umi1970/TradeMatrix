@@ -3,6 +3,8 @@
 -- Description: Fix missing FK updates for user_watchlist and alert_subscriptions
 -- Created: 2025-11-07
 -- Reason: Migration 024 forgot to update these 2 tables - they still reference symbols
+--         symbols table was already deleted by Migration 024, so we can't migrate data
+--         Solution: Delete orphaned records, update FK constraints
 -- =====================================================================
 
 BEGIN;
@@ -11,21 +13,12 @@ BEGIN;
 -- STEP 1: Fix user_watchlist FK (symbols → market_symbols)
 -- =====================================================================
 
--- First, migrate existing records to point to market_symbols
-UPDATE public.user_watchlist uw
-SET symbol_id = ms.id
-FROM public.symbols s
-JOIN public.market_symbols ms ON (
-    (s.symbol = '^GDAXI' AND ms.symbol = 'DAX') OR
-    (s.symbol = '^NDX' AND ms.symbol = 'NDX') OR
-    (s.symbol = '^DJI' AND ms.symbol = 'DJI') OR
-    (s.symbol = 'EURUSD' AND ms.symbol = 'EUR/USD') OR
-    (s.symbol = 'EURGBP' AND ms.symbol = 'EUR/GBP') OR
-    (s.symbol = 'GBPUSD' AND ms.symbol = 'GBP/USD')
-)
-WHERE uw.symbol_id = s.id;
+-- symbols table no longer exists (deleted in Migration 024)
+-- Delete all orphaned records (symbol_id points to deleted symbols)
+DELETE FROM public.user_watchlist
+WHERE symbol_id NOT IN (SELECT id FROM public.market_symbols);
 
--- Drop old FK to symbols
+-- Drop old FK to symbols (if it still exists)
 ALTER TABLE public.user_watchlist
     DROP CONSTRAINT IF EXISTS user_watchlist_symbol_id_fkey;
 
@@ -40,21 +33,11 @@ ALTER TABLE public.user_watchlist
 -- STEP 2: Fix alert_subscriptions FK (symbols → market_symbols)
 -- =====================================================================
 
--- First, migrate existing records to point to market_symbols
-UPDATE public.alert_subscriptions asub
-SET symbol_id = ms.id
-FROM public.symbols s
-JOIN public.market_symbols ms ON (
-    (s.symbol = '^GDAXI' AND ms.symbol = 'DAX') OR
-    (s.symbol = '^NDX' AND ms.symbol = 'NDX') OR
-    (s.symbol = '^DJI' AND ms.symbol = 'DJI') OR
-    (s.symbol = 'EURUSD' AND ms.symbol = 'EUR/USD') OR
-    (s.symbol = 'EURGBP' AND ms.symbol = 'EUR/GBP') OR
-    (s.symbol = 'GBPUSD' AND ms.symbol = 'GBP/USD')
-)
-WHERE asub.symbol_id = s.id;
+-- Delete all orphaned records (symbol_id points to deleted symbols)
+DELETE FROM public.alert_subscriptions
+WHERE symbol_id NOT IN (SELECT id FROM public.market_symbols);
 
--- Drop old FK to symbols
+-- Drop old FK to symbols (if it still exists)
 ALTER TABLE public.alert_subscriptions
     DROP CONSTRAINT IF EXISTS alert_subscriptions_symbol_id_fkey;
 
