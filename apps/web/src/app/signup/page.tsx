@@ -30,18 +30,18 @@ export default function SignUpPage() {
   }, [router])
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-950 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen flex items-center justify-center bg-background px-4 sm:px-6 lg:px-8">
       <div className="max-w-md w-full space-y-8">
         <div className="text-center">
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">
+          <h1 className="text-3xl font-bold text-foreground">
             Create your account
           </h1>
-          <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">
+          <p className="mt-2 text-sm text-muted-foreground">
             Start trading smarter with AI-powered analysis
           </p>
         </div>
 
-        <div className="mt-8 bg-white dark:bg-gray-900 py-8 px-4 shadow sm:rounded-lg sm:px-10 border border-gray-200 dark:border-gray-800">
+        <div className="mt-8 bg-card py-8 px-4 shadow sm:rounded-lg sm:px-10 border border-border">
           <div className="space-y-6">
             {/* Google OAuth */}
             <GoogleSignInButton />
@@ -49,10 +49,10 @@ export default function SignUpPage() {
             {/* Divider */}
             <div className="relative">
               <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t border-gray-300 dark:border-gray-700" />
+                <div className="w-full border-t border-border" />
               </div>
               <div className="relative flex justify-center text-sm">
-                <span className="px-2 bg-white dark:bg-gray-900 text-gray-500 dark:text-gray-400">
+                <span className="px-2 bg-card text-muted-foreground">
                   Or sign up with email
                 </span>
               </div>
@@ -63,7 +63,7 @@ export default function SignUpPage() {
 
             {/* Login Link */}
             <div className="text-center text-sm">
-              <span className="text-gray-600 dark:text-gray-400">Already have an account? </span>
+              <span className="text-muted-foreground">Already have an account? </span>
               <Link
                 href="/login"
                 className="font-medium text-blue-600 dark:text-blue-400 hover:text-blue-500 dark:hover:text-blue-300"
@@ -75,13 +75,13 @@ export default function SignUpPage() {
         </div>
 
         {/* Footer */}
-        <p className="mt-4 text-center text-xs text-gray-500 dark:text-gray-400">
+        <p className="mt-4 text-center text-xs text-muted-foreground">
           By signing up, you agree to our{' '}
-          <Link href="/terms" className="underline hover:text-gray-700 dark:hover:text-gray-300">
+          <Link href="/terms" className="underline hover:opacity-80">
             Terms of Service
           </Link>{' '}
           and{' '}
-          <Link href="/privacy" className="underline hover:text-gray-700 dark:hover:text-gray-300">
+          <Link href="/privacy" className="underline hover:opacity-80">
             Privacy Policy
           </Link>
         </p>
