@@ -306,7 +306,7 @@ class PriceFetcher:
         try:
             cache_record = {
                 'symbol_id': symbol_id,
-                'current_price': float(price_data['current_price']),
+                'price': float(price_data['current_price']),
                 'high_today': float(price_data['high_today']),
                 'low_today': float(price_data['low_today']),
                 'open_today': float(price_data['open_today']),
