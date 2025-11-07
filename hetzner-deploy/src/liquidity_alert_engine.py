@@ -42,16 +42,16 @@ class LiquidityAlertEngine:
             return None
 
     def get_current_price(self, symbol_id: str) -> Optional[Decimal]:
-        """Get current price from cache"""
+        """Get current price from current_prices table (Migration 024 - price_cache removed)"""
         try:
-            response = self.supabase.table('price_cache')\
-                .select('current_price')\
+            response = self.supabase.table('current_prices')\
+                .select('price')\
                 .eq('symbol_id', symbol_id)\
                 .limit(1)\
                 .execute()
 
             if response.data and len(response.data) > 0:
-                return Decimal(str(response.data[0]['current_price']))
+                return Decimal(str(response.data[0]['price']))
             return None
 
         except Exception as e:
@@ -59,10 +59,10 @@ class LiquidityAlertEngine:
             return None
 
     def get_active_subscriptions(self) -> List[Dict]:
-        """Get all active alert subscriptions"""
+        """Get all active alert subscriptions (Migration 024 - uses market_symbols)"""
         try:
             response = self.supabase.table('alert_subscriptions')\
-                .select('*, symbols(symbol, name)')\
+                .select('*, market_symbols(symbol, alias)')\
                 .execute()
 
             return response.data or []

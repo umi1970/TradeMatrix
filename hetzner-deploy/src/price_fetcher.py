@@ -54,20 +54,20 @@ class PriceFetcher:
         Returns symbol configuration dict with provider info.
 
         Returns:
-            Dict mapping symbol to provider config
+            Dict mapping API symbol to provider config
             Example: {
-                '^GDAXI': {'provider': 'yfinance'},
-                'EURUSD': {'provider': 'twelvedata', 'ticker': 'EUR/USD', 'exchange': None}
+                '^GDAXI': {'provider': 'yfinance', 'db_symbol': 'DAX'},
+                'EURUSD': {'provider': 'twelvedata', 'ticker': 'EUR/USD', 'exchange': None, 'db_symbol': 'EURUSD'}
             }
 
         Fallback: Returns default symbols if query fails or no symbols found
         """
         try:
-            # Query user_watchlist + symbols table (JOIN)
+            # Query user_watchlist + market_symbols table (JOIN)
             # Filter only active symbols
             result = self.supabase.table('user_watchlist')\
-                .select('symbols!inner(symbol, is_active, type)')\
-                .eq('symbols.is_active', True)\
+                .select('market_symbols!inner(symbol, active, type)')\
+                .eq('market_symbols.active', True)\
                 .execute()
 
             if not result.data:
@@ -78,36 +78,33 @@ class PriceFetcher:
             symbol_config = {}
 
             for item in result.data:
-                symbol_data = item.get('symbols')
+                symbol_data = item.get('market_symbols')
                 if not symbol_data:
                     continue
 
-                symbol = symbol_data['symbol']
+                db_symbol = symbol_data['symbol']  # Database symbol (DAX, NDX, EUR/USD)
+                api_symbol = symbol_data.get('api_symbol', db_symbol)  # API symbol (^GDAXI, ^NDX, EUR/USD)
                 symbol_type = symbol_data.get('type', '')
 
                 # Skip duplicates
-                if symbol in symbol_config:
+                if db_symbol in symbol_config:
                     continue
 
-                # Determine provider based on symbol format
-                # Indices start with ^ (use yfinance)
-                # Forex are all caps without ^ (use twelvedata)
-                if symbol.startswith('^'):
-                    # Index symbol - use yfinance
-                    symbol_config[symbol] = {'provider': 'yfinance'}
-                elif symbol_type == 'forex' or self._is_forex_pair(symbol):
+                # Determine provider based on symbol type or format
+                if symbol_type == 'forex' or '/' in db_symbol:
                     # Forex pair - use twelvedata
-                    # Format: EURUSD → EUR/USD
-                    ticker = self._format_forex_ticker(symbol)
-                    symbol_config[symbol] = {
+                    symbol_config[db_symbol] = {
                         'provider': 'twelvedata',
-                        'ticker': ticker,
-                        'exchange': None
+                        'ticker': api_symbol,  # EUR/USD, EUR/GBP, etc.
+                        'exchange': None,
+                        'api_symbol': api_symbol
                     }
                 else:
-                    # Default to yfinance for unknown types
-                    print(f"⚠️  Unknown type '{symbol_type}' for {symbol}, defaulting to yfinance")
-                    symbol_config[symbol] = {'provider': 'yfinance'}
+                    # Index symbol - use yfinance
+                    symbol_config[db_symbol] = {
+                        'provider': 'yfinance',
+                        'api_symbol': api_symbol  # ^GDAXI, ^NDX, ^DJI
+                    }
 
             if not symbol_config:
                 print("⚠️  No valid symbols found, using defaults")
@@ -120,38 +117,6 @@ class PriceFetcher:
             print(f"❌ Error fetching watched symbols from DB: {e}")
             print("   Using fallback symbols")
             return self.default_symbols
-
-    def _is_forex_pair(self, symbol: str) -> bool:
-        """
-        Check if symbol is a forex pair (e.g., EURUSD, GBPJPY)
-
-        Args:
-            symbol: Symbol to check
-
-        Returns:
-            True if likely a forex pair
-        """
-        # Forex pairs are typically 6 characters (EURUSD, GBPJPY)
-        if len(symbol) == 6 and symbol.isupper() and symbol.isalpha():
-            return True
-        return False
-
-    def _format_forex_ticker(self, symbol: str) -> str:
-        """
-        Format forex symbol for Twelvedata API
-
-        Args:
-            symbol: Internal symbol (e.g., 'EURUSD')
-
-        Returns:
-            Formatted ticker for API (e.g., 'EUR/USD')
-        """
-        if len(symbol) == 6:
-            # Split into base/quote currency (e.g., EURUSD → EUR/USD)
-            base = symbol[:3]
-            quote = symbol[3:]
-            return f"{base}/{quote}"
-        return symbol  # Return as-is if not standard format
 
     def fetch_yfinance_quote(self, symbol: str) -> Optional[Dict]:
         """
@@ -253,7 +218,7 @@ class PriceFetcher:
         Fetch realtime price for a symbol using appropriate provider
 
         Args:
-            symbol: Internal symbol (e.g., '^GDAXI', 'EURUSD')
+            symbol: Database symbol (e.g., 'DAX', 'NDX', 'EUR/USD')
 
         Returns:
             Dict with price data or None if failed
@@ -268,9 +233,10 @@ class PriceFetcher:
             return None
 
         provider = config['provider']
+        api_symbol = config.get('api_symbol', symbol)
 
         if provider == 'yfinance':
-            return self.fetch_yfinance_quote(symbol)
+            return self.fetch_yfinance_quote(api_symbol)  # Use API symbol (^GDAXI)
         elif provider == 'twelvedata':
             return self.fetch_twelvedata_quote(
                 symbol=config['ticker'],
@@ -281,9 +247,9 @@ class PriceFetcher:
             return None
 
     def get_symbol_id(self, symbol: str) -> Optional[str]:
-        """Get symbol UUID from symbols table (Migration 023 - FK constraint fixed)"""
+        """Get symbol UUID from market_symbols table (Migration 024 - normalized architecture)"""
         try:
-            response = self.supabase.table('symbols')\
+            response = self.supabase.table('market_symbols')\
                 .select('id')\
                 .eq('symbol', symbol)\
                 .limit(1)\

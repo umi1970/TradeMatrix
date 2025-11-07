@@ -96,7 +96,8 @@ class ChartGenerator:
             SymbolNotFoundError: If symbol doesn't exist or chart not enabled
         """
         try:
-            response = self.supabase.table('symbols')\
+            # Migration 024: chart config migrated from symbols to market_symbols
+            response = self.supabase.table('market_symbols')\
                 .select('id, symbol, chart_img_symbol, chart_enabled, chart_config')\
                 .eq('id', symbol_id)\
                 .eq('chart_enabled', True)\
