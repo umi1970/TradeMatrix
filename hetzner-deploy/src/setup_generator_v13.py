@@ -118,25 +118,18 @@ class SetupGeneratorV13:
             if price_response.data and len(price_response.data) > 0:
                 current_price = float(price_response.data[0]['price'])
 
-            # Fallback: If current_prices is empty, get latest close from ohlc table
-            if not current_price:
-                ohlc_response = self.supabase.table('ohlc')\
-                    .select('close')\
-                    .eq('symbol_id', symbol_id)\
-                    .order('ts', desc=True)\
-                    .limit(1)\
-                    .execute()
-
-                if ohlc_response.data and len(ohlc_response.data) > 0:
-                    current_price = float(ohlc_response.data[0]['close'])
-                    logger.info(f"Using fallback price from ohlc: {current_price}")
-
             # Extract support/resistance from analysis
             support_levels = analysis.get('support_levels', [])
             resistance_levels = analysis.get('resistance_levels', [])
 
             supports = [float(s) for s in support_levels] if support_levels else []
             resistances = [float(r) for r in resistance_levels] if resistance_levels else []
+
+            # Fallback: If current_price not available, estimate from support/resistance levels
+            if not current_price and supports and resistances:
+                # Estimate current price as midpoint between highest support and lowest resistance
+                current_price = (max(supports) + min(resistances)) / 2
+                logger.info(f"Estimated current_price from levels: {current_price}")
 
             # Extract patterns
             patterns = analysis.get('patterns_detected', [])
