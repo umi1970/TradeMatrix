@@ -1,0 +1,30 @@
+# ===============================================================
+# TradeMatrix.ai — Journal Commit Flow
+# ===============================================================
+
+flow: journal_commit
+description: >
+  Commits validated trades to the Trade Journal and triggers reporting events.
+
+steps:
+  - id: prepare_entry
+    uses: JournalBot.prepare_record
+    comment: Normalize JSON fields, calculate P/L potential, append timestamp.
+
+  - id: write_entry
+    uses: JournalBot.write_to_db
+    params:
+      table: trade_journal
+    comment: Insert validated trade into Supabase table "trade_journal".
+
+  - id: publish_event
+    uses: Publisher.broadcast
+    params:
+      channel: "journal_updates"
+    comment: Notify subscribers (Dashboard, Reports, Alerts).
+
+  - id: archive_log
+    uses: JournalBot.log_to_storage
+    params:
+      bucket: "journal_logs"
+    comment: Keep a raw copy for auditing.

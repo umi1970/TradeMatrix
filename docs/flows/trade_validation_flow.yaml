@@ -1,0 +1,35 @@
+# ===============================================================
+# TradeMatrix.ai — Trade Validation Flow
+# ===============================================================
+
+flow: trade_validation
+description: >
+  Validation pipeline verifying data integrity, confidence, and logical structure
+  before a setup is allowed to reach JournalBot.
+
+steps:
+  - id: verify_data_origin
+    uses: TradeValidationEngine.verify_source
+    params:
+      required_sources: ["MarketDataFetcher", "ChartWatcher"]
+    on_fail: stop
+    comment: Stop immediately if data source not whitelisted.
+
+  - id: check_confidence
+    uses: TradeValidationEngine.check_confidence
+    params:
+      min_confidence: 0.5
+    on_fail: stop
+    comment: Reject low-probability setups.
+
+  - id: check_validity
+    uses: TradeValidationEngine.check_flag
+    params:
+      field: valid
+      must_be: true
+    on_fail: stop
+    comment: Skip invalid setups.
+
+  - id: handoff
+    next: journal_commit_flow.yaml
+    comment: Pass verified trades to the Journal Commit Flow.

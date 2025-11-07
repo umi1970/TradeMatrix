@@ -1,0 +1,28 @@
+# ===============================================================
+# TradeMatrix.ai — System Integrity Rules
+# Version: 1.0  |  Last Updated: 2025-11-07
+# ===============================================================
+
+validation:
+  # Real-time data only. No synthetic or estimated values allowed.
+  no_estimated_prices: true
+  data_origin_required: ["ChartWatcher", "MarketDataFetcher"]
+  prohibited_fields: ["guessed_price", "estimated_price", "interpolated_price"]
+  fail_on_invalid_source: true
+
+confidence_policy:
+  min_confidence: 0.50
+  review_required: 0.50-0.65
+  auto_commit_threshold: 0.70
+
+dev_policy:
+  runtime_commands: prohibited
+  architecture_changes: require_owner_approval
+  direct_db_writes: prohibited
+  docker_runtime_queries: prohibited
+  ai_agents_must_follow_yaml_flows: true
+
+logging:
+  validation_events: true
+  rejected_setups: true
+  source_trace: true
