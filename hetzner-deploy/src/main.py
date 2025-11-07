@@ -11,7 +11,7 @@ Architecture:
 from fastapi import FastAPI, Depends, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
-from typing import Literal
+from typing import Literal, Optional
 from src.config.supabase import get_supabase_admin
 import os
 
@@ -72,6 +72,7 @@ async def health():
 
 class TriggerAgentRequest(BaseModel):
     agent_name: Literal["chart_watcher", "morning_planner", "journal_bot"]
+    symbol: Optional[str] = None  # Optional: Single symbol to analyze (e.g., "DAX", "NDX")
 
 @app.post("/api/agents/trigger")
 async def trigger_agent(request: TriggerAgentRequest):
@@ -82,6 +83,9 @@ async def trigger_agent(request: TriggerAgentRequest):
     - chart_watcher: ChartWatcher (analyzes charts with OpenAI Vision)
     - morning_planner: MorningPlanner (generates morning setups)
     - journal_bot: JournalBot (generates daily reports)
+
+    Optional parameters:
+    - symbol: Specific symbol to analyze (default: all active symbols)
     """
     try:
         # Import Celery tasks
@@ -98,14 +102,20 @@ async def trigger_agent(request: TriggerAgentRequest):
         if not task:
             raise HTTPException(status_code=400, detail=f"Unknown agent: {request.agent_name}")
 
-        # Trigger Celery task asynchronously
-        result = task.apply_async()
+        # Trigger Celery task asynchronously (pass symbol if provided)
+        if request.symbol:
+            result = task.apply_async(args=[request.symbol])
+            message = f"{request.agent_name} started for {request.symbol}"
+        else:
+            result = task.apply_async()
+            message = f"{request.agent_name} started for all symbols"
 
         return {
             "success": True,
             "agent": request.agent_name,
+            "symbol": request.symbol,
             "task_id": result.id,
-            "message": f"{request.agent_name} started successfully"
+            "message": message
         }
 
     except Exception as e:

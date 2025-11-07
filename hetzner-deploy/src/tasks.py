@@ -147,14 +147,21 @@ def check_liquidity_alerts(self):
 # ================================================
 
 @celery.task(name='run_chart_analysis', bind=True)
-def run_chart_analysis_task(self):
+def run_chart_analysis_task(self, symbol: str = None):
     """
     ChartWatcher - runs every 6 hours
     Analyzes chart images using OpenAI Vision API
+
+    Args:
+        symbol: Optional single symbol to analyze (e.g., "DAX", "NDX")
+                If None, analyzes all active symbols
     """
     try:
         logger.info("=" * 70)
-        logger.info("📊 Starting ChartWatcher analysis")
+        if symbol:
+            logger.info(f"📊 Starting ChartWatcher analysis for {symbol}")
+        else:
+            logger.info("📊 Starting ChartWatcher analysis for all symbols")
         logger.info("=" * 70)
 
         # Initialize ChartWatcher
@@ -165,7 +172,9 @@ def run_chart_analysis_task(self):
         )
 
         # Run chart analysis (async method - use asyncio.run)
-        result = asyncio.run(watcher.run(timeframe='4h'))
+        # Pass symbol as list if provided (ChartWatcher.run() expects List[str])
+        symbols_list = [symbol] if symbol else None
+        result = asyncio.run(watcher.run(symbols=symbols_list, timeframe='4h'))
 
         logger.info("=" * 70)
         logger.info(f"✅ ChartWatcher completed: {result.get('analyses_created', 0)} analyses created")
