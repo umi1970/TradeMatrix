@@ -118,6 +118,19 @@ class SetupGeneratorV13:
             if price_response.data and len(price_response.data) > 0:
                 current_price = float(price_response.data[0]['price'])
 
+            # Fallback: If current_prices is empty, get latest close from ohlc table
+            if not current_price:
+                ohlc_response = self.supabase.table('ohlc')\
+                    .select('close')\
+                    .eq('symbol_id', symbol_id)\
+                    .order('ts', desc=True)\
+                    .limit(1)\
+                    .execute()
+
+                if ohlc_response.data and len(ohlc_response.data) > 0:
+                    current_price = float(ohlc_response.data[0]['close'])
+                    logger.info(f"Using fallback price from ohlc: {current_price}")
+
             # Extract support/resistance from analysis
             support_levels = analysis.get('support_levels', [])
             resistance_levels = analysis.get('resistance_levels', [])
