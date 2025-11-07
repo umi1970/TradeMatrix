@@ -30,7 +30,7 @@ export function ChartSnapshotCard({ snapshot, onDelete }: ChartSnapshotCardProps
     if (!confirm('Delete this chart snapshot?')) return
 
     try {
-      const { error } = await supabase
+      const { error } = await (supabase as any)
         .from('chart_snapshots')
         .delete()
         .eq('id', snapshot.id)

@@ -126,8 +126,7 @@ export function ChartConfigModal({
 
     try {
       // Update chart_config in Supabase
-      // @ts-ignore - market_symbols not in generated types yet
-      const { error } = await supabase
+      const { error } = await (supabase as any)
         .from('market_symbols')
         .update({ chart_config: config })
         .eq('id', symbol.id)
@@ -198,7 +197,7 @@ export function ChartConfigModal({
               <Label htmlFor="default-tf">Default Timeframe</Label>
               <Select
                 value={config.default_timeframe}
-                onValueChange={(value) =>
+                onValueChange={(value: string) =>
                   setConfig({ ...config, default_timeframe: value })
                 }
               >
@@ -291,6 +290,7 @@ export function ChartConfigModal({
             <ChartPreview
               config={{
                 ...config,
+                theme: config.theme || 'dark',
                 tv_symbol: tvSymbol,
                 width,
                 height,

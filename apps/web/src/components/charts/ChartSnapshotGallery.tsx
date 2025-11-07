@@ -44,8 +44,7 @@ export function ChartSnapshotGallery() {
     setIsLoading(true)
 
     try {
-      // @ts-ignore - chart_snapshots and market_symbols not in generated types yet
-      let query = supabase
+      let query = (supabase as any)
         .from('chart_snapshots')
         .select(
           `
@@ -109,7 +108,7 @@ export function ChartSnapshotGallery() {
             {uniqueAgents.length > 1 && (
               <Select
                 value={filterAgent || 'all'}
-                onValueChange={(v) => setFilterAgent(v === 'all' ? null : v)}
+                onValueChange={(v: string) => setFilterAgent(v === 'all' ? null : v)}
               >
                 <SelectTrigger className="w-[180px]">
                   <SelectValue placeholder="Filter by agent" />
@@ -128,7 +127,7 @@ export function ChartSnapshotGallery() {
             {uniqueTimeframes.length > 1 && (
               <Select
                 value={filterTimeframe || 'all'}
-                onValueChange={(v) => setFilterTimeframe(v === 'all' ? null : v)}
+                onValueChange={(v: string) => setFilterTimeframe(v === 'all' ? null : v)}
               >
                 <SelectTrigger className="w-[180px]">
                   <SelectValue placeholder="Filter by timeframe" />
