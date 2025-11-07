@@ -369,37 +369,52 @@ export interface Database {
           }
         ]
       }
-      symbols: {
+      market_symbols: {
         Row: {
           id: string
+          vendor: string
           symbol: string
-          name: string
-          asset_type: string
-          exchange: string | null
+          alias: string | null
+          tick_size: number
+          timezone: string
+          active: boolean
           tv_symbol: string | null
-          is_active: boolean
+          api_symbol: string | null
+          chart_img_symbol: string | null
+          chart_enabled: boolean
+          chart_config: Json | null
           created_at: string
           updated_at: string
         }
         Insert: {
           id?: string
+          vendor: string
           symbol: string
-          name: string
-          asset_type: string
-          exchange?: string | null
+          alias?: string | null
+          tick_size?: number
+          timezone?: string
+          active?: boolean
           tv_symbol?: string | null
-          is_active?: boolean
+          api_symbol?: string | null
+          chart_img_symbol?: string | null
+          chart_enabled?: boolean
+          chart_config?: Json | null
           created_at?: string
           updated_at?: string
         }
         Update: {
           id?: string
+          vendor?: string
           symbol?: string
-          name?: string
-          asset_type?: string
-          exchange?: string | null
+          alias?: string | null
+          tick_size?: number
+          timezone?: string
+          active?: boolean
           tv_symbol?: string | null
-          is_active?: boolean
+          api_symbol?: string | null
+          chart_img_symbol?: string | null
+          chart_enabled?: boolean
+          chart_config?: Json | null
           created_at?: string
           updated_at?: string
         }
