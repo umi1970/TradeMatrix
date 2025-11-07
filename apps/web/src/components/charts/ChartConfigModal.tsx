@@ -126,6 +126,7 @@ export function ChartConfigModal({
 
     try {
       // Update chart_config in Supabase
+      // @ts-ignore - market_symbols not in generated types yet
       const { error } = await supabase
         .from('market_symbols')
         .update({ chart_config: config })

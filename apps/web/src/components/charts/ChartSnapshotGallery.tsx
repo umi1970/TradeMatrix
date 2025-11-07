@@ -44,6 +44,7 @@ export function ChartSnapshotGallery() {
     setIsLoading(true)
 
     try {
+      // @ts-ignore - chart_snapshots and market_symbols not in generated types yet
       let query = supabase
         .from('chart_snapshots')
         .select(
