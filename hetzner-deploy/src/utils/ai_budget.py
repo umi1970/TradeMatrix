@@ -23,7 +23,7 @@ DAILY_LIMITS = {
 }
 
 # System-wide daily budget (safety net against runaway costs)
-SYSTEM_DAILY_BUDGET = 100  # Max 100 AI calls/day across all users
+SYSTEM_DAILY_BUDGET = 10  # Max 10 AI calls/day across all users (testing - increase for production)
 
 # Estimated costs per model (USD)
 MODEL_COSTS = {
@@ -66,23 +66,28 @@ def check_ai_budget(
     try:
         # 1. Check user's daily usage (if user_id provided)
         if user_id:
-            user_calls_result = supabase.table("ai_usage_log")\
-                .select("id", count="exact")\
-                .eq("user_id", user_id)\
-                .gte("created_at", yesterday)\
-                .execute()
+            # Only check user limit if user_id is a valid UUID
+            try:
+                user_calls_result = supabase.table("ai_usage_log")\
+                    .select("id", count="exact")\
+                    .eq("user_id", user_id)\
+                    .gte("created_at", yesterday)\
+                    .execute()
 
-            user_calls = user_calls_result.count or 0
-            user_limit = DAILY_LIMITS.get(tier, DAILY_LIMITS["free"])
+                user_calls = user_calls_result.count or 0
+                user_limit = DAILY_LIMITS.get(tier, DAILY_LIMITS["free"])
 
-            if user_calls >= user_limit:
-                logger.warning(f"User {user_id} ({tier}) exceeded daily limit: {user_calls}/{user_limit}")
-                raise AIBudgetError(
-                    f"Daily AI limit reached ({user_limit} calls). "
-                    f"Upgrade to {'Pro' if tier == 'starter' else 'Expert'} for more!"
-                )
+                if user_calls >= user_limit:
+                    logger.warning(f"User {user_id} ({tier}) exceeded daily limit: {user_calls}/{user_limit}")
+                    raise AIBudgetError(
+                        f"Daily AI limit reached ({user_limit} calls). "
+                        f"Upgrade to {'Pro' if tier == 'starter' else 'Expert'} for more!"
+                    )
 
-            logger.info(f"User {user_id} ({tier}): {user_calls}/{user_limit} calls today")
+                logger.info(f"User {user_id} ({tier}): {user_calls}/{user_limit} calls today")
+            except Exception as e:
+                logger.warning(f"Could not check user budget (invalid user_id?): {e}")
+                # Continue to system-wide check
 
         # 2. Check system-wide budget (safety net)
         system_calls_result = supabase.table("ai_usage_log")\
@@ -143,16 +148,17 @@ def log_ai_usage(
         if tokens and model in ["gpt-4", "gpt-3.5-turbo"]:
             estimated_cost = (tokens / 1000) * MODEL_COSTS[model]
 
-        # Insert usage record
+        # Insert usage record (user_id can be NULL for system calls)
         supabase.table("ai_usage_log").insert({
-            "user_id": user_id,
+            "user_id": user_id,  # Can be NULL
             "agent_name": agent_name,
             "symbol": symbol,
             "model": model,
             "cost": round(estimated_cost, 4)
         }).execute()
 
-        logger.info(f"Logged AI usage: {agent_name} ({model}) - ${estimated_cost:.4f}")
+        user_info = f"user={user_id}" if user_id else "system"
+        logger.info(f"Logged AI usage: {agent_name} ({model}) - ${estimated_cost:.4f} ({user_info})")
 
     except Exception as e:
         logger.error(f"Error logging AI usage: {e}")

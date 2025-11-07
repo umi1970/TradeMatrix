@@ -83,8 +83,8 @@ export function AgentControlPanel() {
         body: JSON.stringify({
           agent_name: backendAgentName,
           symbol: selectedSymbol === 'all' ? null : selectedSymbol,  // Pass symbol or null
-          user_id: 'demo_user',  // TODO: Get from Supabase session
-          tier: 'free',  // TODO: Get from user profile
+          user_id: null,  // TODO: Get real UUID from Supabase session (for now: NULL = system-wide budget only)
+          tier: 'free',  // Not used when user_id is NULL
         }),
       })
 
