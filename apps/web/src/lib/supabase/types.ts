@@ -440,7 +440,7 @@ export interface Database {
           {
             foreignKeyName: 'user_watchlist_symbol_id_fkey'
             columns: ['symbol_id']
-            referencedRelation: 'symbols'
+            referencedRelation: 'market_symbols'
             referencedColumns: ['id']
           }
         ]
