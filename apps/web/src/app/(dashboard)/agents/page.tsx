@@ -7,6 +7,7 @@ import { AgentControlPanel } from '@/components/agents/agent-control-panel'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Loader2, Clock, Play } from 'lucide-react'
 
 interface SearchParams {
@@ -211,7 +212,7 @@ export default async function AgentsPage({
       {/* Filters Section */}
       <AgentFilter currentFilter={agentFilter} />
 
-      {/* Setups Grid - Grouped by Agent */}
+      {/* Setups Grid - Tabs by Agent */}
       <section>
         {setups.length === 0 ? (
           <Card>
@@ -227,8 +228,32 @@ export default async function AgentsPage({
             </CardContent>
           </Card>
         ) : (
-          <div className="space-y-8">
-            {/* Group setups by agent_name */}
+          <Tabs defaultValue={Object.keys(
+            setups.reduce((groups, setup) => {
+              const agent = setup.agent_name
+              if (!groups[agent]) groups[agent] = []
+              groups[agent].push(setup)
+              return groups
+            }, {} as Record<string, typeof setups>)
+          )[0]} className="w-full">
+            <TabsList className="w-full justify-start">
+              {Object.entries(
+                setups.reduce((groups, setup) => {
+                  const agent = setup.agent_name
+                  if (!groups[agent]) groups[agent] = []
+                  groups[agent].push(setup)
+                  return groups
+                }, {} as Record<string, typeof setups>)
+              ).map(([agentName, agentSetups]) => (
+                <TabsTrigger key={agentName} value={agentName} className="gap-2">
+                  {agentName}
+                  <Badge variant="secondary" className="ml-1 text-xs">
+                    {agentSetups.length}
+                  </Badge>
+                </TabsTrigger>
+              ))}
+            </TabsList>
+
             {Object.entries(
               setups.reduce((groups, setup) => {
                 const agent = setup.agent_name
@@ -237,19 +262,15 @@ export default async function AgentsPage({
                 return groups
               }, {} as Record<string, typeof setups>)
             ).map(([agentName, agentSetups]) => (
-              <div key={agentName}>
-                <div className="flex items-center gap-3 mb-4 pb-2 border-b">
-                  <h3 className="text-xl font-bold">{agentName}</h3>
-                  <Badge variant="secondary" className="text-xs">{agentSetups.length}</Badge>
-                </div>
+              <TabsContent key={agentName} value={agentName} className="mt-6">
                 <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                   {agentSetups.map((setup) => (
                     <TradingSetupCard key={setup.id} setup={setup} />
                   ))}
                 </div>
-              </div>
+              </TabsContent>
             ))}
-          </div>
+          </Tabs>
         )}
       </section>
     </div>
