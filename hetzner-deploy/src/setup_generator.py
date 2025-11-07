@@ -131,17 +131,20 @@ Chart Analysis Summary:
     def _generate_levels_with_ai(self, symbol: str, context: str) -> Optional[Dict[str, Any]]:
         """Use OpenAI to generate Entry/SL/TP levels"""
         try:
-            prompt = f"""You are an expert trader analyzing {symbol}.
+            prompt = f"""You are an expert technical analyst creating a detailed trading setup for {symbol}.
 
 {context}
 
-Based on this technical analysis, provide a trading setup:
+Analyze this data and create a comprehensive trading setup. Your analysis must include:
 
-1. Determine the best SIDE (long or short)
-2. Calculate optimal ENTRY price
-3. Calculate STOP LOSS price (risk management)
-4. Calculate TAKE PROFIT price (reward target)
-5. Provide brief REASONING
+1. **Market Context**: Current trend and momentum
+2. **Pattern Analysis**: Which patterns are most significant and why
+3. **Key Levels**: Relevant support/resistance levels
+4. **Setup Rationale**: WHY this setup makes sense NOW
+5. **Entry Logic**: WHY this specific entry price
+6. **Stop Loss Logic**: WHERE and WHY this stop placement
+7. **Take Profit Logic**: Target zone and reasoning
+8. **Risk Assessment**: What could invalidate this setup
 
 Return ONLY valid JSON in this exact format:
 {{
@@ -150,13 +153,16 @@ Return ONLY valid JSON in this exact format:
     "stop_loss": number,
     "take_profit": number,
     "confidence": 0.0-1.0,
-    "reasoning": "brief explanation"
+    "reasoning": "DETAILED multi-paragraph analysis covering all points above. Use specific levels, pattern names, and technical reasoning. Minimum 150 words."
 }}
 
-Important:
-- Use realistic prices based on support/resistance levels
-- Risk/reward ratio should be at least 1:2
-- Stop loss should be tight but not too close"""
+Requirements:
+- Entry near support (long) or resistance (short)
+- Stop loss beyond invalidation level
+- Risk/Reward ratio minimum 1:2
+- Reasoning MUST be detailed (150+ words) with specific technical details
+- Reference actual support/resistance levels from the data
+- Explain market structure and why NOW is a good time"""
 
             response = self.openai_client.chat.completions.create(
                 model="gpt-4",

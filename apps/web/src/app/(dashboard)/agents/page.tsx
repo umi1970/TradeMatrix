@@ -122,29 +122,45 @@ async function getSetups(agentFilter?: string[]): Promise<TradingSetup[]> {
       allSetups.push(...analysisSetups)
     }
 
-    // Transform setups (MorningPlanner)
+    // Transform setups (MorningPlanner + AI-generated)
     if (tradingSetupsResult.data && tradingSetupsResult.data.length > 0) {
-      const tradingSetups = tradingSetupsResult.data.map((setup: any) => ({
-        id: setup.id,
-        symbol_id: setup.symbol_id,
-        symbol: setup.market_symbols?.symbol || 'Unknown',
-        timeframe: setup.payload?.timeframe || '1h',
-        agent_name: setup.strategy === 'asia_sweep' || setup.strategy === 'y_low_rebound' ? 'MorningPlanner' : 'Unknown',
-        analysis: `${setup.strategy.replace(/_/g, ' ')} setup detected. ${setup.side.toUpperCase()} signal with ${(setup.confidence * 100).toFixed(0)}% confidence.`,
-        chart_url: setup.payload?.chart_url_1h || setup.payload?.chart_url_15m || '',
-        chart_snapshot_id: setup.payload?.chart_snapshot_id || null,
-        confidence_score: parseFloat(setup.confidence) || 0,
-        created_at: setup.created_at,
-        metadata: {
-          setup_type: setup.strategy,
-          entry: parseFloat(setup.entry_price),
-          sl: parseFloat(setup.stop_loss),
-          tp: parseFloat(setup.take_profit),
-          trend: setup.side === 'long' ? 'bullish' : 'bearish',
-          support_levels: [],
-          resistance_levels: [],
-        },
-      }))
+      const tradingSetups = tradingSetupsResult.data.map((setup: any) => {
+        // Use AI reasoning if available, otherwise generic message
+        const analysis = setup.payload?.reasoning
+          ? setup.payload.reasoning
+          : `${setup.strategy.replace(/_/g, ' ')} setup detected. ${setup.side.toUpperCase()} signal with ${(setup.confidence * 100).toFixed(0)}% confidence.`
+
+        // Determine agent name
+        let agentName = 'Unknown'
+        if (setup.strategy === 'asia_sweep' || setup.strategy === 'y_low_rebound') {
+          agentName = 'MorningPlanner'
+        } else if (setup.strategy === 'pattern_based' || setup.module === 'ai_generated') {
+          agentName = 'AI Setup Generator'
+        }
+
+        return {
+          id: setup.id,
+          symbol_id: setup.symbol_id,
+          symbol: setup.market_symbols?.symbol || 'Unknown',
+          timeframe: setup.payload?.timeframe || '1h',
+          agent_name: agentName,
+          analysis,
+          chart_url: setup.payload?.chart_url_1h || setup.payload?.chart_url_15m || setup.payload?.chart_url || '',
+          chart_snapshot_id: setup.payload?.chart_snapshot_id || null,
+          confidence_score: parseFloat(setup.confidence) || 0,
+          created_at: setup.created_at,
+          metadata: {
+            setup_type: setup.strategy,
+            entry: parseFloat(setup.entry_price),
+            sl: parseFloat(setup.stop_loss),
+            tp: parseFloat(setup.take_profit),
+            trend: setup.side === 'long' ? 'bullish' : 'bearish',
+            support_levels: [],
+            resistance_levels: [],
+            patterns: setup.payload?.patterns || [],
+          },
+        }
+      })
       allSetups.push(...tradingSetups)
     }
 
