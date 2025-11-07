@@ -85,14 +85,14 @@ export default function DashboardPage() {
       setUserId(session.user.id)
 
       const { data, error: watchlistError } = await supabase
-        .from('user_watchlist')
+        .from('user_watchlist' as any)
         .select('id, position, market_symbols(*)')
         .eq('user_id', session.user.id)
         .order('position')
 
       if (watchlistError) throw watchlistError
 
-      setWatchlist((data || []) as WatchlistItem[])
+      setWatchlist(data || [])
     } catch (err: unknown) {
       console.error('Error fetching watchlist:', err)
       setError(err instanceof Error ? err.message : 'Failed to load watchlist')
