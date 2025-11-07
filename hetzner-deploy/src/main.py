@@ -135,13 +135,13 @@ async def generate_setup_from_analysis(request: dict):
         if not analysis_id:
             raise HTTPException(status_code=400, detail="analysis_id is required")
 
-        # Import setup generator
-        from src.setup_generator import SetupGenerator
+        # Import setup generator v1.3 (ChatGPT-improved)
+        from src.setup_generator_v13 import SetupGeneratorV13
         from src.config.supabase import get_supabase_admin
         import os
 
         # Initialize generator
-        generator = SetupGenerator(
+        generator = SetupGeneratorV13(
             supabase_client=get_supabase_admin(),
             openai_api_key=os.getenv('OPENAI_API_KEY')
         )
