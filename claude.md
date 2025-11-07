@@ -368,16 +368,21 @@ gh pr create --title "feat: [name]" --body "[description]" --base main
 3. **Edge Functions für Webhooks** - Stripe, externe APIs
 4. **RLS immer aktivieren** - Row Level Security für alle Tabellen
 
+### Datenbank
+5. **MIGRATIONS ERST CHECKEN** - BEVOR du `.table('xyz')` oder `.select('abc')` verwendest, lies `services/api/supabase/migrations/*.sql` um Tabellennamen und Spalten zu verifizieren
+6. **Nie Tabellen/Spalten raten** - Glob migrations, Read relevante SQL-Datei, dann Code schreiben
+7. **Schema-Dokumentation nutzen** - Siehe `services/api/supabase/README.md` für Migrations-Übersicht
+
 ### Code
-5. **Keine Redundanz** - Wenn Supabase es kann, nutze Supabase
-6. **Server Components bevorzugen** - Next.js (weniger Client JS)
-7. **TypeScript strikt** - Keine `any` types
-8. **Environment Variables** - Nie Secrets committen
+8. **Keine Redundanz** - Wenn Supabase es kann, nutze Supabase
+9. **Server Components bevorzugen** - Next.js (weniger Client JS)
+10. **TypeScript strikt** - Keine `any` types
+11. **Environment Variables** - Nie Secrets committen
 
 ### Dokumentation
-9. **Update während Entwicklung** - Nicht nachträglich
-10. **Checklists nutzen** - TodoWrite tool für Tracking
-11. **Status aktualisieren** - PROJECT_OVERVIEW.md Status immer aktuell
+12. **Update während Entwicklung** - Nicht nachträglich
+13. **Checklists nutzen** - TodoWrite tool für Tracking
+14. **Status aktualisieren** - PROJECT_OVERVIEW.md Status immer aktuell
 
 ---
 
