@@ -1,10 +1,11 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { Clock, Play } from 'lucide-react'
+import { Clock, Play, RefreshCw } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 
 const agents = [
@@ -17,7 +18,27 @@ const agents = [
 
 export function AgentControlPanel() {
   const { toast } = useToast()
+  const router = useRouter()
   const [triggeringAgent, setTriggeringAgent] = useState<string | null>(null)
+  const [refreshCountdown, setRefreshCountdown] = useState<number | null>(null)
+
+  // Auto-refresh countdown effect
+  useEffect(() => {
+    if (refreshCountdown === null || refreshCountdown <= 0) return
+
+    const timer = setInterval(() => {
+      setRefreshCountdown((prev) => {
+        if (prev === null || prev <= 1) {
+          // Refresh page when countdown reaches 0
+          router.refresh()
+          return null
+        }
+        return prev - 1
+      })
+    }, 1000)
+
+    return () => clearInterval(timer)
+  }, [refreshCountdown, router])
 
   const triggerAgent = async (agentName: string) => {
     setTriggeringAgent(agentName)
@@ -49,8 +70,11 @@ export function AgentControlPanel() {
 
       toast({
         title: "Agent Started",
-        description: `${agentName} is now running. Results will appear below.`,
+        description: `${agentName} is analyzing charts. Page will auto-refresh in 60 seconds.`,
       })
+
+      // Start auto-refresh countdown (60 seconds)
+      setRefreshCountdown(60)
     } catch (error) {
       toast({
         title: "Error",
@@ -65,10 +89,20 @@ export function AgentControlPanel() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>AI Agent Controls</CardTitle>
-        <CardDescription>
-          Manage and monitor your AI trading agents
-        </CardDescription>
+        <div className="flex items-center justify-between">
+          <div>
+            <CardTitle>AI Agent Controls</CardTitle>
+            <CardDescription>
+              Manage and monitor your AI trading agents
+            </CardDescription>
+          </div>
+          {refreshCountdown !== null && refreshCountdown > 0 && (
+            <Badge variant="secondary" className="flex items-center gap-2">
+              <RefreshCw className="h-3 w-3 animate-spin" />
+              Auto-refresh in {refreshCountdown}s
+            </Badge>
+          )}
+        </div>
       </CardHeader>
       <CardContent>
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
