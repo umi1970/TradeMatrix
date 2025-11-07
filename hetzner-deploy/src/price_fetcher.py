@@ -304,13 +304,15 @@ class PriceFetcher:
             return False
 
         try:
+            # Normalize API-specific keys to database schema (Migration 009)
+            # Supports both normalized keys (price, open, high, low) and legacy keys (current_price, open_today, etc.)
             cache_record = {
                 'symbol_id': symbol_id,
-                'price': float(price_data['current_price']),
-                'high': float(price_data['high_today']),
-                'low': float(price_data['low_today']),
-                'open': float(price_data['open_today']),
-                'volume': price_data.get('volume_today'),
+                'price': float(price_data.get('price') or price_data.get('current_price')),
+                'open': float(price_data.get('open') or price_data.get('open_today')),
+                'high': float(price_data.get('high') or price_data.get('high_today')),
+                'low': float(price_data.get('low') or price_data.get('low_today')),
+                'volume': int(price_data.get('volume') or price_data.get('volume_today') or 0),
                 'price_timestamp': datetime.utcnow().isoformat(),
             }
 
