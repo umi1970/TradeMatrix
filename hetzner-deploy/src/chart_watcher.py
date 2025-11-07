@@ -436,6 +436,7 @@ If no clear patterns are visible, return an empty patterns array but still provi
                 'pattern_data': pattern_data,
                 'chart_url': chart_url,
                 'timeframe': timeframe,
+                'current_price': current_price,  # Store for SetupGenerator
                 'analysis_timestamp': datetime.now(timezone.utc).isoformat()
             }
 

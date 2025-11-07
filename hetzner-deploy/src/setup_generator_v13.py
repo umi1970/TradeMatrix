@@ -106,17 +106,21 @@ class SetupGeneratorV13:
     def _build_technical_context(self, analysis: Dict[str, Any], symbol_id: str) -> Optional[Dict[str, Any]]:
         """Build structured technical context with current price and indicators"""
         try:
-            # Fetch current price from current_prices table
-            price_response = self.supabase.table('current_prices')\
-                .select('price')\
-                .eq('symbol_id', symbol_id)\
-                .order('updated_at', desc=True)\
-                .limit(1)\
-                .execute()
+            # Try to get current_price from analysis payload (ChartWatcher stores it there)
+            current_price = analysis.get('payload', {}).get('current_price')
 
-            current_price = None
-            if price_response.data and len(price_response.data) > 0:
-                current_price = float(price_response.data[0]['price'])
+            # Fallback: Fetch from current_prices table
+            if not current_price:
+                price_response = self.supabase.table('current_prices')\
+                    .select('price')\
+                    .eq('symbol_id', symbol_id)\
+                    .order('updated_at', desc=True)\
+                    .limit(1)\
+                    .execute()
+
+                if price_response.data and len(price_response.data) > 0:
+                    current_price = float(price_response.data[0]['price'])
+                    logger.info(f"Using current_price from current_prices table: {current_price}")
 
             # Extract support/resistance from analysis
             support_levels = analysis.get('support_levels', [])
@@ -125,11 +129,10 @@ class SetupGeneratorV13:
             supports = [float(s) for s in support_levels] if support_levels else []
             resistances = [float(r) for r in resistance_levels] if resistance_levels else []
 
-            # Fallback: If current_price not available, estimate from support/resistance levels
-            if not current_price and supports and resistances:
-                # Estimate current price as midpoint between highest support and lowest resistance
-                current_price = (max(supports) + min(resistances)) / 2
-                logger.info(f"Estimated current_price from levels: {current_price}")
+            # NO ESTIMATION - If no real price data, fail
+            if not current_price:
+                logger.error("No current_price available from ChartWatcher or current_prices table")
+                return None
 
             # Extract patterns
             patterns = analysis.get('patterns_detected', [])
