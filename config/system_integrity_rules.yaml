@@ -1,0 +1,95 @@
+# TradeMatrix.ai — System Integrity Rules
+# CRITICAL: These rules enforce data integrity for production trading
+# NO EXCEPTIONS - Violations must cause system failure, not warnings
+
+validation:
+  # NO price estimation or guessing allowed
+  no_estimated_prices: true
+
+  # current_price MUST come from these sources only
+  data_origin_required:
+    - "ChartWatcher"
+    - "MarketDataFetcher"
+    - "PriceFetcher"
+
+  # These fields are PROHIBITED - code must reject them
+  prohibited_fields:
+    - "guessed_price"
+    - "estimated_price"
+    - "approximate_price"
+    - "fallback_price"
+
+  # Setup generation FAILS if source is invalid
+  fail_on_invalid_source: true
+
+  # Minimum data quality requirements
+  min_data_quality:
+    price_age_max_seconds: 300  # Price must be < 5 minutes old
+    source_confidence_min: 1.0  # Only 100% reliable sources
+
+data_flow:
+  # Documented data pipeline - MUST be followed
+  price_pipeline:
+    - step: "PriceFetcher (Celery Beat 60s)"
+      output: "current_prices table"
+      validation: "yfinance or Twelvedata API"
+
+    - step: "ChartWatcher"
+      input: "current_prices table"
+      output: "chart_analyses.payload.current_price"
+      validation: "Must exist in current_prices"
+
+    - step: "SetupGeneratorV13"
+      input: "chart_analyses.payload.current_price"
+      output: "setups table (Entry/SL/TP)"
+      validation: "Fails if current_price is None"
+
+dev_policy:
+  # Claude is NOT allowed to run these without explicit user request
+  runtime_commands_prohibited:
+    - "docker-compose ps"
+    - "docker logs"
+    - "ssh commands"
+    - "server status checks"
+
+  # Architecture changes require owner approval
+  architecture_changes_require_approval: true
+
+  # Claude MUST read docs before coding
+  mandatory_doc_review:
+    - "docs/ARCHITECTURE.md"
+    - "services/api/supabase/migrations/*.sql"
+    - "claude.md (Database section)"
+
+  # NO solutions without understanding root cause
+  no_workarounds: true
+  no_quick_fixes: true
+  no_temporary_solutions: true
+
+error_handling:
+  # How to handle missing current_price
+  missing_current_price:
+    action: "FAIL"
+    message: "No current_price available - cannot generate setup"
+    log_level: "ERROR"
+    notify_user: true
+
+  # How to handle invalid data source
+  invalid_data_source:
+    action: "REJECT"
+    message: "Data source not in allowed list"
+    log_level: "CRITICAL"
+    notify_user: true
+
+enforcement:
+  # These checks run automatically
+  pre_commit_checks:
+    - "Grep for 'estimated' or 'guessed' in code"
+    - "Validate all .table() calls against migrations"
+    - "Check data_origin field exists"
+
+  # Runtime validation
+  runtime_checks:
+    - "Assert current_price is not None before setup generation"
+    - "Assert data_source in allowed list"
+    - "Assert price timestamp within max age"
