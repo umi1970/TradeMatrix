@@ -149,7 +149,7 @@ export function AgentControlPanel() {
                   <div className="space-y-2">
                     <Select
                       value={selectedSymbols[agent.name] || 'all'}
-                      onValueChange={(value) =>
+                      onValueChange={(value: string) =>
                         setSelectedSymbols((prev) => ({ ...prev, [agent.name]: value }))
                       }
                     >
