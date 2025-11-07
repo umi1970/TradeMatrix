@@ -380,11 +380,18 @@ gh pr create --title "feat: [name]" --body "[description]" --base main
 11. **Erlaubte Datenquellen** - Nur: PriceFetcher (yfinance/Twelvedata), ChartWatcher, MarketDataFetcher
 12. **System Integrity Rules** - Siehe `config/system_integrity_rules.yaml` - KEINE Ausnahmen!
 
+### 🔴 NIEMALS QUICK-FIXES!!! 🔴
+13. **NIEMALS Quick-Fixes implementieren** - Quick-Fix = kein sauberer Refactor
+14. **IMMER saubere Architektur** - ERST Schema checken, DANN Datenquellen checken, DANN Normalisierung planen, DANN Code schreiben
+15. **WENN ich Quick-Fixes mache** - bin ich der größte HURENSOHN
+16. **Vendor Lock-in vermeiden** - API-agnostische Normalisierung auf Persistence-Layer (MarketDataFetcher → Normalizer → Database)
+17. **Schema = Single Source of Truth** - Migration-Spalten IMMER vor Code-Spalten priorisieren
+
 ### Code
-13. **Keine Redundanz** - Wenn Supabase es kann, nutze Supabase
-14. **Server Components bevorzugen** - Next.js (weniger Client JS)
-15. **TypeScript strikt** - Keine `any` types
-16. **Environment Variables** - Nie Secrets committen
+18. **Keine Redundanz** - Wenn Supabase es kann, nutze Supabase
+19. **Server Components bevorzugen** - Next.js (weniger Client JS)
+20. **TypeScript strikt** - Keine `any` types
+21. **Environment Variables** - Nie Secrets committen
 
 ### Dokumentation
 17. **Update während Entwicklung** - Nicht nachträglich
