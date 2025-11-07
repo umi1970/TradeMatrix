@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Clock, Play, RefreshCw } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 
@@ -16,11 +17,25 @@ const agents = [
   { name: 'USOpenPlanner', status: 'planned', schedule: 'Daily at 15:30', description: 'US opening range breakouts' },
 ]
 
+const symbols = [
+  { value: 'all', label: 'All Symbols' },
+  { value: 'DAX', label: 'DAX' },
+  { value: 'NDX', label: 'NASDAQ 100' },
+  { value: 'DJI', label: 'Dow Jones' },
+  { value: 'EUR/USD', label: 'EUR/USD' },
+  { value: 'EUR/GBP', label: 'EUR/GBP' },
+]
+
 export function AgentControlPanel() {
   const { toast } = useToast()
   const router = useRouter()
   const [triggeringAgent, setTriggeringAgent] = useState<string | null>(null)
   const [refreshCountdown, setRefreshCountdown] = useState<number | null>(null)
+  const [selectedSymbols, setSelectedSymbols] = useState<Record<string, string>>({
+    ChartWatcher: 'all',
+    MorningPlanner: 'all',
+    JournalBot: 'all',
+  })
 
   // Auto-refresh countdown effect
   useEffect(() => {
@@ -50,6 +65,9 @@ export function AgentControlPanel() {
       .toLowerCase()
       .replace(/^_/, '')
 
+    // Get selected symbol for this agent
+    const selectedSymbol = selectedSymbols[agentName] || 'all'
+
     try {
       // Use Netlify Function as proxy to avoid HTTPS->HTTP mixed content issues
       const response = await fetch('/.netlify/functions/trigger-agent', {
@@ -59,6 +77,7 @@ export function AgentControlPanel() {
         },
         body: JSON.stringify({
           agent_name: backendAgentName,
+          symbol: selectedSymbol === 'all' ? null : selectedSymbol,  // Pass symbol or null
         }),
       })
 
@@ -68,9 +87,11 @@ export function AgentControlPanel() {
 
       const data = await response.json()
 
+      const symbolText = selectedSymbol === 'all' ? 'all symbols' : selectedSymbol
+
       toast({
         title: "Agent Started",
-        description: `${agentName} is analyzing charts. Page will auto-refresh in 60 seconds.`,
+        description: `${agentName} is analyzing ${symbolText}. Page will auto-refresh in 60 seconds.`,
       })
 
       // Start auto-refresh countdown (60 seconds)
@@ -125,16 +146,35 @@ export function AgentControlPanel() {
                   <span>{agent.schedule}</span>
                 </div>
                 {agent.status === 'active' && (
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    className="w-full"
-                    onClick={() => triggerAgent(agent.name)}
-                    disabled={triggeringAgent === agent.name}
-                  >
-                    <Play className="h-3 w-3 mr-1" />
-                    {triggeringAgent === agent.name ? 'Starting...' : 'Run Now'}
-                  </Button>
+                  <div className="space-y-2">
+                    <Select
+                      value={selectedSymbols[agent.name] || 'all'}
+                      onValueChange={(value) =>
+                        setSelectedSymbols((prev) => ({ ...prev, [agent.name]: value }))
+                      }
+                    >
+                      <SelectTrigger className="w-full h-8 text-xs">
+                        <SelectValue placeholder="Select symbol" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {symbols.map((symbol) => (
+                          <SelectItem key={symbol.value} value={symbol.value} className="text-xs">
+                            {symbol.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="w-full"
+                      onClick={() => triggerAgent(agent.name)}
+                      disabled={triggeringAgent === agent.name}
+                    >
+                      <Play className="h-3 w-3 mr-1" />
+                      {triggeringAgent === agent.name ? 'Starting...' : 'Run Now'}
+                    </Button>
+                  </div>
                 )}
               </CardContent>
             </Card>
