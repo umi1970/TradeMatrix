@@ -30,7 +30,8 @@ export function AgentControlPanel() {
       .replace(/^_/, '')
 
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/agents/trigger`, {
+      // Use Netlify Function as proxy to avoid HTTPS->HTTP mixed content issues
+      const response = await fetch('/.netlify/functions/trigger-agent', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
