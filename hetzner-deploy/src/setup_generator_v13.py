@@ -106,8 +106,8 @@ class SetupGeneratorV13:
     def _build_technical_context(self, analysis: Dict[str, Any], symbol_id: str) -> Optional[Dict[str, Any]]:
         """Build structured technical context with current price and indicators"""
         try:
-            # Fetch current price from price_cache
-            price_response = self.supabase.table('price_cache')\
+            # Fetch current price from current_prices table
+            price_response = self.supabase.table('current_prices')\
                 .select('price')\
                 .eq('symbol_id', symbol_id)\
                 .order('updated_at', desc=True)\
