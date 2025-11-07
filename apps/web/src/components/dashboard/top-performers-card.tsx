@@ -37,13 +37,13 @@ export function TopPerformersCard() {
           .select(`
             daily_change_percent,
             yesterday_close,
-            symbols!inner (
+            market_symbols!inner (
               symbol,
               name,
-              is_active
+              active
             )
           `)
-          .eq('symbols.is_active', true)
+          .eq('market_symbols.active', true)
           .gte('trade_date', today)
           .not('daily_change_percent', 'is', null)
           .order('daily_change_percent', { ascending: false })
@@ -61,13 +61,13 @@ export function TopPerformersCard() {
             .select(`
               daily_change_percent,
               yesterday_close,
-              symbols!inner (
+              market_symbols!inner (
                 symbol,
                 name,
-                is_active
+                active
               )
             `)
-            .eq('symbols.is_active', true)
+            .eq('market_symbols.active', true)
             .eq('trade_date', yesterdayStr)
             .not('daily_change_percent', 'is', null)
             .order('daily_change_percent', { ascending: false })
@@ -84,8 +84,8 @@ export function TopPerformersCard() {
 
         // Transform and separate gainers and losers
         const allPerformers: Performer[] = data.map((item: any) => ({
-          symbol: item.symbols.symbol,
-          name: item.symbols.name,
+          symbol: item.market_symbols.symbol,
+          name: item.market_symbols.name,
           change_percent: item.daily_change_percent,
           yesterday_close: item.yesterday_close,
         }))

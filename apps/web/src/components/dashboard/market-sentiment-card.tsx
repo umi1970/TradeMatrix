@@ -32,11 +32,11 @@ export function MarketSentimentCard() {
           .from('eod_levels' as any)
           .select(`
             daily_change_percent,
-            symbols!inner (
-              is_active
+            market_symbols!inner (
+              active
             )
           `)
-          .eq('symbols.is_active', true)
+          .eq('market_symbols.active', true)
           .gte('trade_date', today)
 
         if (error) throw error
@@ -51,11 +51,11 @@ export function MarketSentimentCard() {
             .from('eod_levels' as any)
             .select(`
               daily_change_percent,
-              symbols!inner (
-                is_active
+              market_symbols!inner (
+                active
               )
             `)
-            .eq('symbols.is_active', true)
+            .eq('market_symbols.active', true)
             .eq('trade_date', yesterdayStr)
 
           if (yesterdayError) throw yesterdayError
