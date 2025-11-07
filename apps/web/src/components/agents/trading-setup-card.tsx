@@ -131,8 +131,17 @@ export function TradingSetupCard({ setup }: TradingSetupCardProps) {
     return 'text-orange-500'
   }
 
+  const hasEntryLevels = !!(setup.metadata.entry && setup.metadata.sl && setup.metadata.tp)
+  const isLongSetup = setup.metadata.trend === 'bullish' || setup.metadata.setup_type?.includes('long')
+
   return (
-    <Card className="overflow-hidden flex flex-col">
+    <Card className={`overflow-hidden flex flex-col ${
+      hasEntryLevels
+        ? isLongSetup
+          ? 'border-l-4 border-l-green-500'
+          : 'border-l-4 border-l-red-500'
+        : ''
+    }`}>
       {/* Card Header */}
       <CardHeader className="pb-3">
         <div className="flex items-start justify-between gap-2">
@@ -147,7 +156,12 @@ export function TradingSetupCard({ setup }: TradingSetupCardProps) {
           </div>
         </div>
 
-        <div className="flex items-center gap-2 mt-2">
+        <div className="flex items-center gap-2 mt-2 flex-wrap">
+          {hasEntryLevels && (
+            <Badge variant="default" className="bg-gradient-to-r from-green-500 to-blue-500 text-white font-semibold">
+              READY TO TRADE
+            </Badge>
+          )}
           <Badge className={`${getAgentColor(setup.agent_name)} text-xs`}>
             {setup.agent_name}
           </Badge>
@@ -161,6 +175,38 @@ export function TradingSetupCard({ setup }: TradingSetupCardProps) {
       </CardHeader>
 
       <CardContent className="space-y-3 flex-1">
+        {/* Entry/SL/TP Levels - FIRST for trading setups */}
+        {hasEntryLevels && (
+          <div className="bg-muted/30 rounded-lg p-4 space-y-3">
+            <div className="grid grid-cols-3 gap-3">
+              <div className="space-y-1">
+                <p className="text-xs text-muted-foreground uppercase tracking-wide">Entry</p>
+                <p className="text-2xl font-bold">{setup.metadata.entry!.toFixed(2)}</p>
+              </div>
+              <div className="space-y-1">
+                <p className="text-xs text-muted-foreground uppercase tracking-wide">Stop Loss</p>
+                <p className="text-2xl font-bold text-red-500">{setup.metadata.sl!.toFixed(2)}</p>
+              </div>
+              <div className="space-y-1">
+                <p className="text-xs text-muted-foreground uppercase tracking-wide">Take Profit</p>
+                <p className="text-2xl font-bold text-green-500">{setup.metadata.tp!.toFixed(2)}</p>
+              </div>
+            </div>
+            {/* Risk/Reward Ratio */}
+            {(() => {
+              const risk = Math.abs(setup.metadata.entry! - setup.metadata.sl!)
+              const reward = Math.abs(setup.metadata.tp! - setup.metadata.entry!)
+              const rrRatio = risk > 0 ? (reward / risk).toFixed(2) : '0'
+              return (
+                <div className="flex items-center justify-between text-xs pt-2 border-t">
+                  <span className="text-muted-foreground">Risk/Reward Ratio:</span>
+                  <span className="font-semibold">1:{rrRatio}</span>
+                </div>
+              )
+            })()}
+          </div>
+        )}
+
         {/* Chart Image - Inline Display */}
         {setup.chart_url && (
           <div className="relative w-full aspect-[3/2] rounded-md overflow-hidden bg-muted">
@@ -323,33 +369,8 @@ export function TradingSetupCard({ setup }: TradingSetupCardProps) {
           </div>
         )}
 
-        {/* Entry/SL/TP Levels OR Generate Setup Button */}
-        {(setup.metadata.entry || setup.metadata.sl || setup.metadata.tp) ? (
-          <div className="grid grid-cols-3 gap-2 text-xs">
-            {setup.metadata.entry && (
-              <div className="space-y-1">
-                <p className="text-muted-foreground">Entry</p>
-                <p className="font-semibold">{setup.metadata.entry.toFixed(2)}</p>
-              </div>
-            )}
-            {setup.metadata.sl && (
-              <div className="space-y-1">
-                <p className="text-muted-foreground">SL</p>
-                <p className="font-semibold text-red-500">
-                  {setup.metadata.sl.toFixed(2)}
-                </p>
-              </div>
-            )}
-            {setup.metadata.tp && (
-              <div className="space-y-1">
-                <p className="text-muted-foreground">TP</p>
-                <p className="font-semibold text-green-500">
-                  {setup.metadata.tp.toFixed(2)}
-                </p>
-              </div>
-            )}
-          </div>
-        ) : setup.agent_name === 'ChartWatcher' && (
+        {/* Generate Setup Button - Only for ChartWatcher without Entry/SL/TP */}
+        {!hasEntryLevels && setup.agent_name === 'ChartWatcher' && (
           <Button
             variant="outline"
             size="sm"
