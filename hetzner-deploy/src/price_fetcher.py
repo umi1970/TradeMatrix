@@ -281,9 +281,9 @@ class PriceFetcher:
             return None
 
     def get_symbol_id(self, symbol: str) -> Optional[str]:
-        """Get symbol UUID from market_symbols table (Migration 009 FK constraint)"""
+        """Get symbol UUID from symbols table (Migration 023 - FK constraint fixed)"""
         try:
-            response = self.supabase.table('market_symbols')\
+            response = self.supabase.table('symbols')\
                 .select('id')\
                 .eq('symbol', symbol)\
                 .limit(1)\
