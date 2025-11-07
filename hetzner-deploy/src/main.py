@@ -112,6 +112,59 @@ async def trigger_agent(request: TriggerAgentRequest):
         raise HTTPException(status_code=500, detail=f"Failed to trigger agent: {str(e)}")
 
 
+@app.post("/api/setups/generate-from-analysis")
+async def generate_setup_from_analysis(request: dict):
+    """
+    Generate trading setup with Entry/SL/TP from chart analysis
+
+    Request body:
+    {
+        "analysis_id": "uuid",
+        "timeframe": "1h"  # optional, defaults to analysis timeframe
+    }
+
+    Returns:
+    {
+        "success": true,
+        "setup_id": "uuid",
+        "setup": { ... }
+    }
+    """
+    try:
+        analysis_id = request.get("analysis_id")
+        if not analysis_id:
+            raise HTTPException(status_code=400, detail="analysis_id is required")
+
+        # Import setup generator
+        from src.setup_generator import SetupGenerator
+        from src.config.supabase import get_supabase_admin
+        import os
+
+        # Initialize generator
+        generator = SetupGenerator(
+            supabase_client=get_supabase_admin(),
+            openai_api_key=os.getenv('OPENAI_API_KEY')
+        )
+
+        # Generate setup from analysis
+        setup_id = await generator.generate_from_analysis(
+            analysis_id=analysis_id,
+            timeframe=request.get("timeframe")
+        )
+
+        if not setup_id:
+            raise HTTPException(status_code=500, detail="Failed to generate setup")
+
+        return {
+            "success": True,
+            "setup_id": setup_id,
+            "message": "Trading setup generated successfully"
+        }
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Setup generation failed: {str(e)}")
+
+
 @app.post("/api/agents/generate-signals")
 async def generate_signals():
     """

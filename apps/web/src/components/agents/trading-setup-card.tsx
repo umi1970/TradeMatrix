@@ -49,6 +49,31 @@ interface TradingSetupCardProps {
 }
 
 export function TradingSetupCard({ setup }: TradingSetupCardProps) {
+  const [generatingSetup, setGeneratingSetup] = useState(false)
+
+  const handleGenerateSetup = async () => {
+    setGeneratingSetup(true)
+    try {
+      const response = await fetch('/.netlify/functions/generate-setup', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          analysis_id: setup.id,
+          timeframe: setup.timeframe
+        })
+      })
+
+      if (!response.ok) throw new Error('Failed to generate setup')
+
+      // Refresh page after 3 seconds to show new setup
+      setTimeout(() => window.location.reload(), 3000)
+    } catch (error) {
+      console.error('Setup generation failed:', error)
+    } finally {
+      setGeneratingSetup(false)
+    }
+  }
+
   const getAgentColor = (agentName: string) => {
     switch (agentName) {
       case 'ChartWatcher':
@@ -298,8 +323,8 @@ export function TradingSetupCard({ setup }: TradingSetupCardProps) {
           </div>
         )}
 
-        {/* Entry/SL/TP Levels */}
-        {(setup.metadata.entry || setup.metadata.sl || setup.metadata.tp) && (
+        {/* Entry/SL/TP Levels OR Generate Setup Button */}
+        {(setup.metadata.entry || setup.metadata.sl || setup.metadata.tp) ? (
           <div className="grid grid-cols-3 gap-2 text-xs">
             {setup.metadata.entry && (
               <div className="space-y-1">
@@ -324,6 +349,26 @@ export function TradingSetupCard({ setup }: TradingSetupCardProps) {
               </div>
             )}
           </div>
+        ) : setup.agent_name === 'ChartWatcher' && (
+          <Button
+            variant="outline"
+            size="sm"
+            className="w-full"
+            onClick={handleGenerateSetup}
+            disabled={generatingSetup}
+          >
+            {generatingSetup ? (
+              <>
+                <RefreshCw className="h-3 w-3 mr-2 animate-spin" />
+                Generating Setup...
+              </>
+            ) : (
+              <>
+                <TrendingUp className="h-3 w-3 mr-2" />
+                Generate Trading Setup
+              </>
+            )}
+          </Button>
         )}
 
         {/* Support/Resistance Levels */}
