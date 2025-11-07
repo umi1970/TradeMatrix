@@ -12,7 +12,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog'
-import { Bot, TrendingUp, TrendingDown, Minus, Clock, FileText } from 'lucide-react'
+import { Bot, TrendingUp, TrendingDown, Minus, Clock, FileText, RefreshCw } from 'lucide-react'
 import Image from 'next/image'
 import { formatDistanceToNow } from 'date-fns'
 
