@@ -187,7 +187,10 @@ export function AgentControlPanel() {
       <CardContent className="space-y-8">
         {/* Analysis Agents Section */}
         <div>
-          <h3 className="text-lg font-semibold mb-4">Analysis Agents</h3>
+          <div className="flex items-center gap-3 mb-4 pb-2 border-b">
+            <h3 className="text-xl font-bold">Analysis Agents</h3>
+            <Badge variant="secondary" className="text-xs">{analysisAgents.length}</Badge>
+          </div>
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
             {analysisAgents.map(renderAgentCard)}
           </div>
@@ -195,7 +198,10 @@ export function AgentControlPanel() {
 
         {/* Trading Setup Agents Section */}
         <div>
-          <h3 className="text-lg font-semibold mb-4">Trading Setups</h3>
+          <div className="flex items-center gap-3 mb-4 pb-2 border-b">
+            <h3 className="text-xl font-bold">Trading Setups</h3>
+            <Badge variant="secondary" className="text-xs">{setupAgents.length}</Badge>
+          </div>
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
             {setupAgents.map(renderAgentCard)}
           </div>
