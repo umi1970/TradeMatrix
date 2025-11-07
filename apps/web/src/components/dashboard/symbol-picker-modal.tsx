@@ -19,9 +19,10 @@ import { Search, Plus, X, GripVertical } from 'lucide-react'
 interface Symbol {
   id: string
   symbol: string
-  name: string
+  alias: string | null
   tv_symbol: string | null
-  asset_type: string
+  vendor: string
+  active: boolean
 }
 
 interface WatchlistItem {
@@ -98,7 +99,7 @@ export function SymbolPickerModal({
   // Filter by search query
   const filteredSymbols = availableSymbols.filter(symbol =>
     symbol.symbol.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    symbol.name.toLowerCase().includes(searchQuery.toLowerCase())
+    (symbol.alias && symbol.alias.toLowerCase().includes(searchQuery.toLowerCase()))
   )
 
   // Add symbol to watchlist
@@ -197,7 +198,7 @@ export function SymbolPickerModal({
                       <GripVertical className="h-4 w-4 text-muted-foreground" />
                       <div className="flex-1">
                         <p className="text-sm font-medium">{item.symbol.symbol}</p>
-                        <p className="text-xs text-muted-foreground">{item.symbol.name}</p>
+                        <p className="text-xs text-muted-foreground">{item.symbol.alias || item.symbol.symbol}</p>
                       </div>
                       <Button
                         size="icon"
@@ -246,10 +247,10 @@ export function SymbolPickerModal({
                         <div className="flex items-center gap-2">
                           <p className="text-sm font-medium">{symbol.symbol}</p>
                           <Badge variant="outline" className="text-xs">
-                            {symbol.asset_type}
+                            {symbol.vendor}
                           </Badge>
                         </div>
-                        <p className="text-xs text-muted-foreground">{symbol.name}</p>
+                        <p className="text-xs text-muted-foreground">{symbol.alias || symbol.symbol}</p>
                       </div>
                       <Button size="icon" variant="ghost">
                         <Plus className="h-4 w-4" />

@@ -23,9 +23,10 @@ interface WatchlistItem {
   market_symbols: {
     id: string
     symbol: string
-    name: string
+    alias: string | null
     tv_symbol: string | null
-    asset_type: string
+    vendor: string
+    active: boolean
   }
 }
 

@@ -39,7 +39,7 @@ export function TopPerformersCard() {
             yesterday_close,
             market_symbols!inner (
               symbol,
-              name,
+              alias,
               active
             )
           `)
@@ -63,7 +63,7 @@ export function TopPerformersCard() {
               yesterday_close,
               market_symbols!inner (
                 symbol,
-                name,
+                alias,
                 active
               )
             `)
@@ -85,7 +85,7 @@ export function TopPerformersCard() {
         // Transform and separate gainers and losers
         const allPerformers: Performer[] = data.map((item: any) => ({
           symbol: item.market_symbols.symbol,
-          name: item.market_symbols.name,
+          name: item.market_symbols.alias || item.market_symbols.symbol,
           change_percent: item.daily_change_percent,
           yesterday_close: item.yesterday_close,
         }))
