@@ -23,16 +23,6 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-# Symbol mapping: yfinance/API symbols → market_symbols table
-SYMBOL_MAPPING = {
-    '^DJI': 'DJI',
-    '^GDAXI': 'DAX',
-    '^NDX': 'NDX',
-    'EURUSD': 'EUR/USD',
-    'EURGBP': 'EUR/GBP',
-    'GBPUSD': 'GBP/USD'
-}
-
 
 class PriceFetcher:
     """Hybrid price fetcher using yfinance (indices) and Twelvedata (forex)"""
@@ -293,19 +283,14 @@ class PriceFetcher:
     def get_symbol_id(self, symbol: str) -> Optional[str]:
         """Get symbol UUID from market_symbols table (Migration 009 FK constraint)"""
         try:
-            # Map API symbol to market_symbols format
-            mapped_symbol = SYMBOL_MAPPING.get(symbol, symbol)
-
             response = self.supabase.table('market_symbols')\
                 .select('id')\
-                .eq('symbol', mapped_symbol)\
+                .eq('symbol', symbol)\
                 .limit(1)\
                 .execute()
 
             if response.data and len(response.data) > 0:
                 return response.data[0]['id']
-
-            print(f"⚠️  Symbol not found in market_symbols: {symbol} (mapped to {mapped_symbol})")
             return None
 
         except Exception as e:
