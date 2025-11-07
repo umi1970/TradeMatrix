@@ -14,7 +14,7 @@ COMMENT ON COLUMN public.market_symbols.tv_symbol IS
 -- Populate tv_symbol for existing symbols
 UPDATE public.market_symbols SET tv_symbol = 'XETR:DAX' WHERE symbol = 'DAX';
 UPDATE public.market_symbols SET tv_symbol = 'NASDAQ:NDX' WHERE symbol = 'NDX';
-UPDATE public.market_symbols SET tv_symbol = 'CAPITALCOM:US30' WHERE symbol = 'DJI';  -- CFD works in free widgets
+UPDATE public.market_symbols SET tv_symbol = 'TVC:DJI' WHERE symbol = 'DJI';  -- TradingView Calculated Index
 UPDATE public.market_symbols SET tv_symbol = 'FX:EURUSD' WHERE symbol = 'EUR/USD';
 UPDATE public.market_symbols SET tv_symbol = 'FX:EURGBP' WHERE symbol = 'EUR/GBP';
 UPDATE public.market_symbols SET tv_symbol = 'FX:GBPUSD' WHERE symbol = 'GBP/USD';
