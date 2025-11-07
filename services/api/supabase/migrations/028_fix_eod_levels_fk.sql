@@ -10,6 +10,11 @@ BEGIN;
 ALTER TABLE public.eod_levels
     DROP CONSTRAINT IF EXISTS eod_levels_symbol_id_fkey;
 
+-- Delete orphaned records (symbol_id not in market_symbols)
+-- These are old records pointing to deleted symbols table
+DELETE FROM public.eod_levels
+WHERE symbol_id NOT IN (SELECT id FROM public.market_symbols);
+
 -- Add new FK to market_symbols
 ALTER TABLE public.eod_levels
     ADD CONSTRAINT eod_levels_symbol_id_fkey
