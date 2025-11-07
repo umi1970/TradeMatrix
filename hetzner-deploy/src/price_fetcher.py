@@ -307,13 +307,11 @@ class PriceFetcher:
             cache_record = {
                 'symbol_id': symbol_id,
                 'price': float(price_data['current_price']),
-                'high_today': float(price_data['high_today']),
-                'low_today': float(price_data['low_today']),
-                'open_today': float(price_data['open_today']),
-                'volume_today': price_data.get('volume_today'),
-                'data_source': price_data['data_source'],
-                'fetched_at': datetime.utcnow().isoformat(),
-                'updated_at': datetime.utcnow().isoformat(),
+                'high': float(price_data['high_today']),
+                'low': float(price_data['low_today']),
+                'open': float(price_data['open_today']),
+                'volume': price_data.get('volume_today'),
+                'price_timestamp': datetime.utcnow().isoformat(),
             }
 
             # Upsert (insert or update)
