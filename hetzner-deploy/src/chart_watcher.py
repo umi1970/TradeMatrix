@@ -556,6 +556,20 @@ If no clear patterns are visible, return an empty patterns array but still provi
         execution_start = datetime.now(timezone.utc)
         logger.info(f"ChartWatcher execution started at {execution_start}")
 
+        # Check AI budget BEFORE starting analysis
+        try:
+            check_ai_budget(self.user_id, self.tier, self.supabase)
+        except AIBudgetError as e:
+            logger.error(f"❌ AI budget exceeded - aborting ChartWatcher run: {e}")
+            return {
+                'execution_time': execution_start.isoformat(),
+                'symbols_analyzed': 0,
+                'analyses_created': 0,
+                'analyses': [],
+                'error': str(e),
+                'status': 'budget_exceeded'
+            }
+
         try:
             # Step 1 - Fetch active symbols
             query = self.supabase.table('market_symbols')\
