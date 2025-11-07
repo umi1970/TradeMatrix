@@ -50,17 +50,6 @@ ON public.ai_usage_log
 FOR INSERT
 WITH CHECK (true);
 
--- Admins can see all usage
-CREATE POLICY "Admins can view all AI usage"
-ON public.ai_usage_log
-FOR SELECT
-USING (
-    EXISTS (
-        SELECT 1 FROM public.profiles
-        WHERE id = auth.uid() AND role = 'admin'
-    )
-);
-
 -- ================================================
 -- Helper View: Daily Usage Summary
 -- ================================================
