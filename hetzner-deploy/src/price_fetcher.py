@@ -67,7 +67,7 @@ class PriceFetcher:
             # Query user_watchlist + market_symbols table (JOIN)
             # Filter only active symbols
             result = self.supabase.table('user_watchlist')\
-                .select('market_symbols!inner(symbol, active, type)')\
+                .select('market_symbols!inner(symbol, active)')\
                 .eq('market_symbols.active', True)\
                 .execute()
 
@@ -85,14 +85,14 @@ class PriceFetcher:
 
                 db_symbol = symbol_data['symbol']  # Database symbol (DAX, NDX, EUR/USD)
                 api_symbol = symbol_data.get('api_symbol', db_symbol)  # API symbol (^GDAXI, ^NDX, EUR/USD)
-                symbol_type = symbol_data.get('type', '')
 
                 # Skip duplicates
                 if db_symbol in symbol_config:
                     continue
 
-                # Determine provider based on symbol type or format
-                if symbol_type == 'forex' or '/' in db_symbol:
+                # Determine provider based on symbol format
+                # Forex symbols contain '/' (EUR/USD, GBP/USD, etc.)
+                if '/' in db_symbol:
                     # Forex pair - use twelvedata
                     symbol_config[db_symbol] = {
                         'provider': 'twelvedata',
