@@ -92,7 +92,7 @@ export default function DashboardPage() {
 
       if (watchlistError) throw watchlistError
 
-      setWatchlist(data || [])
+      setWatchlist((data as WatchlistItem[]) || [])
     } catch (err: unknown) {
       console.error('Error fetching watchlist:', err)
       setError(err instanceof Error ? err.message : 'Failed to load watchlist')
