@@ -53,51 +53,60 @@ async function getSetups(agentFilter?: string[]): Promise<TradingSetup[]> {
   }
 
   try {
-    // Query chart_analyses table for ChartWatcher and SignalBot setups
-    // Note: Using 'as any' because chart_analyses table exists but is not in generated types yet
-    const { data: chartAnalyses, error } = await (supabase as any)
-      .from('chart_analyses')
-      .select(`
-        id,
-        symbol_id,
-        timeframe,
-        chart_url,
-        patterns_detected,
-        trend,
-        support_levels,
-        resistance_levels,
-        confidence_score,
-        analysis_summary,
-        created_at,
-        payload,
-        market_symbols!inner(symbol)
-      `)
-      .order('created_at', { ascending: false })
-      .limit(50)
+    // Parallel fetch: chart_analyses (ChartWatcher) + setups (MorningPlanner, JournalBot)
+    const [chartAnalysesResult, tradingSetupsResult] = await Promise.all([
+      // 1. Chart Analyses (ChartWatcher pattern detection)
+      (supabase as any)
+        .from('chart_analyses')
+        .select(`
+          id,
+          symbol_id,
+          timeframe,
+          chart_url,
+          patterns_detected,
+          trend,
+          support_levels,
+          resistance_levels,
+          confidence_score,
+          analysis_summary,
+          created_at,
+          payload,
+          market_symbols!inner(symbol)
+        `)
+        .order('created_at', { ascending: false })
+        .limit(25),
 
-    if (error) {
-      console.error('Error fetching setups:', error)
-      return []
-    }
+      // 2. Trading Setups (MorningPlanner with Entry/SL/TP)
+      (supabase as any)
+        .from('setups')
+        .select(`
+          id,
+          symbol_id,
+          strategy,
+          side,
+          entry_price,
+          stop_loss,
+          take_profit,
+          confidence,
+          status,
+          created_at,
+          payload,
+          market_symbols!inner(symbol)
+        `)
+        .order('created_at', { ascending: false })
+        .limit(25),
+    ])
 
-    if (!chartAnalyses || chartAnalyses.length === 0) {
-      return []
-    }
+    const allSetups: TradingSetup[] = []
 
-    // Transform data to unified format
-    const setups: TradingSetup[] = chartAnalyses.map((analysis: any) => {
-      // Determine agent name based on timeframe (from chart_watcher.py logic)
-      let agent_name = 'ChartWatcher'
-      if (analysis.timeframe === '15m' || analysis.timeframe === '1h') {
-        agent_name = analysis.payload?.agent_name || 'ChartWatcher'
-      }
-
-      return {
+    // Transform chart_analyses
+    if (chartAnalysesResult.data && chartAnalysesResult.data.length > 0) {
+      const analysisSetups = chartAnalysesResult.data.map((analysis: any) => ({
         id: analysis.id,
         symbol_id: analysis.symbol_id,
         symbol: analysis.market_symbols?.symbol || 'Unknown',
         timeframe: analysis.timeframe,
-        agent_name,
+        agent_name: 'ChartWatcher',
         analysis: analysis.analysis_summary || 'Pattern detection completed',
         chart_url: analysis.chart_url,
         chart_snapshot_id: analysis.payload?.chart_snapshot_id || null,
@@ -109,15 +118,45 @@ async function getSetups(agentFilter?: string[]): Promise<TradingSetup[]> {
           support_levels: analysis.support_levels || [],
           resistance_levels: analysis.resistance_levels || [],
         },
-      }
-    })
+      }))
+      allSetups.push(...analysisSetups)
+    }
+
+    // Transform setups (MorningPlanner)
+    if (tradingSetupsResult.data && tradingSetupsResult.data.length > 0) {
+      const tradingSetups = tradingSetupsResult.data.map((setup: any) => ({
+        id: setup.id,
+        symbol_id: setup.symbol_id,
+        symbol: setup.market_symbols?.symbol || 'Unknown',
+        timeframe: setup.payload?.timeframe || '1h',
+        agent_name: setup.strategy === 'asia_sweep' || setup.strategy === 'y_low_rebound' ? 'MorningPlanner' : 'Unknown',
+        analysis: `${setup.strategy.replace(/_/g, ' ')} setup detected. ${setup.side.toUpperCase()} signal with ${(setup.confidence * 100).toFixed(0)}% confidence.`,
+        chart_url: setup.payload?.chart_url_1h || setup.payload?.chart_url_15m || '',
+        chart_snapshot_id: setup.payload?.chart_snapshot_id || null,
+        confidence_score: parseFloat(setup.confidence) || 0,
+        created_at: setup.created_at,
+        metadata: {
+          setup_type: setup.strategy,
+          entry: parseFloat(setup.entry_price),
+          sl: parseFloat(setup.stop_loss),
+          tp: parseFloat(setup.take_profit),
+          trend: setup.side === 'long' ? 'bullish' : 'bearish',
+          support_levels: [],
+          resistance_levels: [],
+        },
+      }))
+      allSetups.push(...tradingSetups)
+    }
+
+    // Sort all setups by created_at (newest first)
+    allSetups.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
 
     // Filter by selected agents if provided
     if (agentFilter && agentFilter.length > 0) {
-      return setups.filter((setup) => agentFilter.includes(setup.agent_name))
+      return allSetups.filter((setup) => agentFilter.includes(setup.agent_name))
     }
 
-    return setups
+    return allSetups
   } catch (error) {
     console.error('Error in getSetups:', error)
     return []
