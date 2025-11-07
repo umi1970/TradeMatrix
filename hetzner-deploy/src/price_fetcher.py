@@ -35,12 +35,13 @@ class PriceFetcher:
         )
 
         # Default fallback symbols (used if DB query fails)
+        # Keys are DB symbols (market_symbols.symbol), not API symbols
         self.default_symbols = {
-            '^GDAXI': {'provider': 'yfinance'},     # DAX Performance Index
-            '^NDX': {'provider': 'yfinance'},       # NASDAQ 100 Index
-            '^DJI': {'provider': 'yfinance'},       # Dow Jones Industrial Average
-            'EURUSD': {'provider': 'twelvedata', 'ticker': 'EUR/USD', 'exchange': None},
-            'EURGBP': {'provider': 'twelvedata', 'ticker': 'EUR/GBP', 'exchange': None},
+            'DAX': {'provider': 'yfinance', 'api_symbol': '^GDAXI'},
+            'NDX': {'provider': 'yfinance', 'api_symbol': '^NDX'},
+            'DJI': {'provider': 'yfinance', 'api_symbol': '^DJI'},
+            'EUR/USD': {'provider': 'twelvedata', 'ticker': 'EUR/USD', 'exchange': None, 'api_symbol': 'EUR/USD'},
+            'EUR/GBP': {'provider': 'twelvedata', 'ticker': 'EUR/GBP', 'exchange': None, 'api_symbol': 'EUR/GBP'},
         }
 
         # Will be populated from database on first use
