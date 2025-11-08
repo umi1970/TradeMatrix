@@ -7,13 +7,15 @@ interface TradingViewWidgetProps {
   width?: string | number
   height?: string | number
   colorTheme?: 'light' | 'dark'
+  backgroundColor?: string  // Custom background color (hex or CSS color)
 }
 
 export function TradingViewWidget({
   symbol,
   width = '100%',
   height = 200,
-  colorTheme = 'dark'
+  colorTheme = 'dark',
+  backgroundColor = 'transparent'
 }: TradingViewWidgetProps) {
   const containerRef = useRef<HTMLDivElement>(null)
   const [isLoading, setIsLoading] = useState(true)
@@ -111,7 +113,7 @@ export function TradingViewWidget({
       {/* TradingView Widget Container */}
       <div
         ref={containerRef}
-        className="tradingview-widget-container rounded-lg overflow-hidden"
+        className="tradingview-widget-container overflow-hidden"
       />
     </div>
   )

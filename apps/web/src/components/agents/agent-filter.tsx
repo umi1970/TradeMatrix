@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Button } from '@/components/ui/button'
 import { Bot, FilterX } from 'lucide-react'
-import { getAgents } from '@/lib/config/agents'
+import { getAgents, getAgentLeftBorderClass, getAgentColor } from '@/lib/config/agents'
 
 const AVAILABLE_AGENTS = getAgents()
 
@@ -75,10 +75,12 @@ export function AgentFilter({ currentFilter = [] }: AgentFilterProps) {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
             {AVAILABLE_AGENTS.map((agent) => {
               const isSelected = selectedAgents.includes(agent.id)
+              const borderClass = getAgentLeftBorderClass(agent.id)
+              const textColor = getAgentColor(agent.id, 'text')
               return (
                 <div
                   key={agent.id}
-                  className="flex items-start space-x-3 p-3 rounded-lg border hover:bg-muted/50 transition-colors cursor-pointer"
+                  className={`flex items-start space-x-3 p-3 rounded-lg border hover:bg-muted/50 transition-colors cursor-pointer ${borderClass}`}
                   onClick={() => handleToggleAgent(agent.id)}
                 >
                   <Checkbox
@@ -90,7 +92,7 @@ export function AgentFilter({ currentFilter = [] }: AgentFilterProps) {
                   <div className="flex-1 space-y-1">
                     <label
                       htmlFor={agent.id}
-                      className={`text-sm font-medium leading-none cursor-pointer flex items-center gap-1.5 ${agent.colors.text}`}
+                      className={`text-sm font-medium leading-none cursor-pointer flex items-center gap-1.5 ${textColor}`}
                     >
                       <span>{agent.icon}</span>
                       <span>{agent.name}</span>

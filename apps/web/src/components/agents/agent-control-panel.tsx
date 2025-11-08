@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Clock, Play, RefreshCw } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
-import { getAgentConfig, getAgentIcon } from '@/lib/config/agents'
+import { getAgentConfig, getAgentIcon, getAgentColor } from '@/lib/config/agents'
 
 // Analysis Agents - Chart analysis and reporting
 const analysisAgents = [
@@ -118,28 +118,51 @@ export function AgentControlPanel() {
   // Get agent card styling with border glow
   const getAgentCardClasses = (agentName: string, status: string) => {
     const agentConfig = getAgentConfig(agentName)
-    if (!agentConfig) return status === 'planned' ? 'opacity-60' : ''
+    if (!agentConfig) return ''
 
-    // Map agent colors to Tailwind border and shadow classes
-    const colorMap: Record<string, string> = {
-      'blue': 'border-2 border-blue-500/50 shadow-lg shadow-blue-500/20 hover:border-blue-500 hover:shadow-blue-500/30 transition-all',
-      'green': 'border-2 border-green-500/50 shadow-lg shadow-green-500/20 hover:border-green-500 hover:shadow-green-500/30 transition-all',
-      'purple': 'border-2 border-purple-500/50 shadow-lg shadow-purple-500/20 hover:border-purple-500 hover:shadow-purple-500/30 transition-all',
-      'orange': 'border-2 border-orange-500/50 shadow-lg shadow-orange-500/20 hover:border-orange-500 hover:shadow-orange-500/30 transition-all',
-      'pink': 'border-2 border-pink-500/50 shadow-lg shadow-pink-500/20 hover:border-pink-500 hover:shadow-pink-500/30 transition-all',
-    }
-
-    // For planned agents: no border glow, just subtle styling
+    // For planned agents: colored border without glow
     if (status === 'planned') {
-      return 'border border-muted-foreground/20'
+      switch (agentConfig.color) {
+        case 'blue':
+          return 'border-2 border-blue-500/30'
+        case 'green':
+          return 'border-2 border-green-500/30'
+        case 'purple':
+          return 'border-2 border-purple-500/30'
+        case 'orange':
+          return 'border-2 border-orange-500/30'
+        case 'pink':
+          return 'border-2 border-pink-500/30'
+        case 'cyan':
+          return 'border-2 border-cyan-500/30'
+        default:
+          return 'border border-muted-foreground/20'
+      }
     }
 
-    return colorMap[agentConfig.color] || ''
+    // For active agents: colored border WITH glow
+    switch (agentConfig.color) {
+      case 'blue':
+        return 'border-2 border-blue-500/50 shadow-lg shadow-blue-500/20 hover:border-blue-500 hover:shadow-blue-500/30 transition-all'
+      case 'green':
+        return 'border-2 border-green-500/50 shadow-lg shadow-green-500/20 hover:border-green-500 hover:shadow-green-500/30 transition-all'
+      case 'purple':
+        return 'border-2 border-purple-500/50 shadow-lg shadow-purple-500/20 hover:border-purple-500 hover:shadow-purple-500/30 transition-all'
+      case 'orange':
+        return 'border-2 border-orange-500/50 shadow-lg shadow-orange-500/20 hover:border-orange-500 hover:shadow-orange-500/30 transition-all'
+      case 'pink':
+        return 'border-2 border-pink-500/50 shadow-lg shadow-pink-500/20 hover:border-pink-500 hover:shadow-pink-500/30 transition-all'
+      case 'cyan':
+        return 'border-2 border-cyan-500/50 shadow-lg shadow-cyan-500/20 hover:border-cyan-500 hover:shadow-cyan-500/30 transition-all'
+      default:
+        return ''
+    }
   }
 
   // Helper function to render agent card
   const renderAgentCard = (agent: typeof analysisAgents[0]) => {
     const agentConfig = getAgentConfig(agent.name)
+    const textColor = getAgentColor(agent.name, 'text')
 
     return (
       <Card key={agent.name} className={getAgentCardClasses(agent.name, agent.status)}>
@@ -147,7 +170,7 @@ export function AgentControlPanel() {
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <span className="text-lg">{agentConfig?.icon || '🤖'}</span>
-              <CardTitle className={`text-base ${agentConfig?.colors.text || ''}`}>{agent.name}</CardTitle>
+              <CardTitle className={`text-base ${textColor}`}>{agent.name}</CardTitle>
             </div>
             <Badge variant={agent.status === 'active' ? 'default' : 'secondary'}>
               {agent.status}

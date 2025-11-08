@@ -11,6 +11,7 @@ export type AgentId =
   | 'MorningPlanner'
   | 'JournalBot'
   | 'USOpenPlanner'
+  | 'AI Setup Generator'
 
 export interface AgentConfig {
   id: AgentId
@@ -132,6 +133,25 @@ export const AGENT_CONFIGS: Record<AgentId, AgentConfig> = {
     },
     schedule: 'Daily at 15:25 MEZ (Mon-Fri)',
   },
+  'AI Setup Generator': {
+    id: 'AI Setup Generator',
+    name: 'AI Setup Generator',
+    description: 'AI-Powered Trading Setup Generation',
+    icon: '🤖',
+    color: 'cyan',
+    colors: {
+      text: 'text-cyan-600 dark:text-cyan-400',
+      bg: 'bg-cyan-600',
+      bgLight: 'bg-cyan-50 dark:bg-cyan-950',
+      border: 'border-cyan-500',
+      ring: 'ring-cyan-500',
+      badge: {
+        bg: 'bg-cyan-100 dark:bg-cyan-900',
+        text: 'text-cyan-700 dark:text-cyan-300',
+      },
+    },
+    schedule: 'On-Demand',
+  },
 }
 
 /**
@@ -142,10 +162,30 @@ export function getAgents(): AgentConfig[] {
 }
 
 /**
- * Get agent config by ID
+ * Normalize agent name from snake_case to PascalCase
+ */
+function normalizeAgentName(name: string): string {
+  // Trim whitespace
+  const trimmed = name.trim()
+
+  // If already PascalCase, return as is
+  if (trimmed in AGENT_CONFIGS) return trimmed
+
+  // Convert snake_case to PascalCase (e.g., "chart_watcher" -> "ChartWatcher")
+  const normalized = trimmed
+    .split('_')
+    .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+    .join('')
+
+  return normalized
+}
+
+/**
+ * Get agent config by ID (supports both PascalCase and snake_case)
  */
 export function getAgentConfig(agentId: string): AgentConfig | undefined {
-  return AGENT_CONFIGS[agentId as AgentId]
+  const normalizedId = normalizeAgentName(agentId)
+  return AGENT_CONFIGS[normalizedId as AgentId]
 }
 
 /**
@@ -164,15 +204,39 @@ export function getAgentIcon(agentId: string): string {
 
 /**
  * Get agent color classes for specific context
+ * NOTE: Using switch instead of config object to ensure Tailwind CSS includes all classes
  */
 export function getAgentColor(agentId: string, context: 'text' | 'bg' | 'bgLight' | 'border' | 'ring' = 'text'): string {
   const config = getAgentConfig(agentId)
   if (!config) return 'text-gray-500'
+
+  // For 'text' context, use switch statement to ensure Tailwind includes classes
+  if (context === 'text') {
+    switch (config.color) {
+      case 'blue':
+        return 'text-blue-600 dark:text-blue-400'
+      case 'green':
+        return 'text-green-600 dark:text-green-400'
+      case 'purple':
+        return 'text-purple-600 dark:text-purple-400'
+      case 'orange':
+        return 'text-orange-600 dark:text-orange-400'
+      case 'pink':
+        return 'text-pink-600 dark:text-pink-400'
+      case 'cyan':
+        return 'text-cyan-600 dark:text-cyan-400'
+      default:
+        return 'text-gray-500'
+    }
+  }
+
+  // For other contexts, return from config (less commonly used)
   return config.colors[context]
 }
 
 /**
  * Get agent badge color classes
+ * NOTE: Using switch instead of config object to ensure Tailwind CSS includes all classes
  */
 export function getAgentBadgeColors(agentId: string): { bg: string; text: string } {
   const config = getAgentConfig(agentId)
@@ -182,5 +246,70 @@ export function getAgentBadgeColors(agentId: string): { bg: string; text: string
       text: 'text-gray-700 dark:text-gray-300',
     }
   }
-  return config.colors.badge
+
+  // Direct switch statement ensures Tailwind CSS purging includes all classes
+  switch (config.color) {
+    case 'blue':
+      return {
+        bg: 'bg-blue-100 dark:bg-blue-900',
+        text: 'text-blue-700 dark:text-blue-300',
+      }
+    case 'green':
+      return {
+        bg: 'bg-green-100 dark:bg-green-900',
+        text: 'text-green-700 dark:text-green-300',
+      }
+    case 'purple':
+      return {
+        bg: 'bg-purple-100 dark:bg-purple-900',
+        text: 'text-purple-700 dark:text-purple-300',
+      }
+    case 'orange':
+      return {
+        bg: 'bg-orange-100 dark:bg-orange-900',
+        text: 'text-orange-700 dark:text-orange-300',
+      }
+    case 'pink':
+      return {
+        bg: 'bg-pink-100 dark:bg-pink-900',
+        text: 'text-pink-700 dark:text-pink-300',
+      }
+    case 'cyan':
+      return {
+        bg: 'bg-cyan-100 dark:bg-cyan-900',
+        text: 'text-cyan-700 dark:text-cyan-300',
+      }
+    default:
+      return {
+        bg: 'bg-gray-100 dark:bg-gray-800',
+        text: 'text-gray-700 dark:text-gray-300',
+      }
+  }
+}
+
+/**
+ * Get agent left border class for cards
+ * NOTE: Using switch instead of Record to ensure Tailwind CSS includes all classes
+ */
+export function getAgentLeftBorderClass(agentId: string): string {
+  const config = getAgentConfig(agentId)
+  if (!config) return 'border-l-4 border-l-gray-500'
+
+  // Direct switch statement ensures Tailwind CSS purging includes all classes
+  switch (config.color) {
+    case 'blue':
+      return 'border-l-4 border-l-blue-500'
+    case 'green':
+      return 'border-l-4 border-l-green-500'
+    case 'purple':
+      return 'border-l-4 border-l-purple-500'
+    case 'orange':
+      return 'border-l-4 border-l-orange-500'
+    case 'pink':
+      return 'border-l-4 border-l-pink-500'
+    case 'cyan':
+      return 'border-l-4 border-l-cyan-500'
+    default:
+      return 'border-l-4 border-l-gray-500'
+  }
 }
