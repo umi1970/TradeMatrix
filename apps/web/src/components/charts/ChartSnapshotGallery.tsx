@@ -49,7 +49,7 @@ export function ChartSnapshotGallery() {
         .select(
           `
           *,
-          symbol:market_symbols(symbol, name)
+          symbol:market_symbols(symbol, alias)
         `
         )
         .order('created_at', { ascending: false })
