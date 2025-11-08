@@ -13,7 +13,7 @@ import { usePushNotifications } from '@/hooks/usePushNotifications'
 interface Symbol {
   id: string
   symbol: string
-  name: string
+  alias: string | null
 }
 
 interface AlertSubscription {
@@ -48,11 +48,11 @@ export function AlertSettingsCard() {
       // Fetch symbols
       const { data: symbolsData } = await supabase
         .from('market_symbols')
-        .select('id, symbol, name')
+        .select('id, symbol, alias')
         .eq('active', true)
         .order('symbol')
 
-      setSymbols(symbolsData || [])
+      setSymbols(symbolsData as any || [])
 
       // Fetch user subscriptions
       const { data: userData } = await supabase.auth.getUser()
@@ -204,7 +204,7 @@ export function AlertSettingsCard() {
                       {symbol.symbol}
                     </Badge>
                     <p className="text-sm text-muted-foreground mt-1">
-                      {symbol.name}
+                      {symbol.alias || symbol.symbol}
                     </p>
                   </div>
                 </div>
