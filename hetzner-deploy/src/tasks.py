@@ -272,30 +272,30 @@ def run_journal_bot_task(self):
 # ================================================
 
 celery.conf.beat_schedule = {
-    # Check liquidity alerts every 60 seconds
+    # Check liquidity alerts every minute (Mon-Fri only)
     'liquidity-alerts': {
         'task': 'check_liquidity_alerts',
-        'schedule': 60.0,  # Every 60 seconds
+        'schedule': crontab(minute='*', day_of_week='mon-fri'),  # Every minute, Mon-Fri only
         'options': {
             'expires': 55,  # Task expires after 55 seconds (before next run)
         }
     },
 
-    # ChartWatcher - runs every 6 hours
+    # ChartWatcher - runs every 6 hours (Mon-Fri only)
     'chart-analysis-6h': {
         'task': 'run_chart_analysis',
-        'schedule': crontab(hour='*/6'),  # Every 6 hours (0, 6, 12, 18)
+        'schedule': crontab(hour='*/6', day_of_week='mon-fri'),  # Every 6 hours, Mon-Fri only
     },
 
-    # MorningPlanner - runs daily at 08:25 MEZ
+    # MorningPlanner - runs daily at 08:25 MEZ (Mon-Fri only)
     'morning-planner-daily': {
         'task': 'run_morning_planner',
-        'schedule': crontab(hour=8, minute=25),  # Daily at 08:25 UTC+1 (07:25 UTC in winter)
+        'schedule': crontab(hour=8, minute=25, day_of_week='mon-fri'),  # Mon-Fri at 08:25 UTC+1
     },
 
-    # JournalBot - runs daily at 21:00 MEZ
+    # JournalBot - runs daily at 21:00 MEZ (Mon-Fri only)
     'journal-bot-daily': {
         'task': 'run_journal_bot',
-        'schedule': crontab(hour=21, minute=0),  # Daily at 21:00 UTC+1 (20:00 UTC in winter)
+        'schedule': crontab(hour=21, minute=0, day_of_week='mon-fri'),  # Mon-Fri at 21:00 UTC+1
     },
 }
