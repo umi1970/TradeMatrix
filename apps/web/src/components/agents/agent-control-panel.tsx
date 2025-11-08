@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Clock, Play, RefreshCw } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
+import { getAgentConfig, getAgentIcon } from '@/lib/config/agents'
 
 // Analysis Agents - Chart analysis and reporting
 const analysisAgents = [
@@ -114,59 +115,85 @@ export function AgentControlPanel() {
     }
   }
 
+  // Get agent card styling with border glow
+  const getAgentCardClasses = (agentName: string, status: string) => {
+    if (status === 'planned') return 'opacity-60'
+
+    const agentConfig = getAgentConfig(agentName)
+    if (!agentConfig) return ''
+
+    // Map agent colors to Tailwind border and shadow classes
+    const colorMap: Record<string, string> = {
+      'blue': 'border-2 border-blue-500/50 shadow-lg shadow-blue-500/20 hover:border-blue-500 hover:shadow-blue-500/30 transition-all',
+      'green': 'border-2 border-green-500/50 shadow-lg shadow-green-500/20 hover:border-green-500 hover:shadow-green-500/30 transition-all',
+      'purple': 'border-2 border-purple-500/50 shadow-lg shadow-purple-500/20 hover:border-purple-500 hover:shadow-purple-500/30 transition-all',
+      'orange': 'border-2 border-orange-500/50 shadow-lg shadow-orange-500/20 hover:border-orange-500 hover:shadow-orange-500/30 transition-all',
+      'pink': 'border-2 border-pink-500/50 shadow-lg shadow-pink-500/20 hover:border-pink-500 hover:shadow-pink-500/30 transition-all',
+    }
+
+    return colorMap[agentConfig.color] || ''
+  }
+
   // Helper function to render agent card
-  const renderAgentCard = (agent: typeof analysisAgents[0]) => (
-    <Card key={agent.name} className={agent.status === 'planned' ? 'opacity-60' : ''}>
-      <CardHeader className="pb-3">
-        <div className="flex items-center justify-between">
-          <CardTitle className="text-base">{agent.name}</CardTitle>
-          <Badge variant={agent.status === 'active' ? 'default' : 'secondary'}>
-            {agent.status}
-          </Badge>
-        </div>
-        <CardDescription className="text-xs">
-          {agent.description}
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="pb-3">
-        <div className="flex items-center gap-2 text-xs text-muted-foreground mb-3">
-          <Clock className="h-3 w-3" />
-          <span>{agent.schedule}</span>
-        </div>
-        {agent.status === 'active' && (
-          <div className="space-y-2">
-            <Select
-              value={selectedSymbols[agent.name] || 'all'}
-              onValueChange={(value: string) =>
-                setSelectedSymbols((prev) => ({ ...prev, [agent.name]: value }))
-              }
-            >
-              <SelectTrigger className="w-full h-8 text-xs">
-                <SelectValue placeholder="Select symbol" />
-              </SelectTrigger>
-              <SelectContent>
-                {symbols.map((symbol) => (
-                  <SelectItem key={symbol.value} value={symbol.value} className="text-xs">
-                    {symbol.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <Button
-              size="sm"
-              variant="outline"
-              className="w-full"
-              onClick={() => triggerAgent(agent.name)}
-              disabled={triggeringAgent === agent.name}
-            >
-              <Play className="h-3 w-3 mr-1" />
-              {triggeringAgent === agent.name ? 'Starting...' : 'Run Now'}
-            </Button>
+  const renderAgentCard = (agent: typeof analysisAgents[0]) => {
+    const agentConfig = getAgentConfig(agent.name)
+
+    return (
+      <Card key={agent.name} className={getAgentCardClasses(agent.name, agent.status)}>
+        <CardHeader className="pb-3">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <span className="text-lg">{agentConfig?.icon || '🤖'}</span>
+              <CardTitle className={`text-base ${agentConfig?.colors.text || ''}`}>{agent.name}</CardTitle>
+            </div>
+            <Badge variant={agent.status === 'active' ? 'default' : 'secondary'}>
+              {agent.status}
+            </Badge>
           </div>
-        )}
-      </CardContent>
-    </Card>
-  )
+          <CardDescription className="text-xs">
+            {agent.description}
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="pb-3">
+          <div className="flex items-center gap-2 text-xs text-muted-foreground mb-3">
+            <Clock className="h-3 w-3" />
+            <span>{agent.schedule}</span>
+          </div>
+          {agent.status === 'active' && (
+            <div className="space-y-2">
+              <Select
+                value={selectedSymbols[agent.name] || 'all'}
+                onValueChange={(value: string) =>
+                  setSelectedSymbols((prev) => ({ ...prev, [agent.name]: value }))
+                }
+              >
+                <SelectTrigger className="w-full h-8 text-xs">
+                  <SelectValue placeholder="Select symbol" />
+                </SelectTrigger>
+                <SelectContent>
+                  {symbols.map((symbol) => (
+                    <SelectItem key={symbol.value} value={symbol.value} className="text-xs">
+                      {symbol.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Button
+                size="sm"
+                variant="outline"
+                className="w-full"
+                onClick={() => triggerAgent(agent.name)}
+                disabled={triggeringAgent === agent.name}
+              >
+                <Play className="h-3 w-3 mr-1" />
+                {triggeringAgent === agent.name ? 'Starting...' : 'Run Now'}
+              </Button>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+    )
+  }
 
   return (
     <Card>
