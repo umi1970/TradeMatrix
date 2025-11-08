@@ -507,22 +507,81 @@ If no clear patterns are visible, return an empty patterns array but still provi
         """
         Calculate overall confidence score from pattern detection results
 
+        Multi-dimensional scoring:
+        - Trend clarity (35%)
+        - Pattern detection (30%)
+        - Support/Resistance levels (25%)
+        - Baseline for no patterns but clear trend (15%)
+
         Args:
             pattern_data: Dict from detect_patterns()
 
         Returns:
             Confidence score (0.0-1.0)
         """
-        patterns = pattern_data.get('patterns', [])
+        patterns = pattern_data.get("patterns", [])
+        trend = pattern_data.get("trend", "").lower()
+        support_levels = pattern_data.get("support_levels", [])
+        resistance_levels = pattern_data.get("resistance_levels", [])
 
-        if not patterns:
+        # 1️⃣ If nothing was delivered
+        if not (trend or support_levels or resistance_levels or patterns):
+            logger.warning("⚠️ No trend, levels, or patterns detected - confidence=0.0")
             return 0.0
 
-        # Average confidence of all detected patterns
-        confidences = [p.get('confidence', 0.0) for p in patterns]
-        avg_confidence = sum(confidences) / len(confidences)
+        confidence = 0.0
+        weight_total = 0
 
-        return round(avg_confidence, 2)
+        # 2️⃣ Trend evaluation (most important)
+        if trend in ["bullish", "bearish", "sideways", "uptrend", "downtrend"]:
+            confidence += 0.35
+            weight_total += 0.35
+            logger.debug(f"✅ Trend detected: {trend} (+0.35)")
+        else:
+            logger.debug(f"⚠️ No clear trend: {trend}")
+
+        # 3️⃣ Pattern evaluation
+        if patterns:
+            # Quality based on number and individual confidence
+            pattern_confidences = [p.get('confidence', 0.0) for p in patterns]
+            avg_pattern_conf = sum(pattern_confidences) / len(pattern_confidences) if pattern_confidences else 0
+            pattern_score = min(len(patterns) * 0.1, 0.3) * avg_pattern_conf
+            confidence += pattern_score
+            weight_total += 0.3
+            logger.debug(f"✅ Patterns detected: {len(patterns)} (avg_conf={avg_pattern_conf:.2f}, score=+{pattern_score:.2f})")
+        else:
+            # No pattern, but trend present → baseline score
+            confidence += 0.15
+            weight_total += 0.15
+            logger.debug("⚠️ No patterns, using baseline (+0.15)")
+
+        # 4️⃣ Support/Resistance levels
+        if support_levels and resistance_levels:
+            confidence += 0.25
+            weight_total += 0.25
+            logger.debug(f"✅ Both support and resistance levels present (+0.25)")
+        elif support_levels or resistance_levels:
+            confidence += 0.15
+            weight_total += 0.25
+            level_type = "support" if support_levels else "resistance"
+            logger.debug(f"⚠️ Only {level_type} levels present (+0.15)")
+
+        # 5️⃣ Normalize & round
+        if weight_total == 0:
+            logger.warning("⚠️ No weights accumulated - confidence=0.0")
+            return 0.0
+
+        final_score = min(confidence / weight_total, 1.0)
+        final_score = round(final_score, 2)
+
+        logger.info(
+            f"⚙️ Confidence Breakdown → "
+            f"trend={trend}, patterns={len(patterns)}, "
+            f"support={len(support_levels)}, resistance={len(resistance_levels)}, "
+            f"confidence={final_score}"
+        )
+
+        return final_score
 
 
     async def run(
