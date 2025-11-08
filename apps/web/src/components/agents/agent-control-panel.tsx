@@ -117,10 +117,8 @@ export function AgentControlPanel() {
 
   // Get agent card styling with border glow
   const getAgentCardClasses = (agentName: string, status: string) => {
-    if (status === 'planned') return 'opacity-60'
-
     const agentConfig = getAgentConfig(agentName)
-    if (!agentConfig) return ''
+    if (!agentConfig) return status === 'planned' ? 'opacity-60' : ''
 
     // Map agent colors to Tailwind border and shadow classes
     const colorMap: Record<string, string> = {
@@ -129,6 +127,11 @@ export function AgentControlPanel() {
       'purple': 'border-2 border-purple-500/50 shadow-lg shadow-purple-500/20 hover:border-purple-500 hover:shadow-purple-500/30 transition-all',
       'orange': 'border-2 border-orange-500/50 shadow-lg shadow-orange-500/20 hover:border-orange-500 hover:shadow-orange-500/30 transition-all',
       'pink': 'border-2 border-pink-500/50 shadow-lg shadow-pink-500/20 hover:border-pink-500 hover:shadow-pink-500/30 transition-all',
+    }
+
+    // For planned agents: no border glow, just subtle styling
+    if (status === 'planned') {
+      return 'border border-muted-foreground/20'
     }
 
     return colorMap[agentConfig.color] || ''
