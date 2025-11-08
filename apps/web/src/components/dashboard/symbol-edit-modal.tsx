@@ -130,7 +130,7 @@ export function SymbolEditModal({
             Edit Chart Settings: {symbol?.symbol}
           </DialogTitle>
           <DialogDescription>
-            Configure chart generation settings for {symbol?.name}
+            Configure chart generation settings for {symbol?.alias || symbol?.symbol}
           </DialogDescription>
         </DialogHeader>
 

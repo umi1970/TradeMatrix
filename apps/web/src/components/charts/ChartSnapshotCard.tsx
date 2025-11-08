@@ -6,6 +6,7 @@ import { Badge } from '@/components/ui/badge'
 import { TrashIcon, ExternalLinkIcon } from 'lucide-react'
 import { createBrowserClient } from '@/lib/supabase/client'
 import { useToast } from '@/hooks/use-toast'
+import { getAgentConfig, getAgentBadgeColors, getAgentIcon, getAgentName } from '@/lib/config/agents'
 
 interface ChartSnapshotCardProps {
   snapshot: {
@@ -25,6 +26,10 @@ interface ChartSnapshotCardProps {
 export function ChartSnapshotCard({ snapshot, onDelete }: ChartSnapshotCardProps) {
   const supabase = createBrowserClient()
   const { toast } = useToast()
+
+  // Get agent config for styling
+  const agentConfig = getAgentConfig(snapshot.created_by_agent)
+  const badgeColors = getAgentBadgeColors(snapshot.created_by_agent)
 
   const handleDelete = async () => {
     if (!confirm('Delete this chart snapshot?')) return
@@ -95,9 +100,14 @@ export function ChartSnapshotCard({ snapshot, onDelete }: ChartSnapshotCardProps
         </div>
       </CardContent>
       <CardFooter className="flex items-center justify-between">
-        <div className="text-xs text-muted-foreground">
-          <div>{snapshot.created_by_agent}</div>
-          <div>{formatDate(snapshot.created_at)}</div>
+        <div className="flex flex-col gap-1.5">
+          <Badge variant="secondary" className={`w-fit text-xs ${badgeColors.bg} ${badgeColors.text} border-0`}>
+            <span className="mr-1">{getAgentIcon(snapshot.created_by_agent)}</span>
+            {getAgentName(snapshot.created_by_agent)}
+          </Badge>
+          <div className="text-xs text-muted-foreground">
+            {formatDate(snapshot.created_at)}
+          </div>
         </div>
         <div className="flex gap-2">
           <Button variant="ghost" size="sm" asChild>

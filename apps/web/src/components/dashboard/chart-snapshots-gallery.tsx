@@ -219,7 +219,7 @@ export function ChartSnapshotsGallery({
         <DialogContent className="max-w-6xl">
           <DialogHeader>
             <DialogTitle>
-              {selectedSnapshot?.symbol?.name || 'Chart'} - {selectedSnapshot?.timeframe}
+              {selectedSnapshot?.symbol?.alias || selectedSnapshot?.symbol?.symbol || 'Chart'} - {selectedSnapshot?.timeframe}
             </DialogTitle>
             <DialogDescription>
               Generated {selectedSnapshot && new Date(selectedSnapshot.generated_at).toLocaleString()}

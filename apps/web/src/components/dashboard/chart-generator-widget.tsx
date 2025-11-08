@@ -57,7 +57,7 @@ export function ChartGeneratorWidget({ symbol }: ChartGeneratorWidgetProps) {
         <CardHeader>
           <CardTitle>Chart Generator</CardTitle>
           <CardDescription>
-            {symbol.name} ({symbol.symbol})
+            {symbol.alias || symbol.symbol} ({symbol.symbol})
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -80,7 +80,7 @@ export function ChartGeneratorWidget({ symbol }: ChartGeneratorWidgetProps) {
           <div>
             <CardTitle>Chart Generator</CardTitle>
             <CardDescription>
-              {symbol.name} ({symbol.symbol})
+              {symbol.alias || symbol.symbol} ({symbol.symbol})
             </CardDescription>
           </div>
           {chartUrl && (

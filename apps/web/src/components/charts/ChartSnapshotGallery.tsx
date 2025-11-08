@@ -14,6 +14,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { RefreshCw } from 'lucide-react'
+import { getAgentIcon, getAgentName } from '@/lib/config/agents'
 
 interface ChartSnapshot {
   id: string
@@ -117,7 +118,10 @@ export function ChartSnapshotGallery() {
                   <SelectItem value="all">All Agents</SelectItem>
                   {uniqueAgents.map((agent) => (
                     <SelectItem key={agent} value={agent}>
-                      {agent}
+                      <span className="flex items-center gap-2">
+                        <span>{getAgentIcon(agent)}</span>
+                        <span>{getAgentName(agent)}</span>
+                      </span>
                     </SelectItem>
                   ))}
                 </SelectContent>

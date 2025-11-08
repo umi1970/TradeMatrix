@@ -6,46 +6,9 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Button } from '@/components/ui/button'
 import { Bot, FilterX } from 'lucide-react'
+import { getAgents } from '@/lib/config/agents'
 
-interface Agent {
-  id: string
-  name: string
-  description: string
-  color: string
-}
-
-const AVAILABLE_AGENTS: Agent[] = [
-  {
-    id: 'ChartWatcher',
-    name: 'ChartWatcher',
-    description: 'Pattern Detection & Analysis',
-    color: 'text-blue-500',
-  },
-  {
-    id: 'SignalBot',
-    name: 'SignalBot',
-    description: 'Entry & Exit Signals',
-    color: 'text-green-500',
-  },
-  {
-    id: 'MorningPlanner',
-    name: 'MorningPlanner',
-    description: 'Daily Market Setup',
-    color: 'text-purple-500',
-  },
-  {
-    id: 'JournalBot',
-    name: 'JournalBot',
-    description: 'Trade Review & Analysis',
-    color: 'text-orange-500',
-  },
-  {
-    id: 'USOpenPlanner',
-    name: 'US Open Planner',
-    description: 'US Market Opening Strategy',
-    color: 'text-pink-500',
-  },
-]
+const AVAILABLE_AGENTS = getAgents()
 
 interface AgentFilterProps {
   currentFilter?: string[]
@@ -127,9 +90,10 @@ export function AgentFilter({ currentFilter = [] }: AgentFilterProps) {
                   <div className="flex-1 space-y-1">
                     <label
                       htmlFor={agent.id}
-                      className={`text-sm font-medium leading-none cursor-pointer ${agent.color}`}
+                      className={`text-sm font-medium leading-none cursor-pointer flex items-center gap-1.5 ${agent.colors.text}`}
                     >
-                      {agent.name}
+                      <span>{agent.icon}</span>
+                      <span>{agent.name}</span>
                     </label>
                     <p className="text-xs text-muted-foreground">
                       {agent.description}
