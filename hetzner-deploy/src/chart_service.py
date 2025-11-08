@@ -81,6 +81,7 @@ class ChartService:
         "NDX": "NASDAQ:NDX",        # NASDAQ 100 Index
         "DJI": "TVC:DJI",           # Dow Jones Industrial Average
         "EUR/USD": "FX:EURUSD",     # Euro / US Dollar
+        "EUR/GBP": "FX:EURGBP",     # Euro / British Pound
         "XAG/USD": "FX:XAGUSD",     # Silver Spot
 
         # symbols table format (for EOD Data Layer compatibility)
