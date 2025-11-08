@@ -12,7 +12,7 @@ export interface ChartConfig {
 export interface MarketSymbol {
   id: string
   symbol: string
-  name: string
+  alias: string | null
   chart_img_symbol: string | null
   chart_enabled: boolean
   chart_config: ChartConfig | null

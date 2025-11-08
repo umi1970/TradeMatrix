@@ -41,7 +41,7 @@ export default function SymbolsPage() {
   const filteredSymbols = symbols.filter((symbol) => {
     const matchesSearch =
       symbol.symbol.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      symbol.name.toLowerCase().includes(searchQuery.toLowerCase())
+      (symbol.alias && symbol.alias.toLowerCase().includes(searchQuery.toLowerCase()))
 
     const matchesChartFilter =
       chartEnabledFilter === 'all' ||
@@ -145,7 +145,7 @@ export default function SymbolsPage() {
                     filteredSymbols.map((symbol) => (
                       <TableRow key={symbol.id}>
                         <TableCell className="font-medium">{symbol.symbol}</TableCell>
-                        <TableCell>{symbol.name}</TableCell>
+                        <TableCell>{symbol.alias || symbol.symbol}</TableCell>
                         <TableCell>
                           {symbol.chart_enabled ? (
                             <Badge variant="default" className="gap-1">
