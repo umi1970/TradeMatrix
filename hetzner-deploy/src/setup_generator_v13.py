@@ -118,7 +118,13 @@ class SetupGeneratorV13:
         try:
             # Step 1: Get current price from PriceFetcher
             logger.info(f"Fetching real-time data for {symbol}")
-            current_price = self.price_fetcher.get_price(symbol)
+            price_data = self.price_fetcher.fetch_price(symbol)
+
+            if not price_data:
+                logger.error(f"PriceFetcher returned no data for {symbol}")
+                return None
+
+            current_price = float(price_data['current_price'])
 
             if not current_price:
                 logger.error(f"Failed to fetch current price for {symbol}")
