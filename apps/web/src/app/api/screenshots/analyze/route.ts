@@ -35,72 +35,77 @@ export async function POST(request: NextRequest) {
 
     const response = await openai.chat.completions.create({
       model: 'gpt-4o',
+      temperature: 0.2,
       messages: [
         {
           role: 'user',
           content: [
             {
               type: 'text',
-              text: `You are a professional day trader analyzing a trading chart screenshot.
+              text: `You are a professional day trader and technical analyst.
+You are analyzing a trading chart screenshot to extract structured data and trading insights.
 
-EXTRACT & ANALYZE the following:
+EXTRACT and ANALYZE the following:
 
 ## 1. BASIC DATA
-- symbol: Trading symbol/instrument name
-- timeframe: Chart timeframe (e.g., "5m", "15m", "1h", "4h", "1D")
-- current_price: Most recent price (number only)
+- symbol: Trading symbol or instrument (e.g. "DAX", "EUR/USD")
+- timeframe: Chart timeframe (e.g. "5m", "15m", "1h", "4h", "1D")
+- current_price: Latest visible price (numeric)
 - open: Opening price of current candle
-- high: Highest price visible
-- low: Lowest price visible
-- close: Closing price (same as current_price usually)
-- timestamp: When screenshot was taken (ISO 8601)
+- high: Highest price visible on chart
+- low: Lowest price visible on chart
+- close: Closing price (usually same as current_price)
+- timestamp: When the chart snapshot was taken (ISO 8601 if visible)
 
-## 2. TECHNICAL INDICATORS (extract visible values)
-- ema20: EMA(20) value if visible
-- ema50: EMA(50) value if visible
-- ema200: EMA(200) value if visible
-- rsi: RSI value if visible
-- pivot_points: Array of pivot levels [R3, R2, R1, PP, S1, S2, S3] if visible
-- other_indicators: Any other visible indicators
+## 2. TECHNICAL INDICATORS
+Extract clearly visible indicator values:
+- ema20, ema50, ema200
+- rsi
+- pivot_points: [R3, R2, R1, PP, S1, S2, S3] (only if shown)
+- other_indicators: list of any additional indicators visible (MACD, VWAP, etc.)
 
-## 3. SUPPORT/RESISTANCE LEVELS
-Identify key price levels from:
-- Horizontal lines on chart
-- Previous highs/lows
-- Consolidation zones
-- Pivot points
-Return as arrays: support_levels[], resistance_levels[]
+## 3. SUPPORT / RESISTANCE LEVELS
+Identify visible horizontal key levels based on:
+- Horizontal lines drawn on chart
+- Recent swing highs/lows
+- Consolidation or reaction zones
+Return as arrays:
+- support_levels[]
+- resistance_levels[]
 
 ## 4. TREND ANALYSIS
 - trend: "bullish", "bearish", or "sideways"
-- trend_strength: "strong", "moderate", "weak"
-- price_vs_emas: Position relative to EMAs (above/below)
+- trend_strength: "strong", "moderate", or "weak"
+- price_vs_emas: "above_all", "below_all", or "mixed"
+- momentum_bias: short textual summary (e.g. "bullish momentum slowing near resistance")
 
 ## 5. PRICE ACTION & PATTERNS
-- patterns_detected: Array of patterns (e.g., "breakout", "rejection", "consolidation", "reversal", "crash")
-- key_events: Describe major price movements visible
-- market_structure: Higher highs/lows, lower highs/lows, range-bound
+- patterns_detected: Array of visible patterns (e.g. "double_top", "breakout", "rejection", "range")
+- key_events: 2–3 short bullet points describing the most relevant recent price actions
+- market_structure: "higher_highs", "lower_lows", "range_bound", or "mixed"
 
-## 6. TRADING SETUP (your recommendation)
+## 6. TRADING SETUP (recommended action)
 - setup_type: "long", "short", or "no_trade"
-- entry_price: Recommended entry (number)
-- stop_loss: Recommended stop loss (number)
-- take_profit: Recommended take profit (number)
-- risk_reward: Ratio (number)
-- reasoning: Why this setup? (2-3 sentences)
+- entry_price: Suggested entry level
+- stop_loss: Suggested stop loss
+- take_profit: Suggested take profit
+- risk_reward: Ratio (TP distance ÷ SL distance)
+- reasoning: 2–3 sentences summarizing logic (trend, levels, confirmation)
+- timeframe_validity: "intraday", "swing", or "midterm"
 
 ## 7. CONFIDENCE & QUALITY
-- confidence_score: 0.0 to 1.0 (how confident are you in this analysis?)
-- chart_quality: "excellent", "good", "fair", "poor"
+- confidence_score: 0.0–1.0 (based on clarity of trend, levels & confluence)
+- chart_quality: "excellent", "good", "fair", or "poor"
+- key_factors: list 2–3 factors influencing confidence (e.g. "clear EMA confluence", "low volume", "strong rejection")
 
 RULES:
-✅ Extract ONLY what you can SEE clearly
-✅ Be precise with numbers (trading depends on accuracy!)
-✅ If unsure about a value, use null
-✅ Analyze like a professional day trader
-✅ Focus on actionable insights
+✅ Extract only what is visually identifiable.
+✅ Never hallucinate numbers — if not visible, return null.
+✅ Be precise with price values and levels.
+✅ Focus on actionable, realistic setups.
+✅ Always output a complete JSON object with all fields, even if some are null.
 
-Respond in JSON format with ALL fields listed above.`,
+Return your answer **only** as valid JSON (no markdown, no extra text).`,
             },
             {
               type: 'image_url',
@@ -126,6 +131,12 @@ Respond in JSON format with ALL fields listed above.`,
     const analysis = JSON.parse(content)
 
     console.log(`✅ Chart analysis complete:`, analysis)
+
+    // Backup heuristic: If confidence is 0.0 but we have data, set minimum confidence
+    if (analysis.confidence_score === 0.0 && (analysis.trend || analysis.support_levels?.length > 0 || analysis.resistance_levels?.length > 0)) {
+      console.log('⚠️ Confidence was 0.0, applying backup heuristic (0.4)')
+      analysis.confidence_score = 0.4
+    }
 
     // Validate analysis data
     if (!analysis.current_price || !analysis.confidence_score || analysis.confidence_score < 0.6) {
@@ -183,12 +194,22 @@ Respond in JSON format with ALL fields listed above.`,
       timeframe: analysis.timeframe,
       current_price: analysis.current_price,
       trend: analysis.trend,
+      trend_strength: analysis.trend_strength,
+      price_vs_emas: analysis.price_vs_emas,
+      momentum_bias: analysis.momentum_bias,
       confidence_score: analysis.confidence_score,
+      chart_quality: analysis.chart_quality,
+      key_factors: analysis.key_factors,
       setup_type: analysis.setup_type,
       entry_price: analysis.entry_price,
       stop_loss: analysis.stop_loss,
       take_profit: analysis.take_profit,
+      risk_reward: analysis.risk_reward,
       reasoning: analysis.reasoning,
+      timeframe_validity: analysis.timeframe_validity,
+      patterns_detected: analysis.patterns_detected,
+      support_levels: analysis.support_levels,
+      resistance_levels: analysis.resistance_levels,
     })
 
   } catch (error) {

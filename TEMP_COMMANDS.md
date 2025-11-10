@@ -4,66 +4,76 @@ Commands für **JETZT** - copy/paste direkt ins Terminal:
 
 ---
 
-## 1. Frontend Deployment (Netlify)
+## 1. Frontend Build & Deploy
 
 ```bash
 cd apps/web
 npm run build
 ```
 
-Wenn Build erfolgreich:
-```bash
-git push origin main
-```
-
-Netlify deployed automatisch → https://tradematrix.netlify.app
+Wenn erfolgreich, Netlify deployed automatisch (git push wurde gemacht).
 
 ---
 
-## 2. Screenshot Upload Feature nutzen
+## 2. Screenshot Analysis testen
 
 1. **Gehe zu:** https://tradematrix.netlify.app/dashboard/screenshots
-2. **Mache Screenshots** von TradingView Charts (DAX, NDX, DJI, EUR/USD, EUR/GBP, XAG/USD)
-3. **Upload** die Screenshots in die jeweiligen Bereiche
-4. **Klick "Analyze Screenshots"** → OpenAI Vision extrahiert Preise
-5. **Ergebnis:** Preise werden in `current_prices` geschrieben
+2. **Upload dow5m.png** (oder andere Chart-Screenshots)
+3. **Klick "Analyze Screenshots"**
+4. **Warte 10-20 Sekunden** (Vision AI analysiert)
+5. **Siehe Ergebnis:**
+   - Symbol: Dow Jones
+   - Timeframe: 5m
+   - Current Price: 47,036
+   - Trend: BEARISH (wegen dem Crash)
+   - Confidence: ~70-90%
+   - Setup Recommendation: SHORT Entry ~47,000, Stop ~47,300, Target ~46,850
 
 ---
 
-## 3. Trading Setup generieren
+## 3. Was Vision AI ALLES erkennt:
 
-Nach dem Upload:
-1. **Gehe zu:** https://tradematrix.netlify.app/agents
-2. **Klick "Generate Trading Setup"** bei einem Symbol
-3. **SetupGenerator nutzt die frischen Preise** aus Screenshots!
-
----
-
-## 4. Was die Screenshots zeigen sollten
-
-Für beste Ergebnisse:
-- ✅ **Symbol Name** sichtbar (z.B. "DAX", "NASDAQ 100")
-- ✅ **Current Price** groß und klar sichtbar
-- ✅ **Timestamp** (Datum/Uhrzeit) sichtbar
-- ✅ **Gute Auflösung** (nicht verpixelt)
-
-**Beispiel TradingView:**
-- Öffne Chart für DAX
-- Zeige Current Price oben links
-- Screenshot machen (Windows: Win+Shift+S, Mac: Cmd+Shift+4)
+✅ **Basic Data:** Symbol, Timeframe, OHLC, Current Price
+✅ **Indicators:** EMA50 (47,073), EMA200 (47,077), Pivot Points (alle 7 Levels!)
+✅ **Levels:** Support (46,950, 46,851), Resistance (47,073, 47,300)
+✅ **Trend:** Bearish nach dem 350-Punkte Drop
+✅ **Patterns:** Crash, Sharp Rejection, Recovery
+✅ **Price Action:** Price UNTER EMAs = Bearish Structure
+✅ **Trading Setup:** Entry, Stop, Target mit Reasoning
 
 ---
 
-## 5. Kosten
+## 4. Wenn Analyse gut ist → Generate Trading Setup
 
-**OpenAI Vision API:**
-- GPT-4 Vision: ~$0.01 pro Bild
-- 6 Symbole = ~$0.06 pro Upload
-- 10x täglich = ~$0.60/Tag = ~$18/Monat
+Klick auf "Generate Trading Setup" Button in der Analyse-Card.
 
-**Vergleich:**
+Das nutzt die chart_analyses Daten und erstellt ein vollständiges Setup via SetupGenerator!
+
+---
+
+## 5. Workflow (komplett automatisiert!)
+
+```
+1. Mache Screenshots (30 Sek für 5-10 Charts)
+2. Upload auf /screenshots
+3. Vision analysiert ALLES (10-20 Sek pro Chart)
+4. Schreibt in chart_analyses
+5. Klick "Generate Setup" → SetupGenerator nutzt die Daten
+6. FERTIG! Vollständiges Trading Setup basierend auf Chart-Analyse
+```
+
+---
+
+## 6. Kosten
+
+**OpenAI Vision (GPT-4o):**
+- ~$0.015 pro Bild (mit 2000 tokens Output)
+- 10 Charts/Tag = $0.15/Tag = $4.50/Monat
+- 50 Charts/Tag = $0.75/Tag = $22.50/Monat
+
+**VIEL günstiger als:**
 - Alpha Vantage: $49.99/mo
 - Finnhub Premium: $59.99/mo
-- Screenshot-Lösung: ~$18/mo + 30 Sekunden manuelle Arbeit
+- Polygon.io: $89/mo
 
 ---

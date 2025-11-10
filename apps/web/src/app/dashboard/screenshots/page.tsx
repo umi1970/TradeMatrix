@@ -16,12 +16,22 @@ interface AnalysisResult {
     timeframe: string
     current_price: number
     trend: string
+    trend_strength?: string
+    price_vs_emas?: string
+    momentum_bias?: string
     confidence_score: number
+    chart_quality?: string
+    key_factors?: string[]
     setup_type: string
     entry_price?: number
     stop_loss?: number
     take_profit?: number
+    risk_reward?: number
     reasoning?: string
+    timeframe_validity?: string
+    patterns_detected?: string[]
+    support_levels?: number[]
+    resistance_levels?: number[]
   }
   error?: string
 }
@@ -255,15 +265,65 @@ export default function ScreenshotsPage() {
                       <div className="flex items-center justify-between">
                         <div>
                           <p className="text-2xl font-bold">{item.analysis.current_price.toLocaleString()}</p>
-                          <Badge className={getTrendColor(item.analysis.trend)}>
-                            {item.analysis.trend.toUpperCase()}
-                          </Badge>
+                          <div className="flex gap-2 mt-1">
+                            <Badge className={getTrendColor(item.analysis.trend)}>
+                              {item.analysis.trend.toUpperCase()}
+                            </Badge>
+                            {item.analysis.trend_strength && (
+                              <Badge variant="outline" className="text-xs">
+                                {item.analysis.trend_strength}
+                              </Badge>
+                            )}
+                          </div>
                         </div>
                         <div className="text-right">
                           <p className="text-sm text-muted-foreground">Confidence</p>
                           <p className="text-lg font-semibold">{(item.analysis.confidence_score * 100).toFixed(0)}%</p>
+                          {item.analysis.chart_quality && (
+                            <p className="text-xs text-muted-foreground capitalize">{item.analysis.chart_quality}</p>
+                          )}
                         </div>
                       </div>
+
+                      {/* Momentum & Price Position */}
+                      {(item.analysis.momentum_bias || item.analysis.price_vs_emas) && (
+                        <div className="p-2 bg-muted/50 rounded text-xs space-y-1">
+                          {item.analysis.momentum_bias && (
+                            <p><span className="font-semibold">Momentum:</span> {item.analysis.momentum_bias}</p>
+                          )}
+                          {item.analysis.price_vs_emas && (
+                            <p><span className="font-semibold">Price vs EMAs:</span> {item.analysis.price_vs_emas.replace('_', ' ')}</p>
+                          )}
+                        </div>
+                      )}
+
+                      {/* Patterns & Key Factors */}
+                      {(item.analysis.patterns_detected?.length > 0 || item.analysis.key_factors?.length > 0) && (
+                        <div className="space-y-2 text-xs">
+                          {item.analysis.patterns_detected?.length > 0 && (
+                            <div>
+                              <p className="font-semibold mb-1">Patterns:</p>
+                              <div className="flex flex-wrap gap-1">
+                                {item.analysis.patterns_detected.map((pattern, i) => (
+                                  <Badge key={i} variant="secondary" className="text-xs">
+                                    {pattern}
+                                  </Badge>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                          {item.analysis.key_factors?.length > 0 && (
+                            <div>
+                              <p className="font-semibold mb-1">Key Factors:</p>
+                              <ul className="list-disc list-inside text-muted-foreground space-y-0.5">
+                                {item.analysis.key_factors.map((factor, i) => (
+                                  <li key={i}>{factor}</li>
+                                ))}
+                              </ul>
+                            </div>
+                          )}
+                        </div>
+                      )}
 
                       {/* Setup Recommendation */}
                       {item.analysis.setup_type !== 'no_trade' && (
@@ -273,9 +333,14 @@ export default function ScreenshotsPage() {
                               {item.analysis.setup_type?.toUpperCase()}
                             </Badge>
                             Setup Recommendation
+                            {item.analysis.timeframe_validity && (
+                              <Badge variant="outline" className="text-xs ml-auto">
+                                {item.analysis.timeframe_validity}
+                              </Badge>
+                            )}
                           </p>
                           {item.analysis.entry_price && (
-                            <div className="grid grid-cols-3 gap-2 text-xs">
+                            <div className="grid grid-cols-4 gap-2 text-xs">
                               <div>
                                 <p className="text-muted-foreground">Entry</p>
                                 <p className="font-mono font-semibold">{item.analysis.entry_price.toLocaleString()}</p>
@@ -287,6 +352,10 @@ export default function ScreenshotsPage() {
                               <div>
                                 <p className="text-muted-foreground">Target</p>
                                 <p className="font-mono font-semibold">{item.analysis.take_profit?.toLocaleString()}</p>
+                              </div>
+                              <div>
+                                <p className="text-muted-foreground">R:R</p>
+                                <p className="font-mono font-semibold">{item.analysis.risk_reward?.toFixed(1) || 'N/A'}</p>
                               </div>
                             </div>
                           )}
