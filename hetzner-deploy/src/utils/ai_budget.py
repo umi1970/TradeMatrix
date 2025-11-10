@@ -23,7 +23,7 @@ DAILY_LIMITS = {
 }
 
 # System-wide daily budget (safety net against runaway costs)
-SYSTEM_DAILY_BUDGET = 10  # Max 10 AI calls/day across all users (testing - increase for production)
+SYSTEM_DAILY_BUDGET = 25  # Max 25 AI calls/day across all users
 
 # Estimated costs per model (USD)
 MODEL_COSTS = {
