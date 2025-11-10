@@ -266,8 +266,17 @@ class PriceFetcher:
         provider = config['provider']
         api_symbol = config.get('api_symbol', symbol)
 
+        # FIX: Local symbol mapping override (DB has wrong symbols)
+        # This ensures correct yfinance symbols regardless of DB content
         if provider == 'yfinance':
-            return self.fetch_yfinance_quote(api_symbol)  # Use API symbol (^GDAXI)
+            yfinance_mapping = {
+                'DAX': '^GDAXI',
+                'NDX': '^NDX',
+                'DJI': '^DJI',
+            }
+            api_symbol = yfinance_mapping.get(api_symbol, api_symbol)
+            print(f"✓ yfinance symbol mapping: {symbol} → {api_symbol}")
+            return self.fetch_yfinance_quote(api_symbol)  # Use corrected API symbol
         elif provider == 'twelvedata':
             return self.fetch_twelvedata_quote(
                 symbol=config['ticker'],
