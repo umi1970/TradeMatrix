@@ -170,6 +170,22 @@ class PriceFetcher:
                 open_today = current_price
                 volume_today = None
 
+            # Get timestamp (when price was fetched)
+            try:
+                # Try to get market time from info
+                market_time = ticker.info.get('regularMarketTime')
+                if market_time:
+                    # Convert Unix timestamp to ISO format
+                    from datetime import datetime
+                    timestamp = datetime.fromtimestamp(market_time).isoformat()
+                else:
+                    # Fallback: current time
+                    timestamp = datetime.now().isoformat()
+            except:
+                # Last fallback: current time
+                from datetime import datetime
+                timestamp = datetime.now().isoformat()
+
             return {
                 'current_price': Decimal(str(current_price)),
                 'high_today': Decimal(str(high_today)),
@@ -177,6 +193,7 @@ class PriceFetcher:
                 'open_today': Decimal(str(open_today)),
                 'volume_today': volume_today,
                 'data_source': 'yfinance',
+                'timestamp': timestamp,  # NEW: When price was fetched
                 'change': Decimal('0'),  # yfinance doesn't provide change directly
                 'change_percent': Decimal('0'),
                 'previous_close': Decimal(str(current_price)),
@@ -222,6 +239,12 @@ class PriceFetcher:
 
             # Extract price data
             if 'close' in data:
+                # Get timestamp from API response (or use current time)
+                timestamp = data.get('timestamp')  # Twelvedata provides ISO timestamp
+                if not timestamp:
+                    from datetime import datetime
+                    timestamp = datetime.now().isoformat()
+
                 return {
                     'current_price': Decimal(str(data['close'])),
                     'high_today': Decimal(str(data.get('high', data['close']))),
@@ -229,6 +252,7 @@ class PriceFetcher:
                     'open_today': Decimal(str(data.get('open', data['close']))),
                     'volume_today': int(data.get('volume', 0)) if data.get('volume') else None,
                     'data_source': 'twelvedata',
+                    'timestamp': timestamp,  # NEW: When price was fetched
                     'change': Decimal(str(data.get('change', 0))),
                     'change_percent': Decimal(str(data.get('percent_change', 0))),
                     'previous_close': Decimal(str(data.get('previous_close', data['close']))),

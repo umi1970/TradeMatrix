@@ -125,6 +125,26 @@ class SetupGeneratorV13:
                 return None
 
             current_price = float(price_data['current_price'])
+            price_timestamp = price_data.get('timestamp')
+
+            # Step 1.5: Validate price freshness (max 2 minutes old)
+            if price_timestamp:
+                from datetime import datetime, timedelta
+                try:
+                    price_time = datetime.fromisoformat(price_timestamp.replace('Z', '+00:00'))
+                    now = datetime.now()
+                    age_seconds = (now - price_time).total_seconds()
+
+                    logger.info(f"Price age: {age_seconds:.0f} seconds (timestamp: {price_timestamp})")
+
+                    if age_seconds > 120:  # 2 minutes
+                        logger.error(f"❌ Price too old: {age_seconds:.0f}s (max 120s)")
+                        return None
+
+                    logger.info(f"✅ Price is fresh ({age_seconds:.0f}s old)")
+                except Exception as e:
+                    logger.warning(f"Could not parse timestamp: {e}")
+                    # Continue anyway (better than rejecting)
 
             if not current_price:
                 logger.error(f"Failed to fetch current price for {symbol}")
