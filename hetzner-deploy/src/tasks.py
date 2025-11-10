@@ -299,9 +299,9 @@ celery.conf.beat_schedule = {
         'schedule': crontab(hour=21, minute=0, day_of_week='mon-fri'),  # Mon-Fri at 21:00 UTC+1
     },
 
-    # Week Preview - runs Sunday evening at 20:00 MEZ (prep for Monday)
-    'week-preview-sunday': {
-        'task': 'run_journal_bot',
-        'schedule': crontab(hour=20, minute=0, day_of_week='sun'),  # Sunday at 20:00 UTC+1
-    },
+    # TODO: Week Preview - Implement proper weekly report first
+    # 'week-preview-sunday': {
+    #     'task': 'run_week_preview',  # Needs dedicated task
+    #     'schedule': crontab(hour=20, minute=0, day_of_week='sun'),
+    # },
 }
