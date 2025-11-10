@@ -137,12 +137,14 @@ class SetupGeneratorV13:
 
             yf_symbol = symbol_map.get(symbol, symbol)
 
-            # Step 3: Fetch historical data (100 periods for EMA200)
+            # Step 3: Fetch historical data for indicators (need 200+ periods for EMA200)
             ticker = yf.Ticker(yf_symbol)
-            hist = ticker.history(period='6mo', interval='1d')  # 6 months daily data
 
-            if hist.empty:
-                logger.warning(f"No historical data for {symbol}, using placeholders")
+            # Download historical data (last 1 year for proper EMA200)
+            hist = ticker.history(period='1y', interval='1d')
+
+            if hist.empty or len(hist) < 20:
+                logger.warning(f"Insufficient historical data for {symbol}, using placeholders")
                 return {
                     'current_price': current_price,
                     'ema20': current_price,
@@ -152,8 +154,10 @@ class SetupGeneratorV13:
                     'atr': current_price * 0.01
                 }
 
-            # Step 4: Calculate technical indicators
+            # Step 4: Calculate technical indicators (use historical data, NOT current price!)
             close_prices = hist['Close']
+
+            logger.info(f"Historical data: {len(close_prices)} days, latest close: {close_prices.iloc[-1]:.2f}, current: {current_price:.2f}")
 
             # EMA calculation
             ema20 = close_prices.ewm(span=20, adjust=False).mean().iloc[-1]

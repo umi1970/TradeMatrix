@@ -131,25 +131,55 @@ class PriceFetcher:
         """
         try:
             ticker = yf.Ticker(symbol)
-            # Get today's data
-            hist = ticker.history(period='1d')
 
-            if hist.empty:
-                print(f"❌ yfinance: No data returned for {symbol}")
+            # Get LIVE price from fast_info (current market price)
+            try:
+                current_price = ticker.fast_info['lastPrice']
+                print(f"✅ yfinance LIVE price for {symbol}: {current_price}")
+            except Exception as e:
+                # Fallback to regular info
+                try:
+                    current_price = ticker.info.get('regularMarketPrice') or ticker.info.get('currentPrice')
+                    print(f"✅ yfinance price from info for {symbol}: {current_price}")
+                except:
+                    # Last fallback: history
+                    hist = ticker.history(period='1d')
+                    if hist.empty:
+                        print(f"❌ yfinance: No data returned for {symbol}")
+                        return None
+                    current_price = hist.iloc[-1]['Close']
+                    print(f"⚠️ yfinance price from history for {symbol}: {current_price}")
+
+            if not current_price or current_price == 0:
+                print(f"❌ Invalid price for {symbol}: {current_price}")
                 return None
 
-            latest = hist.iloc[-1]
+            # Get today's OHLC from history
+            hist = ticker.history(period='1d')
+
+            if not hist.empty:
+                latest = hist.iloc[-1]
+                high_today = latest['High']
+                low_today = latest['Low']
+                open_today = latest['Open']
+                volume_today = int(latest['Volume']) if latest['Volume'] > 0 else None
+            else:
+                # Use current price as fallback for OHLC
+                high_today = current_price
+                low_today = current_price
+                open_today = current_price
+                volume_today = None
 
             return {
-                'current_price': Decimal(str(latest['Close'])),
-                'high_today': Decimal(str(latest['High'])),
-                'low_today': Decimal(str(latest['Low'])),
-                'open_today': Decimal(str(latest['Open'])),
-                'volume_today': int(latest['Volume']) if latest['Volume'] > 0 else None,
+                'current_price': Decimal(str(current_price)),
+                'high_today': Decimal(str(high_today)),
+                'low_today': Decimal(str(low_today)),
+                'open_today': Decimal(str(open_today)),
+                'volume_today': volume_today,
                 'data_source': 'yfinance',
                 'change': Decimal('0'),  # yfinance doesn't provide change directly
                 'change_percent': Decimal('0'),
-                'previous_close': Decimal(str(latest['Close'])),  # Use close as fallback
+                'previous_close': Decimal(str(current_price)),
             }
 
         except Exception as e:
