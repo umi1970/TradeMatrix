@@ -15,6 +15,7 @@ import {
   Menu,
   Settings,
   Bot,
+  Upload,
 } from 'lucide-react'
 
 const navigation = [
@@ -37,6 +38,11 @@ const navigation = [
     name: 'Charts',
     href: '/dashboard/charts',
     icon: BarChart3,
+  },
+  {
+    name: 'Screenshots',
+    href: '/dashboard/screenshots',
+    icon: Upload,
   },
   {
     name: 'Symbols',
