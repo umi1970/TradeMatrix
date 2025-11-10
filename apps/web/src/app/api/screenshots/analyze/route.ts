@@ -41,24 +41,66 @@ export async function POST(request: NextRequest) {
           content: [
             {
               type: 'text',
-              text: `You are analyzing a screenshot of market data for ${symbol}.
+              text: `You are a professional day trader analyzing a trading chart screenshot.
 
-Extract the following information:
-1. Current Price (the most recent/current price shown)
-2. Timestamp (when the data was captured - look for date/time on the chart)
+EXTRACT & ANALYZE the following:
 
-IMPORTANT RULES:
-- Only extract VISIBLE data from the screenshot
-- Current price must be a valid number (no text, no symbols except decimal point)
-- If you cannot find the data with high confidence, return null
-- Be precise - trading depends on accurate price data
+## 1. BASIC DATA
+- symbol: Trading symbol/instrument name
+- timeframe: Chart timeframe (e.g., "5m", "15m", "1h", "4h", "1D")
+- current_price: Most recent price (number only)
+- open: Opening price of current candle
+- high: Highest price visible
+- low: Lowest price visible
+- close: Closing price (same as current_price usually)
+- timestamp: When screenshot was taken (ISO 8601)
 
-Respond in JSON format:
-{
-  "price": <number>,
-  "timestamp": "<ISO 8601 string>",
-  "confidence": <0.0 to 1.0>
-}`,
+## 2. TECHNICAL INDICATORS (extract visible values)
+- ema20: EMA(20) value if visible
+- ema50: EMA(50) value if visible
+- ema200: EMA(200) value if visible
+- rsi: RSI value if visible
+- pivot_points: Array of pivot levels [R3, R2, R1, PP, S1, S2, S3] if visible
+- other_indicators: Any other visible indicators
+
+## 3. SUPPORT/RESISTANCE LEVELS
+Identify key price levels from:
+- Horizontal lines on chart
+- Previous highs/lows
+- Consolidation zones
+- Pivot points
+Return as arrays: support_levels[], resistance_levels[]
+
+## 4. TREND ANALYSIS
+- trend: "bullish", "bearish", or "sideways"
+- trend_strength: "strong", "moderate", "weak"
+- price_vs_emas: Position relative to EMAs (above/below)
+
+## 5. PRICE ACTION & PATTERNS
+- patterns_detected: Array of patterns (e.g., "breakout", "rejection", "consolidation", "reversal", "crash")
+- key_events: Describe major price movements visible
+- market_structure: Higher highs/lows, lower highs/lows, range-bound
+
+## 6. TRADING SETUP (your recommendation)
+- setup_type: "long", "short", or "no_trade"
+- entry_price: Recommended entry (number)
+- stop_loss: Recommended stop loss (number)
+- take_profit: Recommended take profit (number)
+- risk_reward: Ratio (number)
+- reasoning: Why this setup? (2-3 sentences)
+
+## 7. CONFIDENCE & QUALITY
+- confidence_score: 0.0 to 1.0 (how confident are you in this analysis?)
+- chart_quality: "excellent", "good", "fair", "poor"
+
+RULES:
+✅ Extract ONLY what you can SEE clearly
+✅ Be precise with numbers (trading depends on accuracy!)
+✅ If unsure about a value, use null
+✅ Analyze like a professional day trader
+✅ Focus on actionable insights
+
+Respond in JSON format with ALL fields listed above.`,
             },
             {
               type: 'image_url',
@@ -69,7 +111,7 @@ Respond in JSON format:
           ],
         },
       ],
-      max_tokens: 500,
+      max_tokens: 2000,
       response_format: { type: 'json_object' },
     })
 
@@ -81,14 +123,14 @@ Respond in JSON format:
       )
     }
 
-    const extracted = JSON.parse(content)
+    const analysis = JSON.parse(content)
 
-    console.log(`✅ Extracted data for ${symbol}:`, extracted)
+    console.log(`✅ Chart analysis complete:`, analysis)
 
-    // Validate extracted data
-    if (!extracted.price || extracted.confidence < 0.7) {
+    // Validate analysis data
+    if (!analysis.current_price || !analysis.confidence_score || analysis.confidence_score < 0.6) {
       return NextResponse.json(
-        { error: 'Low confidence extraction or missing data' },
+        { error: 'Low confidence analysis or missing critical data' },
         { status: 400 }
       )
     }
@@ -96,46 +138,57 @@ Respond in JSON format:
     // Get symbol_id from market_symbols table
     const { data: symbolData, error: symbolError } = await supabase
       .from('market_symbols')
-      .select('id')
-      .eq('symbol', symbol)
+      .select('id, symbol')
+      .eq('symbol', analysis.symbol || symbol)
       .single()
 
     if (symbolError || !symbolData) {
       return NextResponse.json(
-        { error: `Symbol ${symbol} not found in database` },
+        { error: `Symbol ${analysis.symbol || symbol} not found in database` },
         { status: 404 }
       )
     }
 
-    // Write to current_prices table
-    const { error: upsertError } = await supabase
-      .from('current_prices')
-      .upsert({
+    // Write to chart_analyses table
+    const { data: insertedAnalysis, error: insertError } = await supabase
+      .from('chart_analyses')
+      .insert({
         symbol_id: symbolData.id,
-        price: extracted.price,
-        open: extracted.price, // We don't have open from screenshot
-        high: extracted.price,
-        low: extracted.price,
-        volume: 0,
-        price_timestamp: extracted.timestamp || new Date().toISOString(),
-      }, {
-        onConflict: 'symbol_id'
+        timeframe: analysis.timeframe || '5m',
+        chart_url: 'screenshot', // Mark as screenshot-based analysis
+        patterns_detected: analysis.patterns_detected || [],
+        trend: analysis.trend || 'unknown',
+        support_levels: analysis.support_levels || [],
+        resistance_levels: analysis.resistance_levels || [],
+        confidence_score: analysis.confidence_score,
+        analysis_summary: analysis.reasoning || analysis.key_events || '',
+        payload: analysis, // Store complete analysis as JSON
       })
+      .select()
+      .single()
 
-    if (upsertError) {
-      console.error('❌ Failed to write to database:', upsertError)
+    if (insertError) {
+      console.error('❌ Failed to write to database:', insertError)
       return NextResponse.json(
-        { error: 'Failed to save price data' },
+        { error: 'Failed to save analysis' },
         { status: 500 }
       )
     }
 
-    console.log(`✅ Saved price for ${symbol}: ${extracted.price}`)
+    console.log(`✅ Saved analysis for ${symbolData.symbol} (${analysis.timeframe})`)
 
     return NextResponse.json({
-      price: extracted.price,
-      timestamp: extracted.timestamp,
-      confidence: extracted.confidence,
+      analysis_id: insertedAnalysis.id,
+      symbol: analysis.symbol,
+      timeframe: analysis.timeframe,
+      current_price: analysis.current_price,
+      trend: analysis.trend,
+      confidence_score: analysis.confidence_score,
+      setup_type: analysis.setup_type,
+      entry_price: analysis.entry_price,
+      stop_loss: analysis.stop_loss,
+      take_profit: analysis.take_profit,
+      reasoning: analysis.reasoning,
     })
 
   } catch (error) {

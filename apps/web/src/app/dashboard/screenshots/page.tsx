@@ -1,66 +1,65 @@
 'use client'
 
 import { useState } from 'react'
-import { Upload, TrendingUp, DollarSign, AlertCircle } from 'lucide-react'
+import { Upload, TrendingUp, TrendingDown, Minus, AlertCircle, CheckCircle2, Loader2, ArrowRight } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Alert, AlertDescription } from '@/components/ui/alert'
+import { Badge } from '@/components/ui/badge'
 
-interface UploadZone {
-  symbol: string
-  displayName: string
-  file: File | null
-  uploading: boolean
-  result: {
-    price?: number
-    timestamp?: string
-    confidence?: number
-  } | null
+interface AnalysisResult {
+  file: File
+  status: 'pending' | 'analyzing' | 'success' | 'error'
+  analysis?: {
+    analysis_id: string
+    symbol: string
+    timeframe: string
+    current_price: number
+    trend: string
+    confidence_score: number
+    setup_type: string
+    entry_price?: number
+    stop_loss?: number
+    take_profit?: number
+    reasoning?: string
+  }
   error?: string
 }
 
 export default function ScreenshotsPage() {
-  const [zones, setZones] = useState<UploadZone[]>([
-    { symbol: 'DAX', displayName: 'DAX 40', file: null, uploading: false, result: null },
-    { symbol: 'NDX', displayName: 'NASDAQ 100', file: null, uploading: false, result: null },
-    { symbol: 'DJI', displayName: 'Dow Jones', file: null, uploading: false, result: null },
-    { symbol: 'EUR/USD', displayName: 'EUR/USD', file: null, uploading: false, result: null },
-    { symbol: 'EUR/GBP', displayName: 'EUR/GBP', file: null, uploading: false, result: null },
-    { symbol: 'XAG/USD', displayName: 'Silver', file: null, uploading: false, result: null },
-  ])
-
+  const [files, setFiles] = useState<AnalysisResult[]>([])
   const [uploading, setUploading] = useState(false)
 
-  const handleFileSelect = (index: number, file: File) => {
-    const newZones = [...zones]
-    newZones[index].file = file
-    newZones[index].error = undefined
-    setZones(newZones)
+  const handleFileSelect = (selectedFiles: FileList) => {
+    const newFiles: AnalysisResult[] = Array.from(selectedFiles).map(file => ({
+      file,
+      status: 'pending'
+    }))
+    setFiles(prev => [...prev, ...newFiles])
   }
 
-  const handleDrop = (index: number, e: React.DragEvent) => {
+  const handleDrop = (e: React.DragEvent) => {
     e.preventDefault()
-    const file = e.dataTransfer.files[0]
-    if (file && file.type.startsWith('image/')) {
-      handleFileSelect(index, file)
+    if (e.dataTransfer.files) {
+      handleFileSelect(e.dataTransfer.files)
     }
   }
 
   const analyzeScreenshots = async () => {
     setUploading(true)
 
-    // Process each zone that has a file
-    for (let i = 0; i < zones.length; i++) {
-      if (!zones[i].file) continue
+    for (let i = 0; i < files.length; i++) {
+      if (files[i].status !== 'pending') continue
 
-      const newZones = [...zones]
-      newZones[i].uploading = true
-      setZones(newZones)
+      // Update status to analyzing
+      setFiles(prev => prev.map((f, idx) =>
+        idx === i ? { ...f, status: 'analyzing' as const } : f
+      ))
 
       try {
         const formData = new FormData()
-        formData.append('file', zones[i].file!)
-        formData.append('symbol', zones[i].symbol)
+        formData.append('file', files[i].file)
+        formData.append('symbol', 'AUTO') // Let Vision detect symbol
 
         const response = await fetch('/api/screenshots/analyze', {
           method: 'POST',
@@ -69,160 +68,262 @@ export default function ScreenshotsPage() {
 
         const data = await response.json()
 
-        newZones[i].uploading = false
-
-        if (response.ok) {
-          newZones[i].result = {
-            price: data.price,
-            timestamp: data.timestamp,
-            confidence: data.confidence,
-          }
-          newZones[i].error = undefined
-        } else {
-          newZones[i].error = data.error || 'Failed to analyze screenshot'
-        }
-
-        setZones(newZones)
+        setFiles(prev => prev.map((f, idx) =>
+          idx === i ? {
+            ...f,
+            status: response.ok ? 'success' as const : 'error' as const,
+            analysis: response.ok ? data : undefined,
+            error: response.ok ? undefined : data.error
+          } : f
+        ))
       } catch (error) {
-        newZones[i].uploading = false
-        newZones[i].error = 'Network error'
-        setZones(newZones)
+        setFiles(prev => prev.map((f, idx) =>
+          idx === i ? { ...f, status: 'error' as const, error: 'Network error' } : f
+        ))
       }
     }
 
     setUploading(false)
   }
 
-  const hasFiles = zones.some(z => z.file !== null)
+  const clearAll = () => {
+    setFiles([])
+  }
+
+  const hasPendingFiles = files.some(f => f.status === 'pending')
+  const successCount = files.filter(f => f.status === 'success').length
+
+  const getTrendIcon = (trend: string) => {
+    switch (trend) {
+      case 'bullish': return <TrendingUp className="h-5 w-5 text-green-500" />
+      case 'bearish': return <TrendingDown className="h-5 w-5 text-red-500" />
+      default: return <Minus className="h-5 w-5 text-yellow-500" />
+    }
+  }
+
+  const getTrendColor = (trend: string) => {
+    switch (trend) {
+      case 'bullish': return 'bg-green-100 text-green-800 dark:bg-green-950 dark:text-green-300'
+      case 'bearish': return 'bg-red-100 text-red-800 dark:bg-red-950 dark:text-red-300'
+      default: return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-950 dark:text-yellow-300'
+    }
+  }
 
   return (
     <div className="container mx-auto p-6 max-w-7xl">
       <div className="mb-6">
-        <h1 className="text-3xl font-bold mb-2">Screenshot Upload</h1>
+        <h1 className="text-3xl font-bold mb-2">Chart Screenshot Analysis</h1>
         <p className="text-muted-foreground">
-          Upload screenshots of current market prices from TradingView or other platforms.
-          OpenAI Vision will extract the price data automatically.
+          Upload trading chart screenshots. OpenAI Vision will analyze them like a professional trader.
         </p>
       </div>
 
       <Alert className="mb-6">
         <AlertCircle className="h-4 w-4" />
         <AlertDescription>
-          <strong>Tip:</strong> Take screenshots that clearly show the symbol name, current price, and timestamp.
-          The better the screenshot quality, the more accurate the extraction.
+          Upload screenshots from TradingView, MetaTrader, or any trading platform.
+          Vision AI will automatically detect: Symbol, Timeframe, Price, Indicators, Patterns, Support/Resistance, and Trading Setups.
         </AlertDescription>
       </Alert>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
-        {zones.map((zone, index) => (
-          <Card key={zone.symbol} className="relative">
-            <CardHeader>
-              <CardTitle className="text-lg flex items-center gap-2">
-                <TrendingUp className="h-5 w-5" />
-                {zone.displayName}
-              </CardTitle>
-              <CardDescription>{zone.symbol}</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div
-                className={`
-                  border-2 border-dashed rounded-lg p-6 text-center
-                  transition-colors cursor-pointer
-                  ${zone.file ? 'border-green-500 bg-green-50 dark:bg-green-950' : 'border-border hover:border-primary'}
-                  ${zone.uploading ? 'opacity-50 cursor-wait' : ''}
-                `}
-                onDrop={(e) => handleDrop(index, e)}
-                onDragOver={(e) => e.preventDefault()}
+      {/* Upload Zone */}
+      {files.length === 0 ? (
+        <Card className="mb-6">
+          <CardContent className="p-12">
+            <div
+              className="border-2 border-dashed rounded-lg p-12 text-center cursor-pointer hover:border-primary transition-colors"
+              onDrop={handleDrop}
+              onDragOver={(e) => e.preventDefault()}
+              onClick={() => {
+                const input = document.createElement('input')
+                input.type = 'file'
+                input.accept = 'image/*'
+                input.multiple = true
+                input.onchange = (e) => {
+                  const files = (e.target as HTMLInputElement).files
+                  if (files) handleFileSelect(files)
+                }
+                input.click()
+              }}
+            >
+              <Upload className="h-16 w-16 mx-auto mb-4 text-muted-foreground" />
+              <h3 className="text-lg font-semibold mb-2">Drop screenshots here or click to upload</h3>
+              <p className="text-sm text-muted-foreground mb-4">
+                Support for multiple files (JPG, PNG, WebP)
+              </p>
+              <Button>Select Files</Button>
+            </div>
+          </CardContent>
+        </Card>
+      ) : (
+        <>
+          {/* Action Buttons */}
+          <div className="flex justify-between items-center mb-6">
+            <div className="text-sm text-muted-foreground">
+              {files.length} screenshot{files.length !== 1 ? 's' : ''} uploaded
+              {successCount > 0 && ` • ${successCount} analyzed`}
+            </div>
+            <div className="flex gap-3">
+              <Button
+                variant="outline"
                 onClick={() => {
                   const input = document.createElement('input')
                   input.type = 'file'
                   input.accept = 'image/*'
+                  input.multiple = true
                   input.onchange = (e) => {
-                    const file = (e.target as HTMLInputElement).files?.[0]
-                    if (file) handleFileSelect(index, file)
+                    const files = (e.target as HTMLInputElement).files
+                    if (files) handleFileSelect(files)
                   }
                   input.click()
                 }}
               >
-                {zone.file ? (
-                  <div>
-                    <p className="text-sm font-medium text-green-700 dark:text-green-300 mb-1">
-                      {zone.file.name}
-                    </p>
-                    <p className="text-xs text-muted-foreground">
-                      {(zone.file.size / 1024).toFixed(0)} KB
-                    </p>
-                  </div>
+                Add More
+              </Button>
+              <Button
+                variant="outline"
+                onClick={clearAll}
+                disabled={uploading}
+              >
+                Clear All
+              </Button>
+              <Button
+                onClick={analyzeScreenshots}
+                disabled={!hasPendingFiles || uploading}
+                size="lg"
+              >
+                {uploading ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Analyzing...
+                  </>
                 ) : (
-                  <div className="flex flex-col items-center gap-2">
-                    <Upload className="h-8 w-8 text-muted-foreground" />
-                    <p className="text-sm text-muted-foreground">
-                      Drop screenshot here or click to upload
-                    </p>
+                  `Analyze ${files.filter(f => f.status === 'pending').length} Screenshot${files.filter(f => f.status === 'pending').length !== 1 ? 's' : ''}`
+                )}
+              </Button>
+            </div>
+          </div>
+
+          {/* Results Grid */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            {files.map((item, index) => (
+              <Card key={index} className="relative overflow-hidden">
+                {item.status === 'analyzing' && (
+                  <div className="absolute inset-0 bg-background/50 backdrop-blur-sm flex items-center justify-center z-10">
+                    <Loader2 className="h-8 w-8 animate-spin text-primary" />
                   </div>
                 )}
 
-                {zone.uploading && (
-                  <div className="absolute inset-0 flex items-center justify-center bg-background/50">
-                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+                <CardHeader className="pb-3">
+                  <div className="flex items-start justify-between">
+                    <div className="flex-1">
+                      <CardTitle className="text-base flex items-center gap-2">
+                        {item.status === 'success' && item.analysis && (
+                          <>
+                            {getTrendIcon(item.analysis.trend)}
+                            <span>{item.analysis.symbol}</span>
+                            <Badge variant="outline" className="ml-1">
+                              {item.analysis.timeframe}
+                            </Badge>
+                          </>
+                        )}
+                        {item.status === 'pending' && (
+                          <span className="text-muted-foreground">{item.file.name}</span>
+                        )}
+                        {item.status === 'error' && (
+                          <span className="text-destructive">{item.file.name}</span>
+                        )}
+                      </CardTitle>
+                      <CardDescription className="text-xs mt-1">
+                        {(item.file.size / 1024).toFixed(0)} KB
+                      </CardDescription>
+                    </div>
+
+                    {item.status === 'success' && (
+                      <CheckCircle2 className="h-5 w-5 text-green-500" />
+                    )}
+                    {item.status === 'error' && (
+                      <AlertCircle className="h-5 w-5 text-destructive" />
+                    )}
                   </div>
-                )}
-              </div>
+                </CardHeader>
 
-              {zone.result && (
-                <div className="mt-4 p-3 bg-green-50 dark:bg-green-950 rounded-lg">
-                  <p className="text-sm font-medium text-green-900 dark:text-green-100 flex items-center gap-2">
-                    <DollarSign className="h-4 w-4" />
-                    Price: {zone.result.price}
-                  </p>
-                  {zone.result.timestamp && (
-                    <p className="text-xs text-muted-foreground mt-1">
-                      {new Date(zone.result.timestamp).toLocaleString()}
-                    </p>
+                <CardContent>
+                  {item.status === 'success' && item.analysis && (
+                    <div className="space-y-3">
+                      {/* Price & Trend */}
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="text-2xl font-bold">{item.analysis.current_price.toLocaleString()}</p>
+                          <Badge className={getTrendColor(item.analysis.trend)}>
+                            {item.analysis.trend.toUpperCase()}
+                          </Badge>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-sm text-muted-foreground">Confidence</p>
+                          <p className="text-lg font-semibold">{(item.analysis.confidence_score * 100).toFixed(0)}%</p>
+                        </div>
+                      </div>
+
+                      {/* Setup Recommendation */}
+                      {item.analysis.setup_type !== 'no_trade' && (
+                        <div className="p-3 bg-muted rounded-lg space-y-2">
+                          <p className="text-sm font-semibold flex items-center gap-2">
+                            <Badge variant={item.analysis.setup_type === 'long' ? 'default' : 'destructive'}>
+                              {item.analysis.setup_type?.toUpperCase()}
+                            </Badge>
+                            Setup Recommendation
+                          </p>
+                          {item.analysis.entry_price && (
+                            <div className="grid grid-cols-3 gap-2 text-xs">
+                              <div>
+                                <p className="text-muted-foreground">Entry</p>
+                                <p className="font-mono font-semibold">{item.analysis.entry_price.toLocaleString()}</p>
+                              </div>
+                              <div>
+                                <p className="text-muted-foreground">Stop</p>
+                                <p className="font-mono font-semibold">{item.analysis.stop_loss?.toLocaleString()}</p>
+                              </div>
+                              <div>
+                                <p className="text-muted-foreground">Target</p>
+                                <p className="font-mono font-semibold">{item.analysis.take_profit?.toLocaleString()}</p>
+                              </div>
+                            </div>
+                          )}
+                          {item.analysis.reasoning && (
+                            <p className="text-xs text-muted-foreground pt-2 border-t">
+                              {item.analysis.reasoning}
+                            </p>
+                          )}
+                        </div>
+                      )}
+
+                      {/* Generate Setup Button */}
+                      <Button
+                        className="w-full"
+                        variant="outline"
+                        onClick={() => {
+                          window.location.href = `/agents?highlight=${item.analysis?.analysis_id}`
+                        }}
+                      >
+                        Generate Trading Setup
+                        <ArrowRight className="ml-2 h-4 w-4" />
+                      </Button>
+                    </div>
                   )}
-                  {zone.result.confidence && (
-                    <p className="text-xs text-muted-foreground">
-                      Confidence: {(zone.result.confidence * 100).toFixed(0)}%
-                    </p>
+
+                  {item.status === 'error' && (
+                    <Alert variant="destructive">
+                      <AlertCircle className="h-4 w-4" />
+                      <AlertDescription>{item.error}</AlertDescription>
+                    </Alert>
                   )}
-                </div>
-              )}
-
-              {zone.error && (
-                <div className="mt-4 p-3 bg-red-50 dark:bg-red-950 rounded-lg">
-                  <p className="text-sm text-red-900 dark:text-red-100">{zone.error}</p>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        ))}
-      </div>
-
-      <div className="flex justify-end gap-4">
-        <Button
-          variant="outline"
-          onClick={() => {
-            setZones(zones.map(z => ({ ...z, file: null, result: null, error: undefined })))
-          }}
-          disabled={!hasFiles || uploading}
-        >
-          Clear All
-        </Button>
-        <Button
-          onClick={analyzeScreenshots}
-          disabled={!hasFiles || uploading}
-          size="lg"
-        >
-          {uploading ? (
-            <>
-              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-              Analyzing...
-            </>
-          ) : (
-            'Analyze Screenshots'
-          )}
-        </Button>
-      </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </>
+      )}
     </div>
   )
 }

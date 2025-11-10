@@ -4,60 +4,66 @@ Commands für **JETZT** - copy/paste direkt ins Terminal:
 
 ---
 
-## 1. Signup für API Keys (PARALLEL!)
-
-### Alpha Vantage
-```
-https://www.alphavantage.co/support/#api-key
-```
-- Free: 25 requests/day (zu wenig!)
-- Premium: $49.99/mo (5000 requests/day)
-
-### Finnhub
-```
-https://finnhub.io/register
-```
-- **FREE Tier:** 60 calls/minute (könnte reichen!)
-- Premium: $59.99/mo (300 calls/minute)
-
----
-
-## 2. API Keys in .env eintragen
-
-Auf dem Server:
-```bash
-nano ~/TradeMatrix/hetzner-deploy/.env
-```
-
-Füge hinzu:
-```
-ALPHA_VANTAGE_API_KEY=dein_key_hier
-FINNHUB_API_KEY=dein_key_hier
-```
-
-Save: CTRL+O, Enter, CTRL+X
-
----
-
-## 3. Test ausführen
+## 1. Frontend Deployment (Netlify)
 
 ```bash
-cd ~/TradeMatrix/hetzner-deploy/
-git pull origin main
-docker-compose restart fastapi
-docker exec -it tradematrix_fastapi python3 src/test_alphavantage_finnhub.py
+cd apps/web
+npm run build
 ```
 
-**Das zeigt:**
-- ✅ Welcher Provider funktioniert
-- 💰 Echte Preise (DAX ~24000, NDX ~21000, DOW ~43000)
-- ⏰ Timestamps + Age
+Wenn Build erfolgreich:
+```bash
+git push origin main
+```
+
+Netlify deployed automatisch → https://tradematrix.netlify.app
 
 ---
 
-## 4. Nach dem Test
+## 2. Screenshot Upload Feature nutzen
 
-Wenn **Finnhub FREE funktioniert** → PERFEKT, kostet nichts!
-Wenn nur Alpha Vantage funktioniert → $49.99/mo
+1. **Gehe zu:** https://tradematrix.netlify.app/dashboard/screenshots
+2. **Mache Screenshots** von TradingView Charts (DAX, NDX, DJI, EUR/USD, EUR/GBP, XAG/USD)
+3. **Upload** die Screenshots in die jeweiligen Bereiche
+4. **Klick "Analyze Screenshots"** → OpenAI Vision extrahiert Preise
+5. **Ergebnis:** Preise werden in `current_prices` geschrieben
+
+---
+
+## 3. Trading Setup generieren
+
+Nach dem Upload:
+1. **Gehe zu:** https://tradematrix.netlify.app/agents
+2. **Klick "Generate Trading Setup"** bei einem Symbol
+3. **SetupGenerator nutzt die frischen Preise** aus Screenshots!
+
+---
+
+## 4. Was die Screenshots zeigen sollten
+
+Für beste Ergebnisse:
+- ✅ **Symbol Name** sichtbar (z.B. "DAX", "NASDAQ 100")
+- ✅ **Current Price** groß und klar sichtbar
+- ✅ **Timestamp** (Datum/Uhrzeit) sichtbar
+- ✅ **Gute Auflösung** (nicht verpixelt)
+
+**Beispiel TradingView:**
+- Öffne Chart für DAX
+- Zeige Current Price oben links
+- Screenshot machen (Windows: Win+Shift+S, Mac: Cmd+Shift+4)
+
+---
+
+## 5. Kosten
+
+**OpenAI Vision API:**
+- GPT-4 Vision: ~$0.01 pro Bild
+- 6 Symbole = ~$0.06 pro Upload
+- 10x täglich = ~$0.60/Tag = ~$18/Monat
+
+**Vergleich:**
+- Alpha Vantage: $49.99/mo
+- Finnhub Premium: $59.99/mo
+- Screenshot-Lösung: ~$18/mo + 30 Sekunden manuelle Arbeit
 
 ---
