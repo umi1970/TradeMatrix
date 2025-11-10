@@ -42,70 +42,58 @@ export async function POST(request: NextRequest) {
           content: [
             {
               type: 'text',
-              text: `You are a professional day trader and technical analyst.
-You are analyzing a trading chart screenshot to extract structured data and trading insights.
+              text: `You are a professional day trader analyzing a trading chart screenshot.
 
-EXTRACT and ANALYZE the following:
+Your task is to EXTRACT and SUMMARIZE the technical and price information visible in the image.
 
-## 1. BASIC DATA
-- symbol: Trading symbol or instrument (e.g. "DAX", "EUR/USD")
-- timeframe: Chart timeframe (e.g. "5m", "15m", "1h", "4h", "1D")
-- current_price: Latest visible price (numeric)
-- open: Opening price of current candle
-- high: Highest price visible on chart
-- low: Lowest price visible on chart
-- close: Closing price (usually same as current_price)
-- timestamp: When the chart snapshot was taken (ISO 8601 if visible)
+⚠️ OUTPUT REQUIREMENTS:
+- Respond **only** in valid JSON (no markdown or explanations).
+- Use EXACTLY these root keys:
+  ["symbol", "timeframe", "current_price", "open", "high", "low", "close", "timestamp", "ema20", "ema50", "ema200", "rsi", "pivot_points", "other_indicators", "support_levels", "resistance_levels", "trend", "trend_strength", "price_vs_emas", "momentum_bias", "patterns_detected", "key_events", "market_structure", "setup_type", "entry_price", "stop_loss", "take_profit", "risk_reward", "reasoning", "timeframe_validity", "confidence_score", "chart_quality", "key_factors"]
 
-## 2. TECHNICAL INDICATORS
-Extract clearly visible indicator values:
-- ema20, ema50, ema200
-- rsi
-- pivot_points: [R3, R2, R1, PP, S1, S2, S3] (only if shown)
-- other_indicators: list of any additional indicators visible (MACD, VWAP, etc.)
+---
 
-## 3. SUPPORT / RESISTANCE LEVELS
-Identify visible horizontal key levels based on:
-- Horizontal lines drawn on chart
-- Recent swing highs/lows
-- Consolidation or reaction zones
-Return as arrays:
-- support_levels[]
-- resistance_levels[]
+### 1️⃣ BASIC_DATA
+Extract visible basic info:
+symbol, timeframe, current_price, open, high, low, close, timestamp.
 
-## 4. TREND ANALYSIS
-- trend: "bullish", "bearish", or "sideways"
-- trend_strength: "strong", "moderate", or "weak"
-- price_vs_emas: "above_all", "below_all", or "mixed"
-- momentum_bias: short textual summary (e.g. "bullish momentum slowing near resistance")
+### 2️⃣ TECHNICAL_INDICATORS
+Extract if visible:
+ema20, ema50, ema200, rsi, pivot_points, other_indicators.
 
-## 5. PRICE ACTION & PATTERNS
-- patterns_detected: Array of visible patterns (e.g. "double_top", "breakout", "rejection", "range")
-- key_events: 2–3 short bullet points describing the most relevant recent price actions
-- market_structure: "higher_highs", "lower_lows", "range_bound", or "mixed"
+### 3️⃣ SUPPORT_RESISTANCE_LEVELS
+support_levels[], resistance_levels[] from visible lines, pivots, or price zones.
 
-## 6. TRADING SETUP (recommended action)
-- setup_type: "long", "short", or "no_trade"
-- entry_price: Suggested entry level
-- stop_loss: Suggested stop loss
-- take_profit: Suggested take profit
-- risk_reward: Ratio (TP distance ÷ SL distance)
-- reasoning: 2–3 sentences summarizing logic (trend, levels, confirmation)
-- timeframe_validity: "intraday", "swing", or "midterm"
+### 4️⃣ TREND_ANALYSIS
+trend ("bullish" | "bearish" | "sideways"),
+trend_strength ("strong" | "moderate" | "weak"),
+price_vs_emas ("above_all" | "below_all" | "mixed"),
+momentum_bias (short comment like "bullish momentum slowing near resistance").
 
-## 7. CONFIDENCE & QUALITY
-- confidence_score: 0.0–1.0 (based on clarity of trend, levels & confluence)
-- chart_quality: "excellent", "good", "fair", or "poor"
-- key_factors: list 2–3 factors influencing confidence (e.g. "clear EMA confluence", "low volume", "strong rejection")
+### 5️⃣ PRICE_ACTION_PATTERNS
+patterns_detected[],
+key_events (2–3 short points),
+market_structure ("higher_highs" | "lower_lows" | "range_bound" | "mixed").
+
+### 6️⃣ TRADING_SETUP
+setup_type ("long" | "short" | "no_trade"),
+entry_price, stop_loss, take_profit, risk_reward,
+reasoning (2–3 sentences),
+timeframe_validity ("intraday" | "swing" | "midterm").
+
+### 7️⃣ CONFIDENCE_QUALITY
+confidence_score (0.0–1.0),
+chart_quality ("excellent" | "good" | "fair" | "poor"),
+key_factors (list 2–3 reasons affecting confidence).
+
+---
 
 RULES:
-✅ Extract only what is visually identifiable.
-✅ Never hallucinate numbers — if not visible, return null.
-✅ Be precise with price values and levels.
-✅ Focus on actionable, realistic setups.
-✅ Always output a complete JSON object with all fields, even if some are null.
-
-Return your answer **only** as valid JSON (no markdown, no extra text).`,
+✅ Use only what is clearly visible in the chart.
+✅ If a value is uncertain, return null.
+✅ Ensure numeric precision (trading requires accuracy).
+✅ Focus on actionable insights, not generic explanations.
+✅ Output must be valid JSON with the exact keys above.`,
             },
             {
               type: 'image_url',
@@ -138,8 +126,22 @@ Return your answer **only** as valid JSON (no markdown, no extra text).`,
       analysis.confidence_score = 0.4
     }
 
+    // Flatten nested structure if needed (Vision sometimes returns numbered keys)
+    if (analysis['1_BASIC_DATA']) {
+      console.log('⚠️ Flattening nested JSON structure...')
+      analysis = {
+        ...analysis['1_BASIC_DATA'],
+        ...analysis['2_TECHNICAL_INDICATORS'],
+        ...analysis['3_SUPPORT_RESISTANCE_LEVELS'],
+        ...analysis['4_TREND_ANALYSIS'],
+        ...analysis['5_PRICE_ACTION_PATTERNS'],
+        ...analysis['6_TRADING_SETUP'],
+        ...analysis['7_CONFIDENCE_QUALITY'],
+      }
+    }
+
     // Validate analysis data
-    if (!analysis.current_price || !analysis.confidence_score || analysis.confidence_score < 0.6) {
+    if (!analysis.current_price || !analysis.confidence_score || analysis.confidence_score < 0.5) {
       return NextResponse.json(
         { error: 'Low confidence analysis or missing critical data' },
         { status: 400 }
