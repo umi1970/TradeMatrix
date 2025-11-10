@@ -60,7 +60,7 @@ export function TradingSetupCard({ setup }: TradingSetupCardProps) {
   const handleGenerateSetup = async () => {
     setGeneratingSetup(true)
     try {
-      const response = await fetch('/.netlify/functions/generate-setup', {
+      const response = await fetch('/api/setups/generate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -69,7 +69,11 @@ export function TradingSetupCard({ setup }: TradingSetupCardProps) {
         })
       })
 
-      if (!response.ok) throw new Error('Failed to generate setup')
+      if (!response.ok) {
+        const errorData = await response.json()
+        console.error('Setup generation failed:', errorData)
+        throw new Error('Failed to generate setup')
+      }
 
       // Refresh page after 3 seconds to show new setup
       setTimeout(() => window.location.reload(), 3000)
