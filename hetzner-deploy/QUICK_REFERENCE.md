@@ -2,7 +2,7 @@
 
 One-page reference for common deployment operations.
 
-**Server:** 135.181.195.241 | **Location:** `/root/tradematrix-agents`
+**Server:** 135.181.195.241 | **Location:** `/root/TradeMatrix`
 
 ---
 
@@ -178,7 +178,7 @@ docker exec tradematrix_redis redis-cli GET "chart_img:requests:daily:$(date +%Y
 ## 📝 File Locations
 
 ```
-/root/tradematrix-agents/
+/root/TradeMatrix/
 ├── .env                    # Environment variables (DO NOT commit!)
 ├── docker-compose.yml      # Service configuration
 ├── deploy.sh               # Deployment script

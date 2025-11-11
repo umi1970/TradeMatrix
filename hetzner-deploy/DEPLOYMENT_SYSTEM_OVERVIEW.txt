@@ -6,7 +6,7 @@
 Created: 2025-11-02
 Agent: Agent 6 (Deployment-Agent)
 Server: Hetzner CX11 (135.181.195.241)
-Location: /root/tradematrix-agents
+Location: /root/TradeMatrix
 
 ┌──────────────────────────────────────────────────────────────────────────────┐
 │ 📁 DIRECTORY STRUCTURE                                                       │
@@ -102,7 +102,7 @@ hetzner-deploy/
    $ ssh root@135.181.195.241
 
 2. Navigate to project
-   $ cd /root/tradematrix-agents
+   $ cd /root/TradeMatrix
 
 3. Deploy
    $ ./deploy.sh
@@ -385,7 +385,7 @@ Created by: Agent 6 (Deployment-Agent)
 Date:       2025-11-02
 Version:    1.0
 Server:     Hetzner CX11 (135.181.195.241)
-Location:   /root/tradematrix-agents
+Location:   /root/TradeMatrix
 
 ═══════════════════════════════════════════════════════════════════════════════
                     Ready to deploy to production!

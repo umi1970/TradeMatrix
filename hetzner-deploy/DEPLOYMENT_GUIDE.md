@@ -2,7 +2,7 @@
 
 **Server:** 135.181.195.241 (Hetzner CX11)
 **Services:** Redis, Celery Worker, Celery Beat
-**Repository:** `/root/tradematrix-agents`
+**Repository:** `/root/TradeMatrix`
 
 ---
 
@@ -34,7 +34,7 @@ Before deploying, ensure all of the following are completed:
 ssh root@135.181.195.241
 
 # Navigate to project
-cd /root/tradematrix-agents
+cd /root/TradeMatrix
 
 # Run deployment script
 chmod +x deploy.sh
@@ -64,7 +64,7 @@ ssh root@135.181.195.241
 ### Step 2: Navigate to Project
 
 ```bash
-cd /root/tradematrix-agents
+cd /root/TradeMatrix
 ```
 
 ### Step 3: Backup Current State

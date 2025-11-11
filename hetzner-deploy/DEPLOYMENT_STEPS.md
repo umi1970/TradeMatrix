@@ -45,7 +45,7 @@ ssh root@135.181.195.241
 
 ### 2.2 Navigate to project directory
 ```bash
-cd /root/tradematrix
+cd /root/TradeMatrix
 ```
 
 ### 2.3 Pull latest code

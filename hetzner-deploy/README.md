@@ -4,7 +4,7 @@ Complete deployment system for TradeMatrix on Hetzner CX11 server.
 
 **Server:** 135.181.195.241
 **Services:** Redis, Celery Worker, Celery Beat
-**Location:** `/root/tradematrix-agents`
+**Location:** `/root/TradeMatrix`
 
 ---
 
@@ -51,7 +51,7 @@ hetzner-deploy/
 ssh root@135.181.195.241
 
 # 2. Navigate to project
-cd /root/tradematrix-agents
+cd /root/TradeMatrix
 
 # 3. Copy environment variables
 cp .env.example .env

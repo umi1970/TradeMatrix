@@ -253,7 +253,7 @@ class MonitoringDashboard:
         print_header("6. System Information")
         print(f"  Server: Hetzner CX11 (135.181.195.241)")
         print(f"  Services: Redis, Celery Worker, Celery Beat")
-        print(f"  Repository: /root/tradematrix-agents")
+        print(f"  Repository: /root/TradeMatrix")
 
         # Footer
         print_header("Dashboard End")

@@ -12,7 +12,7 @@ echo ""
 # Check if we're in the right directory
 if [ ! -f "docker-compose.yml" ]; then
     echo "❌ Error: docker-compose.yml not found"
-    echo "Please run this script from /root/tradematrix/hetzner-deploy"
+    echo "Please run this script from /root/TradeMatrix/hetzner-deploy"
     exit 1
 fi
 
@@ -21,14 +21,14 @@ echo ""
 
 # Step 1: Pull latest code
 echo "Step 1/5: Pulling latest code from git..."
-cd /root/tradematrix
+cd /root/TradeMatrix
 git pull origin main
 echo "✅ Code updated"
 echo ""
 
 # Step 2: Fix environment variable
 echo "Step 2/5: Fixing environment variable name..."
-cd /root/tradematrix/hetzner-deploy
+cd /root/TradeMatrix/hetzner-deploy
 sed -i 's/TWELVE_DATA_API_KEY=/TWELVEDATA_API_KEY=/' .env
 if grep -q "TWELVEDATA_API_KEY" .env; then
     echo "✅ TWELVEDATA_API_KEY configured"

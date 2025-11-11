@@ -16,7 +16,7 @@ This checklist ensures all TradeMatrix services are working correctly after depl
 ssh root@135.181.195.241
 
 # Navigate to project
-cd /root/tradematrix-agents
+cd /root/TradeMatrix
 
 # Run health check
 ./health_check.sh
