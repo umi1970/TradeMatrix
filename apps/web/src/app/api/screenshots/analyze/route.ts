@@ -14,54 +14,70 @@ const supabase = createClient(
 export async function POST(request: NextRequest) {
   try {
     const formData = await request.formData()
-    const file = formData.get('file') as File
+    const files = formData.getAll('files') as File[]
     const symbol = formData.get('symbol') as string
 
-    if (!file || !symbol) {
+    if (!files || files.length === 0 || !symbol) {
       return NextResponse.json(
-        { error: 'Missing file or symbol' },
+        { error: 'Missing files or symbol' },
         { status: 400 }
       )
     }
 
-    // Upload screenshot to Supabase Storage
-    const timestamp = Date.now()
-    const fileName = `${timestamp}_${file.name}`
-    const filePath = `screenshots/${fileName}`
+    console.log(`📸 Received ${files.length} screenshot(s) for multi-timeframe analysis`)
 
-    const { data: uploadData, error: uploadError } = await supabase
-      .storage
-      .from('charts')
-      .upload(filePath, file, {
-        contentType: file.type,
-        cacheControl: '3600',
+    // Upload all screenshots to Supabase Storage and convert to base64
+    const screenshotUrls: string[] = []
+    const imageContents: Array<{ type: 'image_url', image_url: { url: string } }> = []
+
+    for (const file of files) {
+      // Upload to Supabase Storage
+      const timestamp = Date.now()
+      const fileName = `${timestamp}_${file.name}`
+      const filePath = `screenshots/${fileName}`
+
+      const { data: uploadData, error: uploadError } = await supabase
+        .storage
+        .from('charts')
+        .upload(filePath, file, {
+          contentType: file.type,
+          cacheControl: '3600',
+        })
+
+      if (uploadError) {
+        console.error('❌ Failed to upload screenshot:', uploadError)
+        return NextResponse.json(
+          { error: 'Failed to upload screenshot' },
+          { status: 500 }
+        )
+      }
+
+      // Get public URL
+      const { data: urlData } = supabase
+        .storage
+        .from('charts')
+        .getPublicUrl(filePath)
+
+      screenshotUrls.push(urlData.publicUrl)
+
+      // Convert file to base64 for OpenAI
+      const bytes = await file.arrayBuffer()
+      const buffer = Buffer.from(bytes)
+      const base64 = buffer.toString('base64')
+      const mimeType = file.type
+
+      imageContents.push({
+        type: 'image_url',
+        image_url: {
+          url: `data:${mimeType};base64,${base64}`
+        }
       })
-
-    if (uploadError) {
-      console.error('❌ Failed to upload screenshot:', uploadError)
-      return NextResponse.json(
-        { error: 'Failed to upload screenshot' },
-        { status: 500 }
-      )
     }
 
-    // Get public URL
-    const { data: urlData } = supabase
-      .storage
-      .from('charts')
-      .getPublicUrl(filePath)
+    console.log(`✅ All screenshots uploaded: ${screenshotUrls.join(', ')}`)
 
-    const screenshotUrl = urlData.publicUrl
-    console.log(`✅ Screenshot uploaded: ${screenshotUrl}`)
-
-    // Convert file to base64
-    const bytes = await file.arrayBuffer()
-    const buffer = Buffer.from(bytes)
-    const base64 = buffer.toString('base64')
-    const mimeType = file.type
-
-    // Call OpenAI Vision API
-    console.log(`🔍 Analyzing screenshot for ${symbol}...`)
+    // Call OpenAI Vision API with ALL images in ONE request
+    console.log(`🔍 Analyzing ${files.length} screenshots for ${symbol}...`)
 
     const response = await openai.chat.completions.create({
       model: 'gpt-4o',
@@ -72,7 +88,7 @@ export async function POST(request: NextRequest) {
           content: [
             {
               type: 'text',
-              text: `You are a professional day trader analyzing a trading chart screenshot.
+              text: `You are a professional day trader analyzing ${files.length > 1 ? `${files.length} trading chart screenshots of the SAME SYMBOL at DIFFERENT TIMEFRAMES` : 'a trading chart screenshot'}.
 
 Your task is to EXTRACT and SUMMARIZE the technical and price information visible in the image.
 
@@ -176,14 +192,21 @@ RULES:
 ✅ If you analyze multiple timeframes of the same symbol, mention confluence in reasoning.
 ✅ Reasoning must explain WHY the setup works given market structure and indicator alignment.
 ✅ key_factors MUST reference specific indicator values (e.g., "ADX 45", "RSI 75", not just "strong trend").
-✅ Output must be valid JSON with the exact 43 keys listed above (all indicators + analysis fields).`,
+✅ Output must be valid JSON with the exact 43 keys listed above (all indicators + analysis fields).
+
+${files.length > 1 ? `
+🎯 MULTI-TIMEFRAME ANALYSIS RULES:
+✅ You are analyzing ${files.length} timeframes of the SAME SYMBOL.
+✅ IDENTIFY which timeframe each chart represents (1m, 5m, 15m, 1h, 4h, 1d, etc.) from chart labels.
+✅ ANALYZE confluence: Does the higher timeframe trend support the lower timeframe entry?
+✅ REPORT the PRIMARY timeframe (where entry would occur) in the "timeframe" field.
+✅ MENTION all analyzed timeframes and their confluence in "reasoning".
+✅ INCREASE confidence_score when multiple timeframes align (e.g., 1h bullish + 15m bullish entry = higher confidence).
+✅ DECREASE confidence_score when timeframes conflict (e.g., 1h bearish but 5m shows bullish pattern).
+✅ USE the most favorable entry from the lowest timeframe, but VALIDATE with higher timeframe structure.
+` : ''}`,
             },
-            {
-              type: 'image_url',
-              image_url: {
-                url: `data:${mimeType};base64,${base64}`,
-              },
-            },
+            ...imageContents, // Spread all images into content array
           ],
         },
       ],
@@ -289,14 +312,18 @@ RULES:
       .insert({
         symbol_id: symbolData.id,
         timeframe: analysis.timeframe || '5m',
-        chart_url: screenshotUrl, // Screenshot URL from Supabase Storage
+        chart_url: screenshotUrls[0], // Primary screenshot URL from Supabase Storage
         patterns_detected: analysis.patterns_detected || [],
         trend: analysis.trend || 'unknown',
         support_levels: analysis.support_levels || [],
         resistance_levels: analysis.resistance_levels || [],
         confidence_score: analysis.confidence_score,
         analysis_summary: analysis.reasoning || analysis.key_events || '',
-        payload: analysis, // Store complete analysis as JSON
+        payload: {
+          ...analysis,
+          screenshot_urls: screenshotUrls, // Store all screenshot URLs in payload
+          num_timeframes: files.length,
+        }, // Store complete analysis as JSON
       })
       .select()
       .single()
@@ -309,7 +336,7 @@ RULES:
       )
     }
 
-    console.log(`✅ Saved analysis for ${normalizedSymbol} (${analysis.timeframe})`)
+    console.log(`✅ Saved multi-timeframe analysis for ${normalizedSymbol} (${files.length} timeframe${files.length > 1 ? 's' : ''}: ${analysis.timeframe})`)
 
     return NextResponse.json({
       analysis_id: insertedAnalysis.id,
@@ -371,7 +398,8 @@ RULES:
       chart_quality: analysis.chart_quality,
       key_factors: analysis.key_factors,
 
-      screenshot_url: screenshotUrl,
+      screenshot_urls: screenshotUrls, // All screenshot URLs
+      num_timeframes: files.length,
     })
 
   } catch (error) {

@@ -126,40 +126,59 @@ export default function ScreenshotsPage() {
   const analyzeScreenshots = async () => {
     setUploading(true)
 
-    for (let i = 0; i < files.length; i++) {
-      if (files[i].status !== 'pending' || !files[i].file) continue
+    // Get all pending files
+    const pendingFiles = files.filter(f => f.status === 'pending' && f.file)
 
-      // Update status to analyzing
-      setFiles(prev => prev.map((f, idx) =>
-        idx === i ? { ...f, status: 'analyzing' as const } : f
-      ))
+    if (pendingFiles.length === 0) {
+      setUploading(false)
+      return
+    }
 
-      try {
-        const formData = new FormData()
-        formData.append('file', files[i].file!)
-        formData.append('symbol', 'AUTO') // Let Vision detect symbol
+    // Mark all as analyzing
+    setFiles(prev => prev.map(f =>
+      f.status === 'pending' && f.file ? { ...f, status: 'analyzing' as const } : f
+    ))
 
-        const response = await fetch('/api/screenshots/analyze', {
-          method: 'POST',
-          body: formData,
-        })
+    try {
+      // Send ALL files in ONE request
+      const formData = new FormData()
+      pendingFiles.forEach((item, index) => {
+        formData.append(`files`, item.file!) // Multiple files with same key
+      })
+      formData.append('symbol', 'AUTO') // Let Vision detect symbol
 
-        const data = await response.json()
+      const response = await fetch('/api/screenshots/analyze', {
+        method: 'POST',
+        body: formData,
+      })
 
-        setFiles(prev => prev.map((f, idx) =>
-          idx === i ? {
-            ...f,
-            status: response.ok ? 'success' as const : 'error' as const,
-            analysis: response.ok ? data : undefined,
-            screenshot_url: response.ok ? data.screenshot_url : undefined, // Save screenshot URL
-            error: response.ok ? undefined : data.error
-          } : f
-        ))
-      } catch (error) {
-        setFiles(prev => prev.map((f, idx) =>
-          idx === i ? { ...f, status: 'error' as const, error: 'Network error' } : f
+      const data = await response.json()
+
+      if (response.ok) {
+        // Success - update all pending files with the combined analysis
+        setFiles(prev => prev.map(f => {
+          if (f.status === 'analyzing') {
+            return {
+              ...f,
+              status: 'success' as const,
+              analysis: data,
+              screenshot_url: data.screenshot_urls?.[0], // Use first screenshot URL for display
+              error: undefined
+            }
+          }
+          return f
+        }))
+      } else {
+        // Error - mark all analyzing files as error
+        setFiles(prev => prev.map(f =>
+          f.status === 'analyzing' ? { ...f, status: 'error' as const, error: data.error } : f
         ))
       }
+    } catch (error) {
+      console.error('Network error:', error)
+      setFiles(prev => prev.map(f =>
+        f.status === 'analyzing' ? { ...f, status: 'error' as const, error: 'Network error' } : f
+      ))
     }
 
     setUploading(false)
