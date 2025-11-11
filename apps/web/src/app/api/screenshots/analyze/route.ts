@@ -95,13 +95,16 @@ Your task is to EXTRACT and SUMMARIZE the technical and price information visibl
 ⚠️ OUTPUT REQUIREMENTS:
 - Respond **only** in valid JSON (no markdown or explanations).
 - Use EXACTLY these root keys:
-  ["symbol", "timeframe", "current_price", "open", "high", "low", "close", "timestamp", "ema_20", "ema_50", "ema_200", "rsi_14", "atr_14", "macd_line", "macd_signal", "macd_histogram", "bb_upper", "bb_middle", "bb_lower", "pivot_point", "resistance_1", "support_1", "resistance_2", "support_2", "adx_14", "di_plus", "di_minus", "volume", "volatility_pct", "price_vs_ema20_pct", "price_vs_ema50_pct", "price_vs_ema200_pct", "support_levels", "resistance_levels", "trend", "trend_strength", "momentum_bias", "patterns_detected", "key_events", "market_structure", "setup_type", "entry_price", "stop_loss", "take_profit", "risk_reward", "reasoning", "timeframe_validity", "confidence_score", "chart_quality", "key_factors"]
+  ["symbol", "timeframe", "analyzed_timeframes", "current_price", "open", "high", "low", "close", "timestamp", "ema_20", "ema_50", "ema_200", "rsi_14", "atr_14", "macd_line", "macd_signal", "macd_histogram", "bb_upper", "bb_middle", "bb_lower", "pivot_point", "resistance_1", "support_1", "resistance_2", "support_2", "adx_14", "di_plus", "di_minus", "volume", "volatility_pct", "price_vs_ema20_pct", "price_vs_ema50_pct", "price_vs_ema200_pct", "support_levels", "resistance_levels", "trend", "trend_strength", "momentum_bias", "patterns_detected", "key_events", "market_structure", "setup_type", "entry_price", "stop_loss", "take_profit", "risk_reward", "reasoning", "timeframe_validity", "confidence_score", "chart_quality", "key_factors"]
 
 ---
 
 ### 1️⃣ BASIC_DATA
 Extract visible basic info:
-symbol, timeframe (use trading format: 1m, 5m, 15m, 30m, 1h, 4h, 1d, 1w - NOT '5 Minuten' or '1 hour'), current_price, open, high, low, close, timestamp.
+- symbol: The trading symbol (e.g., EURUSD, GBPUSD, DAX)
+- timeframe: The PRIMARY timeframe for entry (use trading format: 1m, 5m, 15m, 30m, 1h, 4h, 1d, 1w - NOT '5 Minuten' or '1 hour')
+- analyzed_timeframes: ${files.length > 1 ? `REQUIRED - Array of ALL ${files.length} timeframes you are analyzing (e.g., ["5m", "1h", "1d"]). MUST identify each chart's timeframe from labels/axes.` : 'null (single chart only)'}
+- current_price, open, high, low, close, timestamp: From the primary/lowest timeframe chart.
 
 ### 2️⃣ TECHNICAL_INDICATORS
 Extract if visible (return null if not visible):
@@ -192,18 +195,29 @@ RULES:
 ✅ If you analyze multiple timeframes of the same symbol, mention confluence in reasoning.
 ✅ Reasoning must explain WHY the setup works given market structure and indicator alignment.
 ✅ key_factors MUST reference specific indicator values (e.g., "ADX 45", "RSI 75", not just "strong trend").
-✅ Output must be valid JSON with the exact 43 keys listed above (all indicators + analysis fields).
+✅ Output must be valid JSON with the exact 44 keys listed above (all indicators + analysis fields + analyzed_timeframes).
 
 ${files.length > 1 ? `
-🎯 MULTI-TIMEFRAME ANALYSIS RULES:
-✅ You are analyzing ${files.length} timeframes of the SAME SYMBOL.
-✅ IDENTIFY which timeframe each chart represents (1m, 5m, 15m, 1h, 4h, 1d, etc.) from chart labels.
-✅ ANALYZE confluence: Does the higher timeframe trend support the lower timeframe entry?
-✅ REPORT the PRIMARY timeframe (where entry would occur) in the "timeframe" field.
-✅ MENTION all analyzed timeframes and their confluence in "reasoning".
-✅ INCREASE confidence_score when multiple timeframes align (e.g., 1h bullish + 15m bullish entry = higher confidence).
-✅ DECREASE confidence_score when timeframes conflict (e.g., 1h bearish but 5m shows bullish pattern).
-✅ USE the most favorable entry from the lowest timeframe, but VALIDATE with higher timeframe structure.
+🎯 MULTI-TIMEFRAME ANALYSIS RULES (${files.length} CHARTS PROVIDED):
+✅ STEP 1: IDENTIFY - Read the timeframe label from EACH of the ${files.length} charts you received (look at chart title, x-axis labels). Fill "analyzed_timeframes" array with ALL ${files.length} timeframes.
+
+✅ STEP 2: ANALYZE EACH TIMEFRAME:
+   - Higher timeframe (e.g., 1d): What is the TREND direction? (bullish/bearish/sideways)
+   - Middle timeframe (e.g., 1h): Does it confirm or conflict with higher TF trend?
+   - Lower timeframe (e.g., 5m): Is there a clear ENTRY opportunity?
+
+✅ STEP 3: CONFLUENCE CHECK:
+   - DO ALL timeframes point in the SAME direction? → INCREASE confidence_score (+0.10 to +0.15)
+   - Is higher TF bullish but lower TF bearish? → DECREASE confidence_score (-0.15 to -0.20)
+   - Example: 1d bullish + 1h bullish + 5m bullish entry = 0.85+ confidence
+   - Example: 1d bearish + 1h sideways + 5m bullish = 0.50-0.60 confidence (conflict!)
+
+✅ STEP 4: REASONING - MUST mention ALL ${files.length} timeframes explicitly:
+   Example: "1d timeframe shows strong bullish trend above all EMAs. 1h confirms with bullish MACD. 5m provides optimal entry near support at 1.1590 with tight stop loss."
+
+✅ STEP 5: PRIMARY TIMEFRAME:
+   - Use the LOWEST timeframe (where entry would occur) in "timeframe" field
+   - But base confidence on ALL timeframes combined
 ` : ''}`,
             },
             ...imageContents, // Spread all images into content array
