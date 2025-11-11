@@ -24,6 +24,36 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    // Upload screenshot to Supabase Storage
+    const timestamp = Date.now()
+    const fileName = `${timestamp}_${file.name}`
+    const filePath = `screenshots/${fileName}`
+
+    const { data: uploadData, error: uploadError } = await supabase
+      .storage
+      .from('charts')
+      .upload(filePath, file, {
+        contentType: file.type,
+        cacheControl: '3600',
+      })
+
+    if (uploadError) {
+      console.error('❌ Failed to upload screenshot:', uploadError)
+      return NextResponse.json(
+        { error: 'Failed to upload screenshot' },
+        { status: 500 }
+      )
+    }
+
+    // Get public URL
+    const { data: urlData } = supabase
+      .storage
+      .from('charts')
+      .getPublicUrl(filePath)
+
+    const screenshotUrl = urlData.publicUrl
+    console.log(`✅ Screenshot uploaded: ${screenshotUrl}`)
+
     // Convert file to base64
     const bytes = await file.arrayBuffer()
     const buffer = Buffer.from(bytes)
@@ -55,7 +85,7 @@ Your task is to EXTRACT and SUMMARIZE the technical and price information visibl
 
 ### 1️⃣ BASIC_DATA
 Extract visible basic info:
-symbol, timeframe, current_price, open, high, low, close, timestamp.
+symbol, timeframe (use trading format: 1m, 5m, 15m, 30m, 1h, 4h, 1d, 1w - NOT '5 Minuten' or '1 hour'), current_price, open, high, low, close, timestamp.
 
 ### 2️⃣ TECHNICAL_INDICATORS
 Extract if visible:
@@ -77,14 +107,25 @@ market_structure ("higher_highs" | "lower_lows" | "range_bound" | "mixed").
 
 ### 6️⃣ TRADING_SETUP
 setup_type ("long" | "short" | "no_trade"),
-entry_price, stop_loss, take_profit, risk_reward,
-reasoning (2–3 sentences),
+entry_price (current price or nearest support/resistance for optimal entry),
+stop_loss (place below support for longs, above resistance for shorts - not arbitrary fixed distances),
+take_profit (target nearest resistance for longs, support for shorts - use chart levels, not fixed ratios),
+risk_reward (as decimal number, calculate dynamically based on trend strength and confidence:
+  - Strong trend + high confidence (>0.75): 2.0–3.0
+  - Moderate trend or medium confidence (0.5-0.75): 1.5–2.0
+  - Weak trend or low confidence (<0.5): 1.0–1.5
+  Example: 2.5 for strong bullish trend with 0.85 confidence),
+reasoning (2–3 sentences explaining WHY this setup makes sense given the current market structure),
 timeframe_validity ("intraday" | "swing" | "midterm").
 
 ### 7️⃣ CONFIDENCE_QUALITY
-confidence_score (0.0–1.0),
+confidence_score (0.0–1.0, calibrate realistically:
+  - 0.85+: Clear trend, strong momentum, confluence of multiple indicators
+  - 0.70–0.84: Good setup but with 1-2 conflicting signals
+  - 0.50–0.69: Mixed signals or range-bound market
+  - <0.50: Low probability, unclear structure),
 chart_quality ("excellent" | "good" | "fair" | "poor"),
-key_factors (list 2–3 reasons affecting confidence).
+key_factors (list 2–3 specific reasons affecting confidence, e.g., "EMA alignment", "momentum divergence", "near resistance").
 
 ---
 
@@ -93,6 +134,9 @@ RULES:
 ✅ If a value is uncertain, return null.
 ✅ Ensure numeric precision (trading requires accuracy).
 ✅ Focus on actionable insights, not generic explanations.
+✅ Calculate risk_reward dynamically based on trend_strength and confidence_score.
+✅ If you analyze multiple timeframes of the same symbol, mention confluence in reasoning (e.g., "Multi-timeframe bullish alignment confirms setup").
+✅ Reasoning must explain WHY the setup works given market structure, not just describe what you see.
 ✅ Output must be valid JSON with the exact keys above.`,
             },
             {
@@ -116,7 +160,7 @@ RULES:
       )
     }
 
-    const analysis = JSON.parse(content)
+    let analysis = JSON.parse(content)
 
     console.log(`✅ Chart analysis complete:`, analysis)
 
@@ -148,18 +192,56 @@ RULES:
       )
     }
 
-    // Get symbol_id from market_symbols table
-    const { data: symbolData, error: symbolError } = await supabase
+    // Normalize only obvious duplicates (keep it minimal!)
+    const aliasMap: Record<string, string> = {
+      'Silber': 'XAG/USD',
+      'Silver': 'XAG/USD',
+      'Gold': 'XAU/USD',
+      'XAUUSD': 'XAU/USD',
+      'Dow Jones': 'DJI',
+      'NASDAQ 100': 'NDX',
+      'S&P 500': 'SPX',
+    }
+
+    const detectedSymbol = analysis.symbol || symbol
+    const normalizedSymbol = aliasMap[detectedSymbol] || detectedSymbol
+
+    console.log(`📊 Symbol: "${detectedSymbol}" → "${normalizedSymbol}", Timeframe: ${analysis.timeframe}`)
+
+    // Get or create symbol in market_symbols table
+    // Try to find existing symbol (any vendor)
+    let { data: symbolData, error: symbolError } = await supabase
       .from('market_symbols')
       .select('id, symbol')
-      .eq('symbol', analysis.symbol || symbol)
-      .single()
+      .eq('symbol', normalizedSymbol)
+      .limit(1)
+      .maybeSingle()
 
     if (symbolError || !symbolData) {
-      return NextResponse.json(
-        { error: `Symbol ${analysis.symbol || symbol} not found in database` },
-        { status: 404 }
-      )
+      console.log(`⚠️ Symbol "${normalizedSymbol}" not found, auto-creating...`)
+
+      // Auto-create symbol with vendor='vision'
+      const { data: newSymbol, error: insertError } = await supabase
+        .from('market_symbols')
+        .insert({
+          vendor: 'vision', // Mark as Vision-detected symbol
+          symbol: normalizedSymbol,
+          alias: detectedSymbol, // Keep original name from Vision as alias
+          active: true,
+        })
+        .select('id, symbol')
+        .single()
+
+      if (insertError || !newSymbol) {
+        console.error('❌ Failed to create symbol:', insertError)
+        return NextResponse.json(
+          { error: `Failed to create symbol ${normalizedSymbol}` },
+          { status: 500 }
+        )
+      }
+
+      console.log(`✅ Created new symbol: ${normalizedSymbol} (vendor: vision)`)
+      symbolData = newSymbol
     }
 
     // Write to chart_analyses table
@@ -168,7 +250,7 @@ RULES:
       .insert({
         symbol_id: symbolData.id,
         timeframe: analysis.timeframe || '5m',
-        chart_url: 'screenshot', // Mark as screenshot-based analysis
+        chart_url: screenshotUrl, // Screenshot URL from Supabase Storage
         patterns_detected: analysis.patterns_detected || [],
         trend: analysis.trend || 'unknown',
         support_levels: analysis.support_levels || [],
@@ -188,11 +270,11 @@ RULES:
       )
     }
 
-    console.log(`✅ Saved analysis for ${symbolData.symbol} (${analysis.timeframe})`)
+    console.log(`✅ Saved analysis for ${normalizedSymbol} (${analysis.timeframe})`)
 
     return NextResponse.json({
       analysis_id: insertedAnalysis.id,
-      symbol: analysis.symbol,
+      symbol: normalizedSymbol,
       timeframe: analysis.timeframe,
       current_price: analysis.current_price,
       trend: analysis.trend,
@@ -212,6 +294,7 @@ RULES:
       patterns_detected: analysis.patterns_detected,
       support_levels: analysis.support_levels,
       resistance_levels: analysis.resistance_levels,
+      screenshot_url: screenshotUrl, // Include screenshot URL for frontend
     })
 
   } catch (error) {

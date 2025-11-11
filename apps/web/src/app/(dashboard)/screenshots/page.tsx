@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Upload, TrendingUp, TrendingDown, Minus, AlertCircle, CheckCircle2, Loader2, ArrowRight } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -8,8 +8,9 @@ import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
 
 interface AnalysisResult {
-  file: File
+  file: File | null  // Allow null for existing analyses
   status: 'pending' | 'analyzing' | 'success' | 'error'
+  screenshot_url?: string  // For existing analyses from DB
   analysis?: {
     analysis_id: string
     symbol: string
@@ -39,6 +40,73 @@ interface AnalysisResult {
 export default function ScreenshotsPage() {
   const [files, setFiles] = useState<AnalysisResult[]>([])
   const [uploading, setUploading] = useState(false)
+  const [loading, setLoading] = useState(true)
+  const [creatingSetup, setCreatingSetup] = useState<string | null>(null) // Track which analysis is creating setup
+
+  useEffect(() => {
+    loadExistingAnalyses()
+  }, [])
+
+  const loadExistingAnalyses = async () => {
+    try {
+      console.log('📥 Loading existing analyses...')
+      // Fetch recent analyses from DB that have screenshot URLs
+      const response = await fetch('/api/screenshots/history?limit=50')
+      const data = await response.json()
+
+      console.log('📊 History response:', { ok: response.ok, count: data.analyses?.length || 0 })
+
+      if (response.ok && data.analyses) {
+        // Convert DB analyses to AnalysisResult format
+        const existingAnalyses: AnalysisResult[] = data.analyses
+          .filter((dbAnalysis: any) => {
+            // Ensure payload exists and has minimum required fields
+            return dbAnalysis.payload &&
+                   dbAnalysis.payload.current_price &&
+                   dbAnalysis.chart_url
+          })
+          .map((dbAnalysis: any) => {
+            const payload = dbAnalysis.payload || {}
+
+            return {
+              file: null, // No file object for existing analyses
+              status: 'success' as const,
+              analysis: {
+                analysis_id: dbAnalysis.id,
+                symbol: dbAnalysis.market_symbols?.symbol || 'Unknown',
+                timeframe: dbAnalysis.timeframe || '5m',
+                current_price: payload.current_price || 0,
+                trend: dbAnalysis.trend || 'unknown',
+                trend_strength: payload.trend_strength,
+                price_vs_emas: payload.price_vs_emas,
+                momentum_bias: payload.momentum_bias,
+                confidence_score: dbAnalysis.confidence_score || 0,
+                chart_quality: payload.chart_quality,
+                key_factors: payload.key_factors || [],
+                setup_type: payload.setup_type || 'no_trade',
+                entry_price: payload.entry_price,
+                stop_loss: payload.stop_loss,
+                take_profit: payload.take_profit,
+                risk_reward: payload.risk_reward,
+                reasoning: dbAnalysis.analysis_summary || '',
+                timeframe_validity: payload.timeframe_validity,
+                patterns_detected: dbAnalysis.patterns_detected || [],
+                support_levels: dbAnalysis.support_levels || [],
+                resistance_levels: dbAnalysis.resistance_levels || [],
+              },
+              screenshot_url: dbAnalysis.chart_url,
+            }
+          })
+
+        console.log('✅ Loaded analyses:', existingAnalyses.length)
+        setFiles(existingAnalyses)
+      }
+    } catch (error) {
+      console.error('❌ Failed to load existing analyses:', error)
+    } finally {
+      setLoading(false)
+    }
+  }
 
   const handleFileSelect = (selectedFiles: FileList) => {
     const newFiles: AnalysisResult[] = Array.from(selectedFiles).map(file => ({
@@ -59,7 +127,7 @@ export default function ScreenshotsPage() {
     setUploading(true)
 
     for (let i = 0; i < files.length; i++) {
-      if (files[i].status !== 'pending') continue
+      if (files[i].status !== 'pending' || !files[i].file) continue
 
       // Update status to analyzing
       setFiles(prev => prev.map((f, idx) =>
@@ -68,7 +136,7 @@ export default function ScreenshotsPage() {
 
       try {
         const formData = new FormData()
-        formData.append('file', files[i].file)
+        formData.append('file', files[i].file!)
         formData.append('symbol', 'AUTO') // Let Vision detect symbol
 
         const response = await fetch('/api/screenshots/analyze', {
@@ -83,6 +151,7 @@ export default function ScreenshotsPage() {
             ...f,
             status: response.ok ? 'success' as const : 'error' as const,
             analysis: response.ok ? data : undefined,
+            screenshot_url: response.ok ? data.screenshot_url : undefined, // Save screenshot URL
             error: response.ok ? undefined : data.error
           } : f
         ))
@@ -98,6 +167,33 @@ export default function ScreenshotsPage() {
 
   const clearAll = () => {
     setFiles([])
+  }
+
+  const handleCreateSetup = async (analysisId: string) => {
+    setCreatingSetup(analysisId)
+    try {
+      const response = await fetch('/api/screenshots/create-setup', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ analysis_id: analysisId }),
+      })
+
+      const data = await response.json()
+
+      if (response.ok && data.setup_id) {
+        console.log('✅ Setup created:', data.setup_id)
+        // Redirect to agents page with setup_id
+        window.location.href = `/agents?highlight=${data.setup_id}`
+      } else {
+        console.error('Failed to create setup:', data.error)
+        alert(`Failed to create setup: ${data.error}`)
+      }
+    } catch (error) {
+      console.error('Error creating setup:', error)
+      alert('Failed to create setup. Please try again.')
+    } finally {
+      setCreatingSetup(null)
+    }
   }
 
   const hasPendingFiles = files.some(f => f.status === 'pending')
@@ -238,14 +334,14 @@ export default function ScreenshotsPage() {
                           </>
                         )}
                         {item.status === 'pending' && (
-                          <span className="text-muted-foreground">{item.file.name}</span>
+                          <span className="text-muted-foreground">{item.file?.name || 'Unknown'}</span>
                         )}
                         {item.status === 'error' && (
-                          <span className="text-destructive">{item.file.name}</span>
+                          <span className="text-destructive">{item.file?.name || 'Unknown'}</span>
                         )}
                       </CardTitle>
                       <CardDescription className="text-xs mt-1">
-                        {(item.file.size / 1024).toFixed(0)} KB
+                        {item.file ? `${(item.file.size / 1024).toFixed(0)} KB` : 'From history'}
                       </CardDescription>
                     </div>
 
@@ -261,6 +357,18 @@ export default function ScreenshotsPage() {
                 <CardContent>
                   {item.status === 'success' && item.analysis && (
                     <div className="space-y-3">
+                      {/* Screenshot Image */}
+                      {(item.screenshot_url || item.file) && (
+                        <div className="mb-3 relative">
+                          <img
+                            src={item.screenshot_url || (item.file ? URL.createObjectURL(item.file) : '')}
+                            alt={`Chart ${item.analysis?.symbol}`}
+                            className="w-full h-48 object-contain bg-muted rounded"
+                            loading="lazy"
+                          />
+                        </div>
+                      )}
+
                       {/* Price & Trend */}
                       <div className="flex items-center justify-between">
                         <div>
@@ -328,17 +436,17 @@ export default function ScreenshotsPage() {
                       {/* Setup Recommendation */}
                       {item.analysis.setup_type !== 'no_trade' && (
                         <div className="p-3 bg-muted rounded-lg space-y-2">
-                          <p className="text-sm font-semibold flex items-center gap-2">
+                          <div className="text-sm font-semibold flex items-center gap-2">
                             <Badge variant={item.analysis.setup_type === 'long' ? 'default' : 'destructive'}>
                               {item.analysis.setup_type?.toUpperCase()}
                             </Badge>
-                            Setup Recommendation
+                            <span>Setup Recommendation</span>
                             {item.analysis.timeframe_validity && (
                               <Badge variant="outline" className="text-xs ml-auto">
                                 {item.analysis.timeframe_validity}
                               </Badge>
                             )}
-                          </p>
+                          </div>
                           {item.analysis.entry_price && (
                             <div className="grid grid-cols-4 gap-2 text-xs">
                               <div>
@@ -355,7 +463,11 @@ export default function ScreenshotsPage() {
                               </div>
                               <div>
                                 <p className="text-muted-foreground">R:R</p>
-                                <p className="font-mono font-semibold">{item.analysis.risk_reward?.toFixed(1) || 'N/A'}</p>
+                                <p className="font-mono font-semibold">
+                                  {typeof item.analysis.risk_reward === 'number'
+                                    ? item.analysis.risk_reward.toFixed(1)
+                                    : item.analysis.risk_reward || 'N/A'}
+                                </p>
                               </div>
                             </div>
                           )}
@@ -371,12 +483,20 @@ export default function ScreenshotsPage() {
                       <Button
                         className="w-full"
                         variant="outline"
-                        onClick={() => {
-                          window.location.href = `/agents?highlight=${item.analysis?.analysis_id}`
-                        }}
+                        onClick={() => handleCreateSetup(item.analysis!.analysis_id)}
+                        disabled={creatingSetup === item.analysis?.analysis_id}
                       >
-                        Generate Trading Setup
-                        <ArrowRight className="ml-2 h-4 w-4" />
+                        {creatingSetup === item.analysis?.analysis_id ? (
+                          <>
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            Creating Setup...
+                          </>
+                        ) : (
+                          <>
+                            Generate Trading Setup
+                            <ArrowRight className="ml-2 h-4 w-4" />
+                          </>
+                        )}
                       </Button>
                     </div>
                   )}

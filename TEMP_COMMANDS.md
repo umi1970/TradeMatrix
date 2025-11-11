@@ -4,18 +4,17 @@ Commands für **JETZT** - copy/paste direkt ins Terminal:
 
 ---
 
-## 1. Frontend Build & Test
+## 1. Netlify Deployment Status checken
 
-```bash
-cd apps/web
-npm run build
-```
+**Gehe zu:** https://app.netlify.com/sites/tradematrix/deploys
 
-Wenn erfolgreich, Netlify deployed automatisch (git push wurde gemacht).
+**Warte auf:** "Published" Status (grüner Haken)
+
+Dauert ca. 2-3 Minuten.
 
 ---
 
-## 2. Screenshot Analysis testen
+## 2. Screenshot Analysis testen (NACH Deployment!)
 
 1. **Gehe zu:** https://tradematrix.netlify.app/dashboard/screenshots
 2. **Upload dow5m.png** (oder andere Chart-Screenshots)
@@ -147,5 +146,20 @@ Wenn erfolgreich, Netlify deployed automatisch (git push wurde gemacht).
   "resistance_levels": [47073, 47300]
 }
 ```
+
+---
+
+## 9. Was ich gerade gefixt habe
+
+**Problem:** `Module not found: Can't resolve 'openai'`
+
+**Fix:**
+```bash
+npm install openai
+```
+
+**Status:** ✅ Committed + Pushed → Netlify deployed automatisch
+
+**Warte 2-3 Minuten bis Deployment fertig ist, dann teste!**
 
 ---

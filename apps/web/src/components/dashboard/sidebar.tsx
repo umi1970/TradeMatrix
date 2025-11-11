@@ -41,7 +41,7 @@ const navigation = [
   },
   {
     name: 'Screenshots',
-    href: '/dashboard/screenshots',
+    href: '/screenshots',
     icon: Upload,
   },
   {

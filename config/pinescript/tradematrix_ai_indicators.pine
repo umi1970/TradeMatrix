@@ -1,0 +1,155 @@
+//@version=5
+indicator("TradeMatrix AI Indicators", shorttitle="TM_AI", overlay=true)
+
+// ============================================================================
+// TradeMatrix AI Analysis Indicators
+// ============================================================================
+// Purpose: Export ALL indicators needed for AI analysis via CSV
+// Usage: Add to chart → Export chart data → Upload CSV to TradeMatrix
+// ============================================================================
+
+// INPUT PARAMETERS
+// ============================================================================
+emaLength1 = input.int(20, "EMA Length 1", minval=1)
+emaLength2 = input.int(50, "EMA Length 2", minval=1)
+emaLength3 = input.int(200, "EMA Length 3", minval=1)
+
+rsiLength = input.int(14, "RSI Length", minval=1)
+rsiOverbought = input.int(70, "RSI Overbought", minval=50, maxval=100)
+rsiOversold = input.int(30, "RSI Oversold", minval=0, maxval=50)
+
+atrLength = input.int(14, "ATR Length", minval=1)
+
+macdFast = input.int(12, "MACD Fast Length", minval=1)
+macdSlow = input.int(26, "MACD Slow Length", minval=1)
+macdSignal = input.int(9, "MACD Signal Length", minval=1)
+
+bbLength = input.int(20, "Bollinger Bands Length", minval=1)
+bbMult = input.float(2.0, "Bollinger Bands StdDev", minval=0.1, step=0.1)
+
+adxLength = input.int(14, "ADX Length", minval=1)
+adxSmoothing = input.int(14, "ADX Smoothing", minval=1)
+
+pivotTimeframe = input.timeframe("D", "Pivot Points Timeframe")
+
+// CALCULATIONS
+// ============================================================================
+
+// 1. EMAs (Exponential Moving Averages)
+ema20 = ta.ema(close, emaLength1)
+ema50 = ta.ema(close, emaLength2)
+ema200 = ta.ema(close, emaLength3)
+
+// 2. RSI (Relative Strength Index)
+rsi = ta.rsi(close, rsiLength)
+
+// 3. ATR (Average True Range)
+atr = ta.atr(atrLength)
+
+// 4. MACD (Moving Average Convergence Divergence)
+[macdLine, signalLine, histLine] = ta.macd(close, macdFast, macdSlow, macdSignal)
+
+// 5. Bollinger Bands
+bbBasis = ta.sma(close, bbLength)
+bbDev = bbMult * ta.stdev(close, bbLength)
+bbUpper = bbBasis + bbDev
+bbLower = bbBasis - bbDev
+
+// 6. Pivot Points (Daily by default)
+pivotHigh = request.security(syminfo.tickerid, pivotTimeframe, high[1], lookahead=barmerge.lookahead_on)
+pivotLow = request.security(syminfo.tickerid, pivotTimeframe, low[1], lookahead=barmerge.lookahead_on)
+pivotClose = request.security(syminfo.tickerid, pivotTimeframe, close[1], lookahead=barmerge.lookahead_on)
+
+pivotPoint = (pivotHigh + pivotLow + pivotClose) / 3
+resistance1 = 2 * pivotPoint - pivotLow
+support1 = 2 * pivotPoint - pivotHigh
+resistance2 = pivotPoint + (pivotHigh - pivotLow)
+support2 = pivotPoint - (pivotHigh - pivotLow)
+
+// 7. ADX (Average Directional Index) - Trend Strength
+[diPlus, diMinus, adx] = ta.dmi(adxLength, adxSmoothing)
+
+// 8. Volume
+vol = volume
+
+// 9. Price Position vs EMAs (calculated as percentage)
+priceVsEma20 = ((close - ema20) / ema20) * 100
+priceVsEma50 = ((close - ema50) / ema50) * 100
+priceVsEma200 = ((close - ema200) / ema200) * 100
+
+// 10. Volatility (ATR as % of price)
+volatilityPercent = (atr / close) * 100
+
+// PLOTS (ALL values will appear in CSV export)
+// ============================================================================
+// IMPORTANT: Each plot() creates a column in CSV export!
+
+// EMAs
+plot(ema20, title="EMA_20", color=color.yellow, linewidth=1)
+plot(ema50, title="EMA_50", color=color.blue, linewidth=1)
+plot(ema200, title="EMA_200", color=color.red, linewidth=1)
+
+// RSI
+plot(rsi, title="RSI_14", color=color.purple, linewidth=1)
+hline(rsiOverbought, title="RSI Overbought", color=color.new(color.red, 50), linestyle=hline.style_dashed)
+hline(rsiOversold, title="RSI Oversold", color=color.new(color.green, 50), linestyle=hline.style_dashed)
+hline(50, title="RSI Midline", color=color.gray, linestyle=hline.style_dotted)
+
+// ATR
+plot(atr, title="ATR_14", color=color.orange, linewidth=1)
+
+// MACD
+plot(macdLine, title="MACD_Line", color=color.blue, linewidth=1)
+plot(signalLine, title="MACD_Signal", color=color.orange, linewidth=1)
+plot(histLine, title="MACD_Histogram", color=color.gray, style=plot.style_histogram)
+
+// Bollinger Bands
+plot(bbUpper, title="BB_Upper", color=color.green, linewidth=1)
+plot(bbBasis, title="BB_Middle", color=color.gray, linewidth=1)
+plot(bbLower, title="BB_Lower", color=color.red, linewidth=1)
+
+// Pivot Points
+plot(pivotPoint, title="Pivot_Point", color=color.white, linewidth=2, style=plot.style_cross)
+plot(resistance1, title="Resistance_1", color=color.green, linewidth=1, style=plot.style_circles)
+plot(support1, title="Support_1", color=color.red, linewidth=1, style=plot.style_circles)
+plot(resistance2, title="Resistance_2", color=color.new(color.green, 50), linewidth=1, style=plot.style_circles)
+plot(support2, title="Support_2", color=color.new(color.red, 50), linewidth=1, style=plot.style_circles)
+
+// ADX & Directional Indicators
+plot(adx, title="ADX_14", color=color.navy, linewidth=2)
+plot(diPlus, title="DI_Plus", color=color.green, linewidth=1)
+plot(diMinus, title="DI_Minus", color=color.red, linewidth=1)
+hline(25, title="ADX Strong Trend", color=color.gray, linestyle=hline.style_dashed)
+
+// Volume
+plot(vol, title="Volume", color=color.blue, style=plot.style_columns)
+
+// Calculated Metrics
+plot(priceVsEma20, title="Price_vs_EMA20_Pct", color=color.yellow, linewidth=1, display=display.none)
+plot(priceVsEma50, title="Price_vs_EMA50_Pct", color=color.blue, linewidth=1, display=display.none)
+plot(priceVsEma200, title="Price_vs_EMA200_Pct", color=color.red, linewidth=1, display=display.none)
+plot(volatilityPercent, title="Volatility_Pct", color=color.orange, linewidth=1, display=display.none)
+
+// ALERTS (Optional - for future webhook integration)
+// ============================================================================
+// alertcondition(ta.crossover(rsi, rsiOversold), title="RSI Oversold", message="RSI crossed above oversold level")
+// alertcondition(ta.crossunder(rsi, rsiOverbought), title="RSI Overbought", message="RSI crossed below overbought level")
+// alertcondition(ta.crossover(macdLine, signalLine), title="MACD Bullish Cross", message="MACD bullish crossover")
+// alertcondition(ta.crossunder(macdLine, signalLine), title="MACD Bearish Cross", message="MACD bearish crossover")
+
+// ============================================================================
+// CSV EXPORT COLUMNS (Expected)
+// ============================================================================
+// time, open, high, low, close,
+// EMA_20, EMA_50, EMA_200,
+// RSI_14,
+// ATR_14,
+// MACD_Line, MACD_Signal, MACD_Histogram,
+// BB_Upper, BB_Middle, BB_Lower,
+// Pivot_Point, Resistance_1, Support_1, Resistance_2, Support_2,
+// ADX_14, DI_Plus, DI_Minus,
+// Volume,
+// Price_vs_EMA20_Pct, Price_vs_EMA50_Pct, Price_vs_EMA200_Pct, Volatility_Pct
+// ============================================================================
+// Total: 28 columns (5 OHLC + 23 indicators)
+// ============================================================================
