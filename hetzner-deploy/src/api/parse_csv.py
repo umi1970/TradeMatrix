@@ -68,7 +68,7 @@ async def parse_csv(
         logger.info(f"💾 Saved to temp file: {tmp_path}")
 
         # Parse CSV
-        from services.tv_csv_parser import parse_tradingview_csv
+        from src.services.tv_csv_parser import parse_tradingview_csv
 
         result = parse_tradingview_csv(tmp_path, symbol=symbol, timeframe=timeframe)
 
