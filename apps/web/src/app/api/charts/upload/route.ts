@@ -29,6 +29,21 @@ export async function POST(request: NextRequest) {
 
     console.log(`📥 Received CSV upload: ${file.name} (${(file.size / 1024).toFixed(1)} KB)`)
 
+    // Extract broker from filename (e.g., "CAPITALCOM_US30, 15.csv" -> "CAPITALCOM")
+    let broker: string | null = null
+    const fileNameWithoutExt = file.name.replace('.csv', '')
+    const symbolPart = fileNameWithoutExt.split(',')[0]?.trim()
+
+    if (symbolPart && (symbolPart.includes('_') || symbolPart.includes(':'))) {
+      const separator = symbolPart.includes('_') ? '_' : ':'
+      const parts = symbolPart.split(separator)
+      if (parts.length === 2) {
+        broker = parts[0].toUpperCase()
+      }
+    }
+
+    console.log(`📊 Extracted broker: ${broker || 'none'}`)
+
     // Upload CSV to Supabase Storage
     const timestamp = Date.now()
     const fileName = `${timestamp}_${file.name}`
@@ -103,12 +118,15 @@ export async function POST(request: NextRequest) {
     if (symbolError || !symbolData) {
       console.log(`⚠️ Symbol "${normalizedSymbol}" not found, auto-creating...`)
 
+      // Use broker as vendor if available, otherwise 'tradingview'
+      const vendor = broker ? broker.toLowerCase() : 'tradingview'
+
       const { data: newSymbol, error: insertError } = await supabase
         .from('market_symbols')
         .insert({
-          vendor: 'tradingview',
+          vendor: vendor,
           symbol: normalizedSymbol,
-          alias: analysis.symbol,
+          alias: broker ? `${broker}:${normalizedSymbol}` : normalizedSymbol,
           active: true,
         })
         .select('id, symbol')
@@ -122,7 +140,7 @@ export async function POST(request: NextRequest) {
         )
       }
 
-      console.log(`✅ Created new symbol: ${normalizedSymbol} (vendor: tradingview)`)
+      console.log(`✅ Created new symbol: ${normalizedSymbol} (vendor: ${vendor}, broker: ${broker || 'none'})`)
       symbolData = newSymbol
     }
 

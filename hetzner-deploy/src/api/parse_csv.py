@@ -58,28 +58,42 @@ async def parse_csv(
     if not file.filename.endswith('.csv'):
         raise HTTPException(status_code=400, detail="File must be a CSV")
 
-    # Extract symbol from filename if not provided
-    if not symbol:
-        # e.g., "CAPITALCOM_US30, 15.csv" -> "US30"
-        filename = file.filename.replace('.csv', '')
-        parts = filename.replace('_', ',').split(',')
-        if len(parts) >= 2:
-            symbol = parts[-2].strip()
+    # Extract broker, symbol, and timeframe from filename
+    broker = None
 
-    # Extract timeframe from filename if not provided
-    if not timeframe:
-        # e.g., "CAPITALCOM_US30, 15.csv" -> "15m"
+    if not symbol or not timeframe:
+        # e.g., "CAPITALCOM_US30, 15.csv" -> Broker: CAPITALCOM, Symbol: US30, Timeframe: 15m
         filename = file.filename.replace('.csv', '')
+
+        # Split by comma to separate symbol part and timeframe
         parts = filename.split(',')
-        if len(parts) >= 2:
-            tf = parts[-1].strip()
+
+        # Extract symbol (and broker if present)
+        if not symbol and len(parts) >= 1:
+            symbol_part = parts[0].strip()
+
+            # Check for broker prefix (e.g., "CAPITALCOM_US30" or "CAPITALCOM:US30")
+            if '_' in symbol_part or ':' in symbol_part:
+                separator = '_' if '_' in symbol_part else ':'
+                broker_symbol = symbol_part.split(separator)
+                if len(broker_symbol) == 2:
+                    broker = broker_symbol[0].strip().upper()
+                    symbol = broker_symbol[1].strip()
+                else:
+                    symbol = symbol_part
+            else:
+                symbol = symbol_part
+
+        # Extract timeframe
+        if not timeframe and len(parts) >= 2:
+            tf = parts[1].strip()
             # Convert to standard format (15 -> 15m)
             if tf.isdigit():
                 timeframe = f"{tf}m"
             else:
                 timeframe = tf
 
-    logger.info(f"📊 Symbol: {symbol}, Timeframe: {timeframe}")
+    logger.info(f"📊 Broker: {broker}, Symbol: {symbol}, Timeframe: {timeframe}")
 
     # Save to temporary file
     try:
