@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { TradingChart } from '@/components/dashboard/trading-chart'
 import { ChartControls, type ChartSettings } from '@/components/dashboard/chart-controls'
 import { CSVUploadZone } from '@/components/dashboard/csv-upload-zone'
+import { AnalysesTable } from '@/components/dashboard/analyses-table'
 import { Card, CardContent } from '@/components/ui/card'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
@@ -158,6 +159,7 @@ export default function ChartsPage() {
         {/* CSV Upload Tab */}
         <TabsContent value="csv-upload" className="space-y-4">
           <CSVUploadZone />
+          <AnalysesTable />
         </TabsContent>
 
         {/* Live Charts Tab */}
