@@ -1,8 +1,25 @@
-# Session Handoff: chart-img.com Integration
+# ❌ DEPRECATED: Session Handoff: chart-img.com Integration
 
 **Date:** 2025-11-05
 **Session Duration:** ~3 hours
-**Status:** Testing Complete - Ready for Implementation
+**Status:** ~~Testing Complete - Ready for Implementation~~ **ABORTED (2025-11-11)**
+
+---
+
+## ⚠️ **THIS FEATURE WAS ABANDONED**
+
+**Reason:** Too expensive for production use
+- $10/month for MEGA plan
+- 1000 requests/day limit (~33 requests/hour)
+- Additional OpenAI Vision API costs
+- Not scalable for multi-user SaaS
+
+**Alternative chosen:** Phase 5E - TradingView CSV Upload & Analysis
+See `claude.md` for current status.
+
+---
+
+# Original Session Handoff (Historical Record)
 
 ---
 
