@@ -46,6 +46,45 @@ export default function ScreenshotsPage() {
 
   useEffect(() => {
     loadExistingAnalyses()
+
+    // Add paste event listener for clipboard images
+    const handlePaste = (e: ClipboardEvent) => {
+      const items = e.clipboardData?.items
+      if (!items) return
+
+      const imageFiles: File[] = []
+
+      for (let i = 0; i < items.length; i++) {
+        const item = items[i]
+
+        // Check if item is an image
+        if (item.type.startsWith('image/')) {
+          const file = item.getAsFile()
+          if (file) {
+            // Rename file with timestamp for clarity
+            const timestamp = Date.now()
+            const renamedFile = new File([file], `pasted-${timestamp}.png`, { type: file.type })
+            imageFiles.push(renamedFile)
+          }
+        }
+      }
+
+      // Add pasted images to files state
+      if (imageFiles.length > 0) {
+        const newFiles: AnalysisResult[] = imageFiles.map(file => ({
+          file,
+          status: 'pending'
+        }))
+        setFiles(prev => [...prev, ...newFiles])
+        console.log(`📋 Pasted ${imageFiles.length} image(s) from clipboard`)
+      }
+    }
+
+    window.addEventListener('paste', handlePaste)
+
+    return () => {
+      window.removeEventListener('paste', handlePaste)
+    }
   }, [])
 
   const loadExistingAnalyses = async () => {
@@ -250,6 +289,8 @@ export default function ScreenshotsPage() {
         <AlertDescription>
           Upload screenshots from TradingView, MetaTrader, or any trading platform. OPTIONAL: Also upload corresponding CSV files with exact OHLCV + Indicator data for higher precision.
           Vision AI will automatically detect: Symbol, Timeframe, Price, Indicators, Patterns, Support/Resistance, and Trading Setups.
+          <br />
+          <strong>💡 Tip:</strong> Press Ctrl+V to paste screenshots directly from clipboard!
         </AlertDescription>
       </Alert>
 
@@ -277,6 +318,8 @@ export default function ScreenshotsPage() {
               <h3 className="text-lg font-semibold mb-2">Drop screenshots + CSV files here or click to upload</h3>
               <p className="text-sm text-muted-foreground mb-4">
                 Screenshots (JPG, PNG, WebP) + Optional CSV files with exact data
+                <br />
+                Or press <kbd className="px-2 py-0.5 text-xs bg-muted rounded">Ctrl+V</kbd> to paste from clipboard
               </p>
               <Button>Select Files</Button>
             </div>
