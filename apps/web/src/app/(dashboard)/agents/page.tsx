@@ -25,6 +25,16 @@ interface TradingSetup {
   chart_snapshot_id: string | null
   confidence_score: number
   created_at: string
+  module?: string
+  status?: string
+  entry_hit?: boolean
+  entry_hit_at?: string | null
+  sl_hit_at?: string | null
+  tp_hit_at?: string | null
+  outcome?: string | null
+  pnl_percent?: number | null
+  pine_script?: string | null
+  pine_script_active?: boolean
   metadata: {
     setup_type?: string
     entry?: number
@@ -77,12 +87,13 @@ async function getSetups(agentFilter?: string[]): Promise<TradingSetup[]> {
         .order('created_at', { ascending: false })
         .limit(25),
 
-      // 2. Trading Setups (MorningPlanner with Entry/SL/TP)
+      // 2. Trading Setups (MorningPlanner with Entry/SL/TP + TradingView monitoring)
       (supabase as any)
         .from('setups')
         .select(`
           id,
           symbol_id,
+          module,
           strategy,
           side,
           entry_price,
@@ -90,6 +101,14 @@ async function getSetups(agentFilter?: string[]): Promise<TradingSetup[]> {
           take_profit,
           confidence,
           status,
+          entry_hit,
+          entry_hit_at,
+          sl_hit_at,
+          tp_hit_at,
+          outcome,
+          pnl_percent,
+          pine_script,
+          pine_script_active,
           created_at,
           payload,
           market_symbols!inner(symbol)
@@ -123,42 +142,56 @@ async function getSetups(agentFilter?: string[]): Promise<TradingSetup[]> {
       allSetups.push(...analysisSetups)
     }
 
-    // Transform setups (MorningPlanner + AI-generated)
+    // Transform setups (MorningPlanner + AI-generated + TradingView)
     if (tradingSetupsResult.data && tradingSetupsResult.data.length > 0) {
       const tradingSetups = tradingSetupsResult.data.map((setup: any) => {
         // Use AI reasoning if available, otherwise generic message
-        const analysis = setup.payload?.reasoning
-          ? setup.payload.reasoning
+        const analysis = setup.payload?.reasoning || setup.payload?.analysis?.reasoning
+          ? setup.payload.reasoning || setup.payload.analysis.reasoning
           : `${setup.strategy.replace(/_/g, ' ')} setup detected. ${setup.side.toUpperCase()} signal with ${(setup.confidence * 100).toFixed(0)}% confidence.`
 
         // Determine agent name
         let agentName = 'Unknown'
         if (setup.strategy === 'asia_sweep' || setup.strategy === 'y_low_rebound') {
           agentName = 'MorningPlanner'
+        } else if (setup.strategy === 'tv_alert' || setup.module === 'tradingview') {
+          agentName = 'TradingView'
         } else if (setup.strategy === 'pattern_based' || setup.module === 'ai_generated') {
           agentName = 'AI Setup Generator'
+        } else if (setup.strategy === 'vision_analysis' || setup.module === 'vision_screenshot') {
+          agentName = 'Vision AI'
         }
 
         return {
           id: setup.id,
           symbol_id: setup.symbol_id,
           symbol: setup.market_symbols?.symbol || 'Unknown',
-          timeframe: setup.payload?.timeframe || '1h',
+          timeframe: setup.payload?.timeframe || setup.payload?.interval || '1h',
           agent_name: agentName,
           analysis,
           chart_url: setup.payload?.chart_url_1h || setup.payload?.chart_url_15m || setup.payload?.chart_url || '',
           chart_snapshot_id: setup.payload?.chart_snapshot_id || null,
           confidence_score: parseFloat(setup.confidence) || 0,
           created_at: setup.created_at,
+          module: setup.module,
+          status: setup.status,
+          entry_hit: setup.entry_hit,
+          entry_hit_at: setup.entry_hit_at,
+          sl_hit_at: setup.sl_hit_at,
+          tp_hit_at: setup.tp_hit_at,
+          outcome: setup.outcome,
+          pnl_percent: setup.pnl_percent ? parseFloat(setup.pnl_percent) : null,
+          pine_script: setup.pine_script,
+          pine_script_active: setup.pine_script_active,
           metadata: {
             setup_type: setup.strategy,
             entry: parseFloat(setup.entry_price),
             sl: parseFloat(setup.stop_loss),
             tp: parseFloat(setup.take_profit),
             trend: setup.side === 'long' ? 'bullish' : 'bearish',
-            support_levels: [],
-            resistance_levels: [],
-            patterns: setup.payload?.patterns || [],
+            support_levels: setup.payload?.analysis?.support_levels || [],
+            resistance_levels: setup.payload?.analysis?.resistance_levels || [],
+            patterns: setup.payload?.patterns || setup.payload?.analysis?.patterns_detected || [],
           },
         }
       })

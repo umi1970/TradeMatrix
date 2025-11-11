@@ -12,6 +12,7 @@ export type AgentId =
   | 'JournalBot'
   | 'USOpenPlanner'
   | 'AI Setup Generator'
+  | 'TradingView'
 
 export interface AgentConfig {
   id: AgentId
@@ -152,6 +153,25 @@ export const AGENT_CONFIGS: Record<AgentId, AgentConfig> = {
     },
     schedule: 'On-Demand',
   },
+  TradingView: {
+    id: 'TradingView',
+    name: 'TradingView',
+    description: 'TradingView Alert Automation with AI Analysis',
+    icon: '📈',
+    color: 'indigo',
+    colors: {
+      text: 'text-indigo-600 dark:text-indigo-400',
+      bg: 'bg-indigo-600',
+      bgLight: 'bg-indigo-50 dark:bg-indigo-950',
+      border: 'border-indigo-500',
+      ring: 'ring-indigo-500',
+      badge: {
+        bg: 'bg-indigo-100 dark:bg-indigo-900',
+        text: 'text-indigo-700 dark:text-indigo-300',
+      },
+    },
+    schedule: 'Real-time (Alert-based)',
+  },
 }
 
 /**
@@ -225,6 +245,8 @@ export function getAgentColor(agentId: string, context: 'text' | 'bg' | 'bgLight
         return 'text-pink-600 dark:text-pink-400'
       case 'cyan':
         return 'text-cyan-600 dark:text-cyan-400'
+      case 'indigo':
+        return 'text-indigo-600 dark:text-indigo-400'
       default:
         return 'text-gray-500'
     }
@@ -279,6 +301,11 @@ export function getAgentBadgeColors(agentId: string): { bg: string; text: string
         bg: 'bg-cyan-100 dark:bg-cyan-900',
         text: 'text-cyan-700 dark:text-cyan-300',
       }
+    case 'indigo':
+      return {
+        bg: 'bg-indigo-100 dark:bg-indigo-900',
+        text: 'text-indigo-700 dark:text-indigo-300',
+      }
     default:
       return {
         bg: 'bg-gray-100 dark:bg-gray-800',
@@ -309,6 +336,8 @@ export function getAgentLeftBorderClass(agentId: string): string {
       return 'border-l-4 border-l-pink-500'
     case 'cyan':
       return 'border-l-4 border-l-cyan-500'
+    case 'indigo':
+      return 'border-l-4 border-l-indigo-500'
     default:
       return 'border-l-4 border-l-gray-500'
   }

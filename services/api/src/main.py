@@ -13,6 +13,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import Literal
 from config import supabase, settings
+from api.analyze_ohlc import router as analyze_ohlc_router
+from api.generate_pine_script import router as pine_script_router
 
 # Create FastAPI app
 app = FastAPI(
@@ -33,6 +35,9 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Include routers
+app.include_router(analyze_ohlc_router, prefix="/api", tags=["Analysis"])
 
 
 @app.get("/")

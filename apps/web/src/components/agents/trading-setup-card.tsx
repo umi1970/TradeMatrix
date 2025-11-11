@@ -12,10 +12,12 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog'
-import { Bot, TrendingUp, TrendingDown, Minus, Clock, FileText, RefreshCw } from 'lucide-react'
+import { Bot, TrendingUp, TrendingDown, Minus, Clock, FileText, RefreshCw, Activity } from 'lucide-react'
 import Image from 'next/image'
 import { formatDistanceToNow } from 'date-fns'
 import { getAgentBadgeColors, getAgentIcon, getAgentLeftBorderClass } from '@/lib/config/agents'
+import { OutcomeBadge } from './outcome-badge'
+import { PineScriptDisplay } from './pine-script-display'
 
 interface Pattern {
   name: string
@@ -33,6 +35,16 @@ interface TradingSetup {
   chart_url: string
   confidence_score: number
   created_at: string
+  module?: string
+  status?: string
+  entry_hit?: boolean
+  entry_hit_at?: string | null
+  sl_hit_at?: string | null
+  tp_hit_at?: string | null
+  outcome?: string | null
+  pnl_percent?: number | null
+  pine_script?: string | null
+  pine_script_active?: boolean
   metadata: {
     setup_type?: string
     entry?: number
@@ -126,6 +138,34 @@ export function TradingSetupCard({ setup }: TradingSetupCardProps) {
 
   const hasEntryLevels = !!(setup.metadata.entry && setup.metadata.sl && setup.metadata.tp)
   const isLongSetup = setup.metadata.trend === 'bullish' || setup.metadata.setup_type?.includes('long')
+  const isTradingViewSetup = setup.module === 'tradingview' || setup.agent_name === 'TradingView'
+  const hasPineScript = !!(setup.pine_script && setup.pine_script.length > 0)
+
+  // Status badge helper
+  const getStatusBadge = (status?: string, entryHit?: boolean) => {
+    if (!status) return null
+
+    const statusConfig: Record<string, { label: string; variant: 'default' | 'secondary' | 'outline' | 'destructive'; className?: string }> = {
+      'pending': { label: 'PENDING', variant: 'secondary' },
+      'entry_hit': { label: 'ENTRY HIT', variant: 'default', className: 'bg-blue-500/20 text-blue-700 dark:text-blue-400 border-blue-500/50' },
+      'sl_hit': { label: 'SL HIT', variant: 'destructive' },
+      'tp_hit': { label: 'TP HIT', variant: 'default', className: 'bg-green-500/20 text-green-700 dark:text-green-400 border-green-500/50' },
+      'expired': { label: 'EXPIRED', variant: 'outline' },
+      'active': { label: 'ACTIVE', variant: 'default' },
+      'invalid': { label: 'INVALID', variant: 'destructive' },
+      'filled': { label: 'FILLED', variant: 'default' },
+      'cancelled': { label: 'CANCELLED', variant: 'outline' },
+    }
+
+    const config = statusConfig[status.toLowerCase()] || { label: status.toUpperCase(), variant: 'outline' as const }
+
+    return (
+      <Badge variant={config.variant} className={config.className}>
+        <Activity className="h-3 w-3 mr-1" />
+        {config.label}
+      </Badge>
+    )
+  }
 
   // Border logic:
   // - Setup cards WITH Entry/SL/TP: green (long) or red (short)
@@ -153,15 +193,28 @@ export function TradingSetupCard({ setup }: TradingSetupCardProps) {
         </div>
 
         <div className="flex items-center gap-2 mt-2 flex-wrap">
-          {hasEntryLevels && (
+          {/* Outcome Badge (highest priority) */}
+          {setup.outcome && (
+            <OutcomeBadge outcome={setup.outcome} pnl={setup.pnl_percent} />
+          )}
+
+          {/* Status Badge (for active monitoring) */}
+          {!setup.outcome && setup.status && getStatusBadge(setup.status, setup.entry_hit)}
+
+          {/* Ready to Trade Badge (if no outcome/status) */}
+          {!setup.outcome && !setup.status && hasEntryLevels && (
             <Badge variant="default" className="bg-gradient-to-r from-green-500 to-blue-500 text-white font-semibold">
               READY TO TRADE
             </Badge>
           )}
+
+          {/* Agent Badge */}
           <Badge variant="secondary" className={`w-fit text-xs ${agentBadgeColors.bg} ${agentBadgeColors.text} border-0`}>
             <span className="mr-1">{agentIcon}</span>
             {setup.agent_name}
           </Badge>
+
+          {/* Trend Badge */}
           {setup.metadata.trend && (
             <Badge variant={getTrendBadgeVariant(setup.metadata.trend)} className="gap-1">
               {getTrendIcon(setup.metadata.trend)}
@@ -231,7 +284,7 @@ export function TradingSetupCard({ setup }: TradingSetupCardProps) {
               <DialogTrigger asChild>
                 <Button variant="ghost" size="sm" className="h-7 text-xs w-full">
                   <FileText className="h-3 w-3 mr-1" />
-                  View Full Analysis
+                  {hasPineScript ? 'View Analysis + Pine Script' : 'View Full Analysis'}
                 </Button>
               </DialogTrigger>
               <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto">
@@ -265,6 +318,16 @@ export function TradingSetupCard({ setup }: TradingSetupCardProps) {
                       {setup.analysis}
                     </p>
                   </div>
+
+                  {/* Pine Script Display (TradingView setups only) */}
+                  {hasPineScript && (
+                    <PineScriptDisplay
+                      pineScript={setup.pine_script!}
+                      active={setup.pine_script_active || false}
+                      ticker={setup.symbol}
+                      setupId={setup.id}
+                    />
+                  )}
 
                   {/* Detected Patterns - Full List */}
                   {setup.metadata.patterns && setup.metadata.patterns.length > 0 && (
