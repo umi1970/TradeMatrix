@@ -164,6 +164,29 @@ CREATE TABLE trade_lessons (
 
 ## 📊 UI/UX Improvements
 
+### Setup Card Header - Timestamp Display:
+```tsx
+// Card Header mit Erstellungszeit
+<CardHeader>
+  <div className="flex items-center justify-between">
+    <CardTitle>{setup.symbol} - {setup.timeframe}</CardTitle>
+    <div className="text-xs text-muted-foreground">
+      🕐 {formatDistanceToNow(new Date(setup.created_at), { addSuffix: true })}
+    </div>
+  </div>
+</CardHeader>
+```
+
+**Anzeige-Format:**
+- "2 minutes ago"
+- "1 hour ago"
+- "3 days ago"
+
+**Location:**
+- `apps/web/src/components/agents/trading-setup-card.tsx`
+- Bereits vorhanden in Line 492, aber nur im Footer
+- **TODO:** Auch im Card Header prominent anzeigen!
+
 ### Setup Card Badges:
 ```tsx
 // Validity Badge
@@ -179,14 +202,28 @@ CREATE TABLE trade_lessons (
     👁️ MONITORING
   </Badge>
 )}
+
+// Age Badge (if older than validity period)
+{isExpired(setup) && (
+  <Badge variant="destructive">
+    Created {formatDistanceToNow(new Date(setup.created_at))} ago
+  </Badge>
+)}
 ```
 
 ### Timeline Visualization:
 ```
-Created    Entry Hit     Current      TP Target
-   |----------|-------------|------------|
-   2h ago    30min ago    NOW         +45min
+Created    Entry Hit     Current      TP Target      Expires
+   |----------|-------------|------------|-------------|
+   2h ago    30min ago    NOW         +45min        +4h
 ```
+
+**Extended Timeline:**
+- Created: Absolutes Datum + relative Zeit
+- Entry Hit: Wenn erreicht
+- Current: Jetzt
+- TP Target: Geschätzt basierend auf Volatility
+- Expires: valid_until Timestamp
 
 ---
 
