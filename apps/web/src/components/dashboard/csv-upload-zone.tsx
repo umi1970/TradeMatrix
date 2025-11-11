@@ -22,9 +22,21 @@ interface AnalysisResult {
   risk_reward?: number
   reasoning: string
   csv_url: string
+  ohlcv_data?: Array<{
+    time: string
+    open: number
+    high: number
+    low: number
+    close: number
+    volume?: number
+  }>
 }
 
-export function CSVUploadZone() {
+interface CSVUploadZoneProps {
+  onAnalysisComplete?: (analysis: AnalysisResult) => void
+}
+
+export function CSVUploadZone({ onAnalysisComplete }: CSVUploadZoneProps = {}) {
   const [isDragging, setIsDragging] = useState(false)
   const [isUploading, setIsUploading] = useState(false)
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
@@ -104,6 +116,11 @@ export function CSVUploadZone() {
       const result: AnalysisResult = await response.json()
       setAnalysis(result)
       setSelectedFile(null)
+
+      // Trigger callback if provided
+      if (onAnalysisComplete) {
+        onAnalysisComplete(result)
+      }
 
     } catch (err) {
       console.error('Upload error:', err)

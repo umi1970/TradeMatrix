@@ -5,6 +5,7 @@ import { TradingChart } from '@/components/dashboard/trading-chart'
 import { ChartControls, type ChartSettings } from '@/components/dashboard/chart-controls'
 import { CSVUploadZone } from '@/components/dashboard/csv-upload-zone'
 import { AnalysesTable } from '@/components/dashboard/analyses-table'
+import { CSVChartViewer } from '@/components/dashboard/csv-chart-viewer'
 import { Card, CardContent } from '@/components/ui/card'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
@@ -19,6 +20,22 @@ interface OHLCVData {
   volume: number
 }
 
+interface CSVChartData {
+  symbol: string
+  timeframe: string
+  current_price: number
+  trend: string
+  confidence_score: number
+  csv_data?: Array<{
+    time: string
+    open: number
+    high: number
+    low: number
+    close: number
+    volume?: number
+  }>
+}
+
 export default function ChartsPage() {
   const [settings, setSettings] = useState<ChartSettings>({
     symbol: 'DAX',
@@ -31,8 +48,23 @@ export default function ChartsPage() {
   })
 
   const [chartData, setChartData] = useState<OHLCVData[]>([])
+  const [csvChartData, setCSVChartData] = useState<CSVChartData | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+
+  // Handle CSV upload complete
+  const handleCSVAnalysisComplete = (analysis: any) => {
+    if (analysis.ohlcv_data) {
+      setCSVChartData({
+        symbol: analysis.symbol,
+        timeframe: analysis.timeframe,
+        current_price: analysis.current_price,
+        trend: analysis.trend,
+        confidence_score: analysis.confidence_score,
+        csv_data: analysis.ohlcv_data,
+      })
+    }
+  }
 
   // Generate sample data (in production, fetch from Supabase)
   const generateSampleData = (symbol: string, timeframe: string): OHLCVData[] => {
@@ -158,12 +190,15 @@ export default function ChartsPage() {
 
         {/* CSV Upload Tab */}
         <TabsContent value="csv-upload" className="space-y-4">
-          <CSVUploadZone />
+          <CSVUploadZone onAnalysisComplete={handleCSVAnalysisComplete} />
           <AnalysesTable />
         </TabsContent>
 
         {/* Live Charts Tab */}
         <TabsContent value="live-charts" className="space-y-4">
+          {/* CSV Chart */}
+          <CSVChartViewer data={csvChartData} />
+
           {/* Chart Controls */}
           <ChartControls settings={settings} onSettingsChange={setSettings} />
 
