@@ -1,0 +1,8 @@
+//@version=5
+indicator("TM_Volume", overlay=false)
+
+// Volume
+vol = volume
+
+// Plot
+plot(vol, title="Volume", color=color.blue, style=plot.style_columns)
