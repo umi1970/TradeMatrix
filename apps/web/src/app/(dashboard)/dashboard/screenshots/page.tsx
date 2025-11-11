@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Upload, TrendingUp, TrendingDown, Minus, AlertCircle, CheckCircle2, Loader2, ArrowRight } from 'lucide-react'
+import { Upload, TrendingUp, TrendingDown, Minus, AlertCircle, CheckCircle2, Loader2, ArrowRight, FileText } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Alert, AlertDescription } from '@/components/ui/alert'
@@ -419,6 +419,31 @@ export default function ScreenshotsPage() {
                 </CardHeader>
 
                 <CardContent>
+                  {/* Preview for pending files */}
+                  {item.status === 'pending' && item.file && (
+                    <div className="space-y-3">
+                      {item.file.type.startsWith('image/') ? (
+                        <div className="relative">
+                          <img
+                            src={URL.createObjectURL(item.file)}
+                            alt={`Preview ${item.file.name}`}
+                            className="w-full h-48 object-contain bg-muted rounded"
+                            loading="lazy"
+                          />
+                          <Badge className="absolute top-2 right-2 bg-yellow-500/90 text-white">
+                            Pending Analysis
+                          </Badge>
+                        </div>
+                      ) : (
+                        <div className="h-48 bg-muted rounded flex flex-col items-center justify-center gap-2">
+                          <FileText className="h-12 w-12 text-muted-foreground" />
+                          <p className="text-sm text-muted-foreground">{item.file.name}</p>
+                          <Badge variant="outline">CSV Data File</Badge>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
                   {item.status === 'success' && item.analysis && (
                     <div className="space-y-3">
                       {/* Screenshot Image */}
