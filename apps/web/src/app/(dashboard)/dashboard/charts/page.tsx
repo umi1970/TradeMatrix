@@ -3,9 +3,11 @@
 import { useState, useEffect } from 'react'
 import { TradingChart } from '@/components/dashboard/trading-chart'
 import { ChartControls, type ChartSettings } from '@/components/dashboard/chart-controls'
+import { CSVUploadZone } from '@/components/dashboard/csv-upload-zone'
 import { Card, CardContent } from '@/components/ui/card'
 import { Alert, AlertDescription } from '@/components/ui/alert'
-import { Loader2 } from 'lucide-react'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { Loader2, Upload, LineChart } from 'lucide-react'
 
 interface OHLCVData {
   time: number
@@ -140,8 +142,28 @@ export default function ChartsPage() {
         </p>
       </div>
 
-      {/* Chart Controls */}
-      <ChartControls settings={settings} onSettingsChange={setSettings} />
+      {/* Tabs: CSV Upload vs Live Charts */}
+      <Tabs defaultValue="csv-upload" className="space-y-4">
+        <TabsList className="grid w-full max-w-md grid-cols-2">
+          <TabsTrigger value="csv-upload" className="flex items-center gap-2">
+            <Upload className="h-4 w-4" />
+            CSV Upload
+          </TabsTrigger>
+          <TabsTrigger value="live-charts" className="flex items-center gap-2">
+            <LineChart className="h-4 w-4" />
+            Live Charts
+          </TabsTrigger>
+        </TabsList>
+
+        {/* CSV Upload Tab */}
+        <TabsContent value="csv-upload" className="space-y-4">
+          <CSVUploadZone />
+        </TabsContent>
+
+        {/* Live Charts Tab */}
+        <TabsContent value="live-charts" className="space-y-4">
+          {/* Chart Controls */}
+          <ChartControls settings={settings} onSettingsChange={setSettings} />
 
       {/* Error Alert */}
       {error && (
@@ -193,27 +215,29 @@ export default function ChartsPage() {
         </Card>
       )}
 
-      {/* Info Card */}
-      <Card>
-        <CardContent className="p-4">
-          <div className="text-sm text-muted-foreground space-y-2">
-            <p className="font-medium text-foreground">Chart Information:</p>
-            <ul className="list-disc list-inside space-y-1 ml-2">
-              <li>Fetching real-time data from Twelve Data API via Supabase</li>
-              <li>Data is updated every minute by background workers</li>
-              <li>EMA indicators are calculated client-side for performance</li>
-              <li>Falls back to sample data if real data is not available</li>
-              <li>
-                {chartData.length > 0 && (
-                  <span className="font-medium text-foreground">
-                    Current: {chartData.length} candles loaded
-                  </span>
-                )}
-              </li>
-            </ul>
-          </div>
-        </CardContent>
-      </Card>
+          {/* Info Card */}
+          <Card>
+            <CardContent className="p-4">
+              <div className="text-sm text-muted-foreground space-y-2">
+                <p className="font-medium text-foreground">Chart Information:</p>
+                <ul className="list-disc list-inside space-y-1 ml-2">
+                  <li>Fetching real-time data from Twelve Data API via Supabase</li>
+                  <li>Data is updated every minute by background workers</li>
+                  <li>EMA indicators are calculated client-side for performance</li>
+                  <li>Falls back to sample data if real data is not available</li>
+                  <li>
+                    {chartData.length > 0 && (
+                      <span className="font-medium text-foreground">
+                        Current: {chartData.length} candles loaded
+                      </span>
+                    )}
+                  </li>
+                </ul>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
     </div>
   )
 }
