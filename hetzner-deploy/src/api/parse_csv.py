@@ -58,6 +58,29 @@ async def parse_csv(
     if not file.filename.endswith('.csv'):
         raise HTTPException(status_code=400, detail="File must be a CSV")
 
+    # Extract symbol from filename if not provided
+    if not symbol:
+        # e.g., "CAPITALCOM_US30, 15.csv" -> "US30"
+        filename = file.filename.replace('.csv', '')
+        parts = filename.replace('_', ',').split(',')
+        if len(parts) >= 2:
+            symbol = parts[-2].strip()
+
+    # Extract timeframe from filename if not provided
+    if not timeframe:
+        # e.g., "CAPITALCOM_US30, 15.csv" -> "15m"
+        filename = file.filename.replace('.csv', '')
+        parts = filename.split(',')
+        if len(parts) >= 2:
+            tf = parts[-1].strip()
+            # Convert to standard format (15 -> 15m)
+            if tf.isdigit():
+                timeframe = f"{tf}m"
+            else:
+                timeframe = tf
+
+    logger.info(f"📊 Symbol: {symbol}, Timeframe: {timeframe}")
+
     # Save to temporary file
     try:
         with tempfile.NamedTemporaryFile(mode='wb', delete=False, suffix='.csv') as tmp:
