@@ -117,7 +117,7 @@
 
 ---
 
-## 📊 Aktueller Status (2025-11-03)
+## 📊 Aktueller Status (2025-11-11)
 
 ### ✅ Phase 1-4: Foundation to Dashboard - COMPLETED (100%)
 - [x] Projekt-Struktur, Dokumentation, Supabase Integration
@@ -153,38 +153,52 @@
 
 ---
 
-### 🚧 Phase 5D: chart-img.com Integration - IN PROGRESS (5%) ⭐ CURRENT!
+### ❌ Phase 5D: chart-img.com Integration - ABORTED (Too Expensive)
 **Feature:** AI-Powered Chart Analysis mit echten Index-Daten
 
 **Architecture Decision (2025-11-05):**
 - 💡 **chart-img.com API:** Generiert JPG/PNG Charts von TradingView
 - ✅ **Echte Index-Daten:** TVC:DJI, NASDAQ:NDX, XETR:DAX funktionieren!
 - ✅ **MEGA Plan:** $10/Monat, 1000 requests/day, alle Indicators
-- ✅ **Perfect für AI Agents:** ChartWatcher, MorningPlanner, JournalBot
 
-**Status:**
+**Status: ABORTED (2025-11-11)**
 - [x] **API Tests:** DAX + DJI funktionieren ✅
 - [x] **MEGA Plan:** Aktiviert ($10/mo) ✅
-- [ ] **BLOCKER 1:** Indicator-Namen für v2 API finden (RSI, MACD)
-- [ ] **BLOCKER 2:** DAX real-time Exchange finden (aktuell 15min delay)
-- [ ] **Phase 1:** Database (1h) - chart_config, chart_snapshots
-- [ ] **Phase 2:** Backend (2h) - ChartService, API endpoints
-- [ ] **Phase 3:** Frontend (3h) - Chart config modal, gallery
-- [ ] **Phase 4:** Agents (3h) - ChartWatcher, MorningPlanner, JournalBot
-- [ ] **Phase 5:** Testing (2h)
-- [ ] **Phase 6:** Deployment (1h)
+- ❌ **ENTSCHEIDUNG:** Zu teuer für aktuellen Use Case
+- ❌ **1000 requests/day** = ~33 requests/hour = zu limitiert für Produktion
+- ❌ **$10/mo + OpenAI Vision API costs** = nicht rentabel
 
-**📖 Dokumentation:**
-- **Feature Docs:** [docs/FEATURES/chart-img-integration/](./docs/FEATURES/chart-img-integration/) (11 Files!)
-- **Implementation:** [IMPLEMENTATION_CHECKLIST.md](./docs/FEATURES/chart-img-integration/IMPLEMENTATION_CHECKLIST.md)
-- **Session Handoff:** [SESSION_HANDOFF_CHART_IMG.md](./SESSION_HANDOFF_CHART_IMG.md) 👈 **START HERE!**
+**Alternative gewählt:** Phase 5E (TradingView CSV Upload & Analysis)
 
-**🎯 Nächster Schritt:**
-1. Fix Blocker 1: Indicator-Namen (30 min)
-2. Fix Blocker 2: DAX real-time Exchange (15 min)
-3. Start Phase 1: Database Setup (1h)
+---
 
-**Estimated Time:** 13h total (1h Blockers + 12h Implementation)
+### ✅ Phase 5E: TradingView CSV Upload & Analysis - DEPLOYED (100%) ⭐ CURRENT!
+**Feature:** Manual CSV upload from TradingView Premium, AI-powered analysis
+
+**Architecture Decision (2025-11-11):**
+- ✅ **User hat TradingView Premium** (20K bars, second intervals, all indicators)
+- ✅ **Manueller CSV Export** (volle Kontrolle über Symbol, Timeframe, Indicators)
+- ✅ **FastAPI CSV Parser** (hetzner-deploy/src/services/tv_csv_parser.py)
+- ✅ **AI Analysis** (Trend, Support/Resistance, Setups, Risk/Reward)
+- ✅ **Chart Visualization** (TradingView Lightweight Charts)
+- ✅ **Analyses History** (Server pagination, 20 rows per page)
+
+**Status: DEPLOYED (2025-11-11)**
+- [x] **CSV Parser Service** - 25 indicators, EMA/RSI/MACD/ADX/Bollinger/Pivots
+- [x] **Backend API** - `/api/parse-csv` (FastAPI), `/api/charts/upload` (Next.js)
+- [x] **Frontend Components** - CSVUploadZone, CSVChartViewer, AnalysesTable
+- [x] **Database Schema** - chart_analyses, market_symbols (broker extraction)
+- [x] **Mock Data Removal** - Simplified charts page to CSV-only (commit 32f6e4e)
+- [x] **Hetzner Deployment** - FastAPI + python-multipart + tv_csv_parser
+
+**Latest Commits:**
+- `32f6e4e` - refactor: Remove mock data charts, simplify to CSV-only visualization
+- `caf4188` - feat: Add CSV chart visualization on Live Charts tab
+- `94b7038` - feat: Add analyses table with server pagination
+- `c58e793` - feat: Extract and store TradingView broker information
+- `864d2f2` - fix: Extract symbol and timeframe from original filename
+- `8a6214f` - fix: Add CSV parser service to hetzner-deploy
+- `08c6b02` - fix: Add python-multipart dependency for FastAPI file uploads
 
 ---
 
