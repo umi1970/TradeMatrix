@@ -82,6 +82,18 @@ class TVCSVParser:
         # Calculate confidence score
         confidence_score = self._calculate_confidence(latest, trend, trend_strength)
 
+        # Convert full DataFrame to OHLCV array for charting
+        ohlcv_data = []
+        for _, row in self.df.iterrows():
+            ohlcv_data.append({
+                'time': str(row['time']),
+                'open': float(row['open']),
+                'high': float(row['high']),
+                'low': float(row['low']),
+                'close': float(row['close']),
+                'volume': float(row.get('Volume', 0)) if 'Volume' in row else None,
+            })
+
         # Build response (compatible with Vision API format)
         response = {
             'symbol': self.symbol,
@@ -89,11 +101,15 @@ class TVCSVParser:
             'current_price': float(latest['close']),
             'timestamp': str(latest['time']),
 
-            # OHLC
+            # OHLC (latest bar)
             'open': float(latest['open']),
             'high': float(latest['high']),
             'low': float(latest['low']),
             'close': float(latest['close']),
+
+            # Full OHLCV data for charting
+            'ohlcv_data': ohlcv_data,
+            'total_bars': len(self.df),
 
             # EMAs
             'ema20': float(latest['EMA_20']),
