@@ -24,13 +24,19 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    console.log(`📸 Received ${files.length} screenshot(s) for multi-timeframe analysis`)
+    console.log(`📸 Received ${files.length} file(s) for multi-timeframe analysis`)
+
+    // Separate image files from CSV files
+    const imageFiles = files.filter(f => f.type.startsWith('image/'))
+    const csvFiles = files.filter(f => f.name.endsWith('.csv') || f.type === 'text/csv')
+
+    console.log(`   📷 ${imageFiles.length} screenshot(s), 📊 ${csvFiles.length} CSV file(s)`)
 
     // Upload all screenshots to Supabase Storage and convert to base64
     const screenshotUrls: string[] = []
     const imageContents: Array<{ type: 'image_url', image_url: { url: string } }> = []
 
-    for (const file of files) {
+    for (const file of imageFiles) {
       // Upload to Supabase Storage
       const timestamp = Date.now()
       const fileName = `${timestamp}_${file.name}`
@@ -76,8 +82,26 @@ export async function POST(request: NextRequest) {
 
     console.log(`✅ All screenshots uploaded: ${screenshotUrls.join(', ')}`)
 
-    // Call OpenAI Vision API with ALL images in ONE request
-    console.log(`🔍 Analyzing ${files.length} screenshots for ${symbol}...`)
+    // Parse CSV files and prepare as text context
+    let csvContext = ''
+    if (csvFiles.length > 0) {
+      console.log(`📊 Processing ${csvFiles.length} CSV file(s)...`)
+      for (const csvFile of csvFiles) {
+        const csvText = await csvFile.text()
+        const lines = csvText.split('\n')
+
+        // Take header + first 100 rows (enough context, not too many tokens)
+        const sampleLines = lines.slice(0, Math.min(101, lines.length))
+
+        csvContext += `\n\n📊 CSV DATA from "${csvFile.name}":\n`
+        csvContext += sampleLines.join('\n')
+        csvContext += `\n... (${lines.length} total rows)\n`
+      }
+      console.log(`✅ CSV context prepared (${csvContext.length} characters)`)
+    }
+
+    // Call OpenAI Vision API with ALL images + CSV data in ONE request
+    console.log(`🔍 Analyzing ${imageFiles.length} screenshot(s) ${csvFiles.length > 0 ? `+ ${csvFiles.length} CSV file(s)` : ''} for ${symbol}...`)
 
     const response = await openai.chat.completions.create({
       model: 'gpt-4o',
@@ -88,14 +112,14 @@ export async function POST(request: NextRequest) {
           content: [
             {
               type: 'text',
-              text: `You are a professional day trader analyzing ${files.length > 1 ? `${files.length} trading chart screenshots of the SAME SYMBOL at DIFFERENT TIMEFRAMES` : 'a trading chart screenshot'}.
+              text: `You are a professional day trader analyzing ${imageFiles.length > 1 ? `${imageFiles.length} trading chart screenshots of the SAME SYMBOL at DIFFERENT TIMEFRAMES` : 'a trading chart screenshot'}${csvFiles.length > 0 ? ` with ${csvFiles.length} corresponding CSV file(s) containing EXACT OHLCV and indicator data` : ''}.
 
 Your task is to EXTRACT and SUMMARIZE the technical and price information visible in the image.
 
 ⚠️ OUTPUT REQUIREMENTS:
 - Respond **only** in valid JSON (no markdown or explanations).
 - Use EXACTLY these root keys:
-  ["symbol", "timeframe", "analyzed_timeframes", "current_price", "open", "high", "low", "close", "timestamp", "ema_20", "ema_50", "ema_200", "rsi_14", "atr_14", "macd_line", "macd_signal", "macd_histogram", "bb_upper", "bb_middle", "bb_lower", "pivot_point", "resistance_1", "support_1", "resistance_2", "support_2", "adx_14", "di_plus", "di_minus", "volume", "volatility_pct", "price_vs_ema20_pct", "price_vs_ema50_pct", "price_vs_ema200_pct", "support_levels", "resistance_levels", "trend", "trend_strength", "momentum_bias", "patterns_detected", "key_events", "market_structure", "setup_type", "entry_price", "stop_loss", "take_profit", "risk_reward", "reasoning", "timeframe_validity", "confidence_score", "chart_quality", "key_factors"]
+  ["symbol", "timeframe", "analyzed_timeframes", "current_price", "open", "high", "low", "close", "timestamp", "ema_20", "ema_50", "ema_200", "rsi_14", "atr_14", "macd_line", "macd_signal", "macd_histogram", "bb_upper", "bb_middle", "bb_lower", "pivot_point", "resistance_1", "support_1", "resistance_2", "support_2", "adx_14", "di_plus", "di_minus", "volume", "volatility_pct", "price_vs_ema20_pct", "price_vs_ema50_pct", "price_vs_ema200_pct", "support_levels", "resistance_levels", "trend", "trend_strength", "momentum_bias", "patterns_detected", "key_events", "market_structure", "setup_type", "entry_price", "stop_loss", "take_profit", "risk_reward", "reasoning", "detailed_analysis", "timeframe_validity", "confidence_score", "chart_quality", "key_factors"]
 
 ---
 
@@ -171,6 +195,24 @@ risk_reward (as decimal number, calculate dynamically based on trend strength an
   - Weak trend or low confidence (<0.5): 1.0–1.5
   Example: 2.5 for strong bullish trend with 0.85 confidence),
 reasoning (2–3 sentences explaining WHY this setup makes sense given the current market structure),
+detailed_analysis (300-500 words comprehensive analysis structured as follows:
+  📊 **Timeframe Breakdown** - Analyze each timeframe separately (if multiple provided):
+     - Higher TF (e.g., 1d): Overall trend direction, key levels, trend strength
+     - Middle TF (e.g., 1h): Current structure, support/resistance, MACD/RSI state
+     - Lower TF (e.g., 5m): Entry timing, precise levels, immediate action
+  🎯 **Indicator Confluence** - Cross-reference ALL indicators across timeframes:
+     - Which indicators agree? (e.g., "RSI above 50 on all TFs, MACD positive on 1h+1d")
+     - Which indicators conflict? (e.g., "5m RSI overbought but 1h still neutral")
+     - Overall confluence score and impact on confidence
+  💰 **Trade Rationale** - Explain exact entry/SL/TP placement:
+     - WHY this entry price? (e.g., "5m EMA20 + previous support at 1.1590")
+     - WHY this stop loss? (e.g., "Below 1h structure and 5m swing low at 1.1556")
+     - WHY this take profit? (e.g., "1h resistance zone at 1.1620, aligns with 1d pivot")
+  ⚠️ **Risk Factors** - What could invalidate this setup:
+     - Key levels to watch (e.g., "If price closes below 1h EMA50, trend weakens")
+     - Alternative scenarios (e.g., "If 1d resistance holds, expect pullback")
+     - Time constraints (e.g., "Setup valid for next 4-6 hours on 5m entry")
+  Use professional trading language. Be specific with levels and indicator values.),
 timeframe_validity ("intraday" | "swing" | "midterm").
 
 ### 7️⃣ CONFIDENCE_QUALITY
@@ -195,11 +237,22 @@ RULES:
 ✅ If you analyze multiple timeframes of the same symbol, mention confluence in reasoning.
 ✅ Reasoning must explain WHY the setup works given market structure and indicator alignment.
 ✅ key_factors MUST reference specific indicator values (e.g., "ADX 45", "RSI 75", not just "strong trend").
-✅ Output must be valid JSON with the exact 44 keys listed above (all indicators + analysis fields + analyzed_timeframes).
+✅ Output must be valid JSON with the exact 45 keys listed above (all indicators + analysis fields + analyzed_timeframes + detailed_analysis).
 
-${files.length > 1 ? `
-🎯 MULTI-TIMEFRAME ANALYSIS RULES (${files.length} CHARTS PROVIDED):
-✅ STEP 1: IDENTIFY - Read the timeframe label from EACH of the ${files.length} charts you received (look at chart title, x-axis labels). Fill "analyzed_timeframes" array with ALL ${files.length} timeframes.
+${csvFiles.length > 0 ? `
+📊 CSV DATA AVAILABLE:
+✅ You have access to CSV files with EXACT OHLCV and indicator values.
+✅ CSV data is MORE ACCURATE than reading from chart images (no pixel estimation).
+✅ PREFER CSV values over visual chart reading when available.
+✅ Use CSV for precise entry_price, stop_loss, take_profit calculations.
+✅ CSV columns typically include: timestamp, open, high, low, close, volume, ema_20, ema_50, ema_200, rsi_14, macd_line, macd_signal, macd_histogram, bb_upper, bb_middle, bb_lower, adx_14, di_plus, di_minus, atr_14, pivot_point, support_1, resistance_1, support_2, resistance_2, and more.
+✅ Use the MOST RECENT row (last row) for current_price and latest indicator values.
+✅ Look back a few rows to understand trend direction and momentum changes.
+` : ''}
+
+${imageFiles.length > 1 ? `
+🎯 MULTI-TIMEFRAME ANALYSIS RULES (${imageFiles.length} CHARTS PROVIDED):
+✅ STEP 1: IDENTIFY - Read the timeframe label from EACH of the ${imageFiles.length} charts you received (look at chart title, x-axis labels). Fill "analyzed_timeframes" array with ALL ${imageFiles.length} timeframes.
 
 ✅ STEP 2: ANALYZE EACH TIMEFRAME:
    - Higher timeframe (e.g., 1d): What is the TREND direction? (bullish/bearish/sideways)
@@ -212,7 +265,7 @@ ${files.length > 1 ? `
    - Example: 1d bullish + 1h bullish + 5m bullish entry = 0.85+ confidence
    - Example: 1d bearish + 1h sideways + 5m bullish = 0.50-0.60 confidence (conflict!)
 
-✅ STEP 4: REASONING - MUST mention ALL ${files.length} timeframes explicitly:
+✅ STEP 4: REASONING - MUST mention ALL ${imageFiles.length} timeframes explicitly:
    Example: "1d timeframe shows strong bullish trend above all EMAs. 1h confirms with bullish MACD. 5m provides optimal entry near support at 1.1590 with tight stop loss."
 
 ✅ STEP 5: PRIMARY TIMEFRAME:
@@ -220,11 +273,17 @@ ${files.length > 1 ? `
    - But base confidence on ALL timeframes combined
 ` : ''}`,
             },
-            ...imageContents, // Spread all images into content array
+            // Add CSV data as text block (if available)
+            ...(csvContext ? [{
+              type: 'text' as const,
+              text: csvContext
+            }] : []),
+            // Add all images
+            ...imageContents,
           ],
         },
       ],
-      max_tokens: 2000,
+      max_tokens: 3000, // Increased for detailed_analysis (300-500 words)
       response_format: { type: 'json_object' },
     })
 
@@ -405,6 +464,7 @@ ${files.length > 1 ? `
       take_profit: analysis.take_profit,
       risk_reward: analysis.risk_reward,
       reasoning: analysis.reasoning,
+      detailed_analysis: analysis.detailed_analysis,
       timeframe_validity: analysis.timeframe_validity,
 
       // Quality & Confidence

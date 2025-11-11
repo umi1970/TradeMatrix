@@ -29,6 +29,7 @@ interface AnalysisResult {
     take_profit?: number
     risk_reward?: number
     reasoning?: string
+    detailed_analysis?: string
     timeframe_validity?: string
     patterns_detected?: string[]
     support_levels?: number[]
@@ -89,6 +90,7 @@ export default function ScreenshotsPage() {
                 take_profit: payload.take_profit,
                 risk_reward: payload.risk_reward,
                 reasoning: dbAnalysis.analysis_summary || '',
+                detailed_analysis: payload.detailed_analysis,
                 timeframe_validity: payload.timeframe_validity,
                 patterns_detected: dbAnalysis.patterns_detected || [],
                 support_levels: dbAnalysis.support_levels || [],
@@ -246,7 +248,7 @@ export default function ScreenshotsPage() {
       <Alert className="mb-6">
         <AlertCircle className="h-4 w-4" />
         <AlertDescription>
-          Upload screenshots from TradingView, MetaTrader, or any trading platform.
+          Upload screenshots from TradingView, MetaTrader, or any trading platform. OPTIONAL: Also upload corresponding CSV files with exact OHLCV + Indicator data for higher precision.
           Vision AI will automatically detect: Symbol, Timeframe, Price, Indicators, Patterns, Support/Resistance, and Trading Setups.
         </AlertDescription>
       </Alert>
@@ -262,7 +264,7 @@ export default function ScreenshotsPage() {
               onClick={() => {
                 const input = document.createElement('input')
                 input.type = 'file'
-                input.accept = 'image/*'
+                input.accept = 'image/*,.csv'
                 input.multiple = true
                 input.onchange = (e) => {
                   const files = (e.target as HTMLInputElement).files
@@ -272,9 +274,9 @@ export default function ScreenshotsPage() {
               }}
             >
               <Upload className="h-16 w-16 mx-auto mb-4 text-muted-foreground" />
-              <h3 className="text-lg font-semibold mb-2">Drop screenshots here or click to upload</h3>
+              <h3 className="text-lg font-semibold mb-2">Drop screenshots + CSV files here or click to upload</h3>
               <p className="text-sm text-muted-foreground mb-4">
-                Support for multiple files (JPG, PNG, WebP)
+                Screenshots (JPG, PNG, WebP) + Optional CSV files with exact data
               </p>
               <Button>Select Files</Button>
             </div>

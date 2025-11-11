@@ -319,6 +319,16 @@ export function TradingSetupCard({ setup }: TradingSetupCardProps) {
                     </p>
                   </div>
 
+                  {/* Detailed Analysis (if available from Vision AI) */}
+                  {setup.metadata.detailed_analysis && (
+                    <div>
+                      <h3 className="text-sm font-semibold mb-2">Detailed Analysis</h3>
+                      <div className="text-sm text-muted-foreground whitespace-pre-wrap space-y-2">
+                        {setup.metadata.detailed_analysis}
+                      </div>
+                    </div>
+                  )}
+
                   {/* Pine Script Display (TradingView setups only) */}
                   {hasPineScript && (
                     <PineScriptDisplay
