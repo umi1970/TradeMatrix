@@ -32,6 +32,7 @@ httpx==0.27.0                    # Modern HTTP client (chart images, async suppo
 # Data Processing
 pyyaml>=6.0.1                    # YAML config file parsing (eod_data_fetcher.py)
 numpy>=1.24.0                    # Numerical computations (signal_bot.py)
+pandas>=2.0.0                    # Data analysis & OHLC processing (analyze_ohlc.py)
 
 # ============================================================
 # PUSH NOTIFICATIONS

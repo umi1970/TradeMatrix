@@ -13,6 +13,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import Literal, Optional
 from src.config.supabase import get_supabase_admin
+from src.api.analyze_ohlc import router as analyze_ohlc_router
+from src.api.generate_pine_script import router as pine_script_router
 import os
 
 # Create FastAPI app
@@ -35,6 +37,10 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Include routers
+app.include_router(analyze_ohlc_router, prefix="/api", tags=["TradingView Analysis"])
+app.include_router(pine_script_router, prefix="/api", tags=["Pine Script"])
 
 
 @app.get("/")
