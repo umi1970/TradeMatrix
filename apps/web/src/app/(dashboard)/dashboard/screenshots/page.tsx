@@ -264,7 +264,7 @@ export default function ScreenshotsPage() {
               onClick={() => {
                 const input = document.createElement('input')
                 input.type = 'file'
-                input.accept = 'image/*,.csv'
+                input.accept = 'image/*,text/csv,.csv'
                 input.multiple = true
                 input.onchange = (e) => {
                   const files = (e.target as HTMLInputElement).files
