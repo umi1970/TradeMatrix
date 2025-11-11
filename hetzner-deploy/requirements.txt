@@ -71,6 +71,7 @@ pytz>=2024.1                     # Timezone handling (MorningPlanner, USOpenPlan
 # FastAPI (for chart API endpoints & agent triggers)
 fastapi>=0.110.0                 # REST API framework
 uvicorn[standard]>=0.27.0        # ASGI server for FastAPI
+python-multipart>=0.0.6          # File upload support (FormData/multipart forms)
 
 # ============================================================
 # DEPLOYMENT NOTES
