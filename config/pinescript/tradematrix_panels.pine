@@ -1,0 +1,41 @@
+//@version=5
+indicator("TM_Panels", overlay=false)
+
+// RSI
+rsi = ta.rsi(close, 14)
+
+// ATR
+atr = ta.atr(14)
+
+// MACD
+[macdLine, signalLine, histLine] = ta.macd(close, 12, 26, 9)
+
+// ADX
+[diPlus, diMinus, adx] = ta.dmi(14, 14)
+
+// Volume
+vol = volume
+
+// Volatility
+volatilityPercent = (atr / close) * 100
+
+// Plots
+plot(rsi, title="RSI_14", color=color.purple, linewidth=2)
+hline(70, color=color.new(color.red, 50), linestyle=hline.style_dashed)
+hline(30, color=color.new(color.green, 50), linestyle=hline.style_dashed)
+hline(50, color=color.gray, linestyle=hline.style_dotted)
+
+plot(atr, title="ATR_14", color=color.orange, linewidth=2)
+
+plot(macdLine, title="MACD_Line", color=color.blue, linewidth=2)
+plot(signalLine, title="MACD_Signal", color=color.orange, linewidth=2)
+plot(histLine, title="MACD_Histogram", color=color.gray, style=plot.style_histogram)
+
+plot(adx, title="ADX_14", color=color.navy, linewidth=2)
+plot(diPlus, title="DI_Plus", color=color.green)
+plot(diMinus, title="DI_Minus", color=color.red)
+hline(25, color=color.gray, linestyle=hline.style_dashed)
+
+plot(vol, title="Volume", color=color.blue, style=plot.style_columns)
+
+plot(volatilityPercent, title="Volatility_Pct", display=display.none)

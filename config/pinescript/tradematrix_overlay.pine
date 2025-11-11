@@ -1,0 +1,48 @@
+//@version=5
+indicator("TM_Overlay", overlay=true)
+
+// EMAs
+ema20 = ta.ema(close, 20)
+ema50 = ta.ema(close, 50)
+ema200 = ta.ema(close, 200)
+
+// Bollinger Bands
+bbBasis = ta.sma(close, 20)
+bbDev = 2.0 * ta.stdev(close, 20)
+bbUpper = bbBasis + bbDev
+bbLower = bbBasis - bbDev
+
+// Pivot Points
+pivotHigh = request.security(syminfo.tickerid, "D", high[1], lookahead=barmerge.lookahead_on)
+pivotLow = request.security(syminfo.tickerid, "D", low[1], lookahead=barmerge.lookahead_on)
+pivotClose = request.security(syminfo.tickerid, "D", close[1], lookahead=barmerge.lookahead_on)
+
+pivotPoint = (pivotHigh + pivotLow + pivotClose) / 3
+resistance1 = 2 * pivotPoint - pivotLow
+support1 = 2 * pivotPoint - pivotHigh
+resistance2 = pivotPoint + (pivotHigh - pivotLow)
+support2 = pivotPoint - (pivotHigh - pivotLow)
+
+// Calculated
+priceVsEma20 = ((close - ema20) / ema20) * 100
+priceVsEma50 = ((close - ema50) / ema50) * 100
+priceVsEma200 = ((close - ema200) / ema200) * 100
+
+// Plots
+plot(ema20, title="EMA_20", color=color.yellow, linewidth=2)
+plot(ema50, title="EMA_50", color=color.blue, linewidth=2)
+plot(ema200, title="EMA_200", color=color.red, linewidth=2)
+
+plot(bbUpper, title="BB_Upper", color=color.green)
+plot(bbBasis, title="BB_Middle", color=color.gray)
+plot(bbLower, title="BB_Lower", color=color.red)
+
+plot(pivotPoint, title="Pivot_Point", color=color.white, linewidth=2, style=plot.style_cross)
+plot(resistance1, title="Resistance_1", color=color.green, style=plot.style_circles)
+plot(support1, title="Support_1", color=color.red, style=plot.style_circles)
+plot(resistance2, title="Resistance_2", color=color.new(color.green, 50), style=plot.style_circles)
+plot(support2, title="Support_2", color=color.new(color.red, 50), style=plot.style_circles)
+
+plot(priceVsEma20, title="Price_vs_EMA20_Pct", display=display.none)
+plot(priceVsEma50, title="Price_vs_EMA50_Pct", display=display.none)
+plot(priceVsEma200, title="Price_vs_EMA200_Pct", display=display.none)
