@@ -82,6 +82,25 @@ export async function POST(request: NextRequest) {
 
     console.log(`🎯 Processing TradingView alert: ${ticker} ${interval} (${bars.length} bars)`)
 
+    // Validate data freshness - reject if last bar is older than 5 minutes
+    const lastBarTime = parseInt(bars[bars.length - 1].time)
+    const nowTimestamp = Date.now()
+    const ageMinutes = (nowTimestamp - lastBarTime) / 1000 / 60
+
+    if (ageMinutes > 5) {
+      console.error(`❌ Data too old: Last bar is ${ageMinutes.toFixed(1)} minutes old`)
+      return NextResponse.json(
+        {
+          error: 'Data too old',
+          age_minutes: parseFloat(ageMinutes.toFixed(1)),
+          message: `Last bar is ${ageMinutes.toFixed(1)} minutes old. Use real-time symbol (e.g., DAX40 instead of XETR:DAX)`
+        },
+        { status: 400 }
+      )
+    }
+
+    console.log(`✅ Data freshness OK: Last bar is ${ageMinutes.toFixed(1)} minutes old`)
+
     // Step 1: Find symbol in database
     const { data: symbolData, error: symbolError } = await supabase
       .from('market_symbols')
