@@ -176,6 +176,34 @@ export function TradingSetupCard({ setup }: TradingSetupCardProps) {
       : 'border-l-4 border-l-red-500'
     : agentBorderClass
 
+  // Format price based on symbol type
+  const formatPrice = (price: number, symbol: string) => {
+    const sym = symbol.toUpperCase()
+
+    // Forex pairs: 5 decimals (major pairs like EURUSD, GBPUSD)
+    if (sym.includes('USD') || sym.includes('EUR') || sym.includes('GBP') || sym.includes('JPY') || sym.includes('CHF') || sym.includes('AUD') || sym.includes('NZD') || sym.includes('CAD')) {
+      return price.toFixed(5)
+    }
+
+    // Indices (DAX, DJI, NDX, SPX): 2 decimals
+    if (sym.includes('DAX') || sym.includes('DJI') || sym.includes('NDX') || sym.includes('SPX') || sym.includes('FTSE') || sym.includes('DOW')) {
+      return price.toFixed(2)
+    }
+
+    // Gold/Silver: 2 decimals
+    if (sym.includes('XAU') || sym.includes('XAG') || sym.includes('GOLD') || sym.includes('SILVER')) {
+      return price.toFixed(2)
+    }
+
+    // Bitcoin: 2 decimals
+    if (sym.includes('BTC')) {
+      return price.toFixed(2)
+    }
+
+    // Default: 5 decimals (assume forex)
+    return price.toFixed(5)
+  }
+
   return (
     <Card className={`overflow-hidden flex flex-col ${cardBorderClass}`}>
       {/* Card Header */}
@@ -231,15 +259,15 @@ export function TradingSetupCard({ setup }: TradingSetupCardProps) {
             <div className="grid grid-cols-3 gap-3">
               <div className="space-y-1">
                 <p className="text-xs text-muted-foreground uppercase tracking-wide">Entry</p>
-                <p className="text-2xl font-bold">{setup.metadata.entry!.toFixed(2)}</p>
+                <p className="text-2xl font-bold">{formatPrice(setup.metadata.entry!, setup.symbol)}</p>
               </div>
               <div className="space-y-1">
                 <p className="text-xs text-muted-foreground uppercase tracking-wide">Stop Loss</p>
-                <p className="text-2xl font-bold text-red-500">{setup.metadata.sl!.toFixed(2)}</p>
+                <p className="text-2xl font-bold text-red-500">{formatPrice(setup.metadata.sl!, setup.symbol)}</p>
               </div>
               <div className="space-y-1">
                 <p className="text-xs text-muted-foreground uppercase tracking-wide">Take Profit</p>
-                <p className="text-2xl font-bold text-green-500">{setup.metadata.tp!.toFixed(2)}</p>
+                <p className="text-2xl font-bold text-green-500">{formatPrice(setup.metadata.tp!, setup.symbol)}</p>
               </div>
             </div>
             {/* Risk/Reward Ratio */}
@@ -388,7 +416,7 @@ export function TradingSetupCard({ setup }: TradingSetupCardProps) {
                           {setup.metadata.support_levels.map((level, idx) => (
                             <div key={idx} className="flex items-center gap-2 text-sm">
                               <div className="h-2 w-2 rounded-full bg-green-500" />
-                              <span className="font-mono">{Number(level).toFixed(2)}</span>
+                              <span className="font-mono">{formatPrice(Number(level), setup.symbol)}</span>
                             </div>
                           ))}
                         </div>
@@ -401,7 +429,7 @@ export function TradingSetupCard({ setup }: TradingSetupCardProps) {
                           {setup.metadata.resistance_levels.map((level, idx) => (
                             <div key={idx} className="flex items-center gap-2 text-sm">
                               <div className="h-2 w-2 rounded-full bg-red-500" />
-                              <span className="font-mono">{Number(level).toFixed(2)}</span>
+                              <span className="font-mono">{formatPrice(Number(level), setup.symbol)}</span>
                             </div>
                           ))}
                         </div>
@@ -473,7 +501,7 @@ export function TradingSetupCard({ setup }: TradingSetupCardProps) {
                 <div className="space-y-0.5">
                   {setup.metadata.support_levels.slice(0, 2).map((level, idx) => (
                     <p key={idx} className="font-mono text-xs">
-                      {Number(level).toFixed(2)}
+                      {formatPrice(Number(level), setup.symbol)}
                     </p>
                   ))}
                 </div>
@@ -486,7 +514,7 @@ export function TradingSetupCard({ setup }: TradingSetupCardProps) {
                   <div className="space-y-0.5">
                     {setup.metadata.resistance_levels.slice(0, 2).map((level, idx) => (
                       <p key={idx} className="font-mono text-xs">
-                        {Number(level).toFixed(2)}
+                        {formatPrice(Number(level), setup.symbol)}
                       </p>
                     ))}
                   </div>
