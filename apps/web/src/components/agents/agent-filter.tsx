@@ -38,12 +38,12 @@ export function AgentFilter({ currentFilter = [] }: AgentFilterProps) {
       params.delete('agents')
     }
 
-    router.push(`/agents?${params.toString()}`)
+    router.push(`/dashboard/agents?${params.toString()}`)
   }
 
   const handleClearFilter = () => {
     setSelectedAgents([])
-    router.push('/agents')
+    router.push('/dashboard/agents')
   }
 
   const isFilterActive = selectedAgents.length > 0

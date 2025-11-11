@@ -26,7 +26,7 @@ const navigation = [
   },
   {
     name: 'AI Agents',
-    href: '/agents',
+    href: '/dashboard/agents',
     icon: Bot,
   },
   {
@@ -41,7 +41,7 @@ const navigation = [
   },
   {
     name: 'Screenshots',
-    href: '/screenshots',
+    href: '/dashboard/screenshots',
     icon: Upload,
   },
   {

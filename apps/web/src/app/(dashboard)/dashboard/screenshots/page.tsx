@@ -183,7 +183,7 @@ export default function ScreenshotsPage() {
       if (response.ok && data.setup_id) {
         console.log('✅ Setup created:', data.setup_id)
         // Redirect to agents page with setup_id
-        window.location.href = `/agents?highlight=${data.setup_id}`
+        window.location.href = `/dashboard/agents?highlight=${data.setup_id}`
       } else {
         console.error('Failed to create setup:', data.error)
         alert(`Failed to create setup: ${data.error}`)
