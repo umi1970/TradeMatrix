@@ -480,24 +480,33 @@ export default function ScreenshotsPage() {
                       )}
 
                       {/* Generate Setup Button */}
-                      <Button
-                        className="w-full"
-                        variant="outline"
-                        onClick={() => handleCreateSetup(item.analysis!.analysis_id)}
-                        disabled={creatingSetup === item.analysis?.analysis_id}
-                      >
-                        {creatingSetup === item.analysis?.analysis_id ? (
-                          <>
-                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                            Creating Setup...
-                          </>
-                        ) : (
-                          <>
-                            Generate Trading Setup
-                            <ArrowRight className="ml-2 h-4 w-4" />
-                          </>
-                        )}
-                      </Button>
+                      {item.analysis.setup_type === 'no_trade' ? (
+                        <Alert className="border-amber-200 bg-amber-50 dark:bg-amber-950/20">
+                          <AlertCircle className="h-4 w-4 text-amber-600" />
+                          <AlertDescription className="text-amber-900 dark:text-amber-200">
+                            No valid trade setup detected in this analysis
+                          </AlertDescription>
+                        </Alert>
+                      ) : (
+                        <Button
+                          className="w-full"
+                          variant="outline"
+                          onClick={() => handleCreateSetup(item.analysis!.analysis_id)}
+                          disabled={creatingSetup === item.analysis?.analysis_id}
+                        >
+                          {creatingSetup === item.analysis?.analysis_id ? (
+                            <>
+                              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                              Creating Setup...
+                            </>
+                          ) : (
+                            <>
+                              Generate Trading Setup
+                              <ArrowRight className="ml-2 h-4 w-4" />
+                            </>
+                          )}
+                        </Button>
+                      )}
                     </div>
                   )}
 

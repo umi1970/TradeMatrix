@@ -44,7 +44,22 @@ export async function POST(request: NextRequest) {
 
     const payload = analysis.payload || {}
 
-    // Validate required fields
+    // Validate setup_type first
+    if (!payload.setup_type || payload.setup_type === 'no_trade') {
+      return NextResponse.json(
+        { error: 'Cannot create setup: Analysis indicates no valid trade setup (setup_type is "no_trade" or missing)' },
+        { status: 400 }
+      )
+    }
+
+    if (payload.setup_type !== 'long' && payload.setup_type !== 'short') {
+      return NextResponse.json(
+        { error: `Invalid setup_type: "${payload.setup_type}". Must be "long" or "short"` },
+        { status: 400 }
+      )
+    }
+
+    // Validate required trading levels
     if (!payload.entry_price || !payload.stop_loss || !payload.take_profit) {
       return NextResponse.json(
         { error: 'Analysis missing required trading levels (entry/stop/target)' },
