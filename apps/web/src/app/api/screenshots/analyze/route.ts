@@ -79,7 +79,7 @@ Your task is to EXTRACT and SUMMARIZE the technical and price information visibl
 ⚠️ OUTPUT REQUIREMENTS:
 - Respond **only** in valid JSON (no markdown or explanations).
 - Use EXACTLY these root keys:
-  ["symbol", "timeframe", "current_price", "open", "high", "low", "close", "timestamp", "ema20", "ema50", "ema200", "rsi", "pivot_points", "other_indicators", "support_levels", "resistance_levels", "trend", "trend_strength", "price_vs_emas", "momentum_bias", "patterns_detected", "key_events", "market_structure", "setup_type", "entry_price", "stop_loss", "take_profit", "risk_reward", "reasoning", "timeframe_validity", "confidence_score", "chart_quality", "key_factors"]
+  ["symbol", "timeframe", "current_price", "open", "high", "low", "close", "timestamp", "ema_20", "ema_50", "ema_200", "rsi_14", "atr_14", "macd_line", "macd_signal", "macd_histogram", "bb_upper", "bb_middle", "bb_lower", "pivot_point", "resistance_1", "support_1", "resistance_2", "support_2", "adx_14", "di_plus", "di_minus", "volume", "volatility_pct", "price_vs_ema20_pct", "price_vs_ema50_pct", "price_vs_ema200_pct", "support_levels", "resistance_levels", "trend", "trend_strength", "momentum_bias", "patterns_detected", "key_events", "market_structure", "setup_type", "entry_price", "stop_loss", "take_profit", "risk_reward", "reasoning", "timeframe_validity", "confidence_score", "chart_quality", "key_factors"]
 
 ---
 
@@ -88,17 +88,53 @@ Extract visible basic info:
 symbol, timeframe (use trading format: 1m, 5m, 15m, 30m, 1h, 4h, 1d, 1w - NOT '5 Minuten' or '1 hour'), current_price, open, high, low, close, timestamp.
 
 ### 2️⃣ TECHNICAL_INDICATORS
-Extract if visible:
-ema20, ema50, ema200, rsi, pivot_points, other_indicators.
+Extract if visible (return null if not visible):
+
+**Moving Averages:**
+- ema_20: EMA 20 value
+- ema_50: EMA 50 value
+- ema_200: EMA 200 value
+
+**Momentum Indicators:**
+- rsi_14: RSI(14) value (0-100)
+- atr_14: ATR(14) value
+- macd_line: MACD line value
+- macd_signal: MACD signal line value
+- macd_histogram: MACD histogram value
+
+**Bollinger Bands:**
+- bb_upper: Upper Bollinger Band
+- bb_middle: Middle Bollinger Band (SMA 20)
+- bb_lower: Lower Bollinger Band
+
+**Pivot Points:**
+- pivot_point: Daily pivot point
+- resistance_1: R1 level
+- support_1: S1 level
+- resistance_2: R2 level
+- support_2: S2 level
+
+**Trend Indicators:**
+- adx_14: ADX(14) value (0-100)
+- di_plus: DI+ value
+- di_minus: DI- value
+
+**Volume & Volatility:**
+- volume: Current bar volume
+- volatility_pct: Volatility as percentage (ATR/Close * 100)
+
+**Calculated Metrics:**
+- price_vs_ema20_pct: (Current Price - EMA20) / EMA20 * 100
+- price_vs_ema50_pct: (Current Price - EMA50) / EMA50 * 100
+- price_vs_ema200_pct: (Current Price - EMA200) / EMA200 * 100
 
 ### 3️⃣ SUPPORT_RESISTANCE_LEVELS
 support_levels[], resistance_levels[] from visible lines, pivots, or price zones.
 
 ### 4️⃣ TREND_ANALYSIS
 trend ("bullish" | "bearish" | "sideways"),
-trend_strength ("strong" | "moderate" | "weak"),
-price_vs_emas ("above_all" | "below_all" | "mixed"),
-momentum_bias (short comment like "bullish momentum slowing near resistance").
+trend_strength ("strong" | "moderate" | "weak") - use ADX and EMA alignment to determine strength,
+momentum_bias (short comment like "bullish momentum slowing near resistance" - consider RSI, MACD, DI+/DI-).
 
 ### 5️⃣ PRICE_ACTION_PATTERNS
 patterns_detected[],
@@ -119,25 +155,28 @@ reasoning (2–3 sentences explaining WHY this setup makes sense given the curre
 timeframe_validity ("intraday" | "swing" | "midterm").
 
 ### 7️⃣ CONFIDENCE_QUALITY
-confidence_score (0.0–1.0, calibrate realistically:
-  - 0.85+: Clear trend, strong momentum, confluence of multiple indicators
-  - 0.70–0.84: Good setup but with 1-2 conflicting signals
-  - 0.50–0.69: Mixed signals or range-bound market
-  - <0.50: Low probability, unclear structure),
-chart_quality ("excellent" | "good" | "fair" | "poor"),
-key_factors (list 2–3 specific reasons affecting confidence, e.g., "EMA alignment", "momentum divergence", "near resistance").
+confidence_score (0.0–1.0, calibrate realistically based on ALL visible indicators:
+  - 0.85+: Clear trend, strong ADX (>40), EMA alignment, RSI confirming, MACD aligned, multiple indicators agree
+  - 0.70–0.84: Good setup but with 1-2 conflicting signals (e.g., bullish EMAs but RSI overbought)
+  - 0.50–0.69: Mixed signals (e.g., sideways EMAs, weak ADX <25, MACD divergence)
+  - <0.50: Low probability, unclear structure, conflicting indicators),
+chart_quality ("excellent" | "good" | "fair" | "poor") - based on chart clarity and indicator visibility,
+key_factors (list 2–4 specific indicators/factors affecting confidence, e.g., "ADX 45 shows strong trend", "RSI 75 overbought", "MACD histogram declining", "Price above all EMAs").
 
 ---
 
 RULES:
 ✅ Use only what is clearly visible in the chart.
-✅ If a value is uncertain, return null.
+✅ If an indicator value is uncertain or not visible, return null.
 ✅ Ensure numeric precision (trading requires accuracy).
 ✅ Focus on actionable insights, not generic explanations.
+✅ Consider ALL 23 indicators when calculating confidence_score and trend_strength.
+✅ Use ADX, RSI, MACD, EMAs alignment to determine trend strength.
 ✅ Calculate risk_reward dynamically based on trend_strength and confidence_score.
-✅ If you analyze multiple timeframes of the same symbol, mention confluence in reasoning (e.g., "Multi-timeframe bullish alignment confirms setup").
-✅ Reasoning must explain WHY the setup works given market structure, not just describe what you see.
-✅ Output must be valid JSON with the exact keys above.`,
+✅ If you analyze multiple timeframes of the same symbol, mention confluence in reasoning.
+✅ Reasoning must explain WHY the setup works given market structure and indicator alignment.
+✅ key_factors MUST reference specific indicator values (e.g., "ADX 45", "RSI 75", not just "strong trend").
+✅ Output must be valid JSON with the exact 43 keys listed above (all indicators + analysis fields).`,
             },
             {
               type: 'image_url',
@@ -277,13 +316,48 @@ RULES:
       symbol: normalizedSymbol,
       timeframe: analysis.timeframe,
       current_price: analysis.current_price,
+
+      // Technical Indicators (23 total)
+      ema_20: analysis.ema_20,
+      ema_50: analysis.ema_50,
+      ema_200: analysis.ema_200,
+      rsi_14: analysis.rsi_14,
+      atr_14: analysis.atr_14,
+      macd_line: analysis.macd_line,
+      macd_signal: analysis.macd_signal,
+      macd_histogram: analysis.macd_histogram,
+      bb_upper: analysis.bb_upper,
+      bb_middle: analysis.bb_middle,
+      bb_lower: analysis.bb_lower,
+      pivot_point: analysis.pivot_point,
+      resistance_1: analysis.resistance_1,
+      support_1: analysis.support_1,
+      resistance_2: analysis.resistance_2,
+      support_2: analysis.support_2,
+      adx_14: analysis.adx_14,
+      di_plus: analysis.di_plus,
+      di_minus: analysis.di_minus,
+      volume: analysis.volume,
+      volatility_pct: analysis.volatility_pct,
+      price_vs_ema20_pct: analysis.price_vs_ema20_pct,
+      price_vs_ema50_pct: analysis.price_vs_ema50_pct,
+      price_vs_ema200_pct: analysis.price_vs_ema200_pct,
+
+      // Trend Analysis
       trend: analysis.trend,
       trend_strength: analysis.trend_strength,
-      price_vs_emas: analysis.price_vs_emas,
       momentum_bias: analysis.momentum_bias,
-      confidence_score: analysis.confidence_score,
-      chart_quality: analysis.chart_quality,
-      key_factors: analysis.key_factors,
+
+      // Support/Resistance
+      support_levels: analysis.support_levels,
+      resistance_levels: analysis.resistance_levels,
+
+      // Patterns & Events
+      patterns_detected: analysis.patterns_detected,
+      market_structure: analysis.market_structure,
+      key_events: analysis.key_events,
+
+      // Trading Setup
       setup_type: analysis.setup_type,
       entry_price: analysis.entry_price,
       stop_loss: analysis.stop_loss,
@@ -291,10 +365,13 @@ RULES:
       risk_reward: analysis.risk_reward,
       reasoning: analysis.reasoning,
       timeframe_validity: analysis.timeframe_validity,
-      patterns_detected: analysis.patterns_detected,
-      support_levels: analysis.support_levels,
-      resistance_levels: analysis.resistance_levels,
-      screenshot_url: screenshotUrl, // Include screenshot URL for frontend
+
+      // Quality & Confidence
+      confidence_score: analysis.confidence_score,
+      chart_quality: analysis.chart_quality,
+      key_factors: analysis.key_factors,
+
+      screenshot_url: screenshotUrl,
     })
 
   } catch (error) {
