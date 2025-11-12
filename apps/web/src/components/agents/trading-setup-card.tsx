@@ -219,6 +219,11 @@ export function TradingSetupCard({ setup }: TradingSetupCardProps) {
               {setup.timeframe}
             </Badge>
           </div>
+          {/* Timestamp */}
+          <div className="flex items-center gap-1 text-xs text-muted-foreground whitespace-nowrap">
+            <Clock className="h-3 w-3" />
+            {formatDistanceToNow(new Date(setup.created_at), { addSuffix: true })}
+          </div>
         </div>
 
         <div className="flex items-center gap-2 mt-2 flex-wrap">
@@ -521,6 +526,52 @@ export function TradingSetupCard({ setup }: TradingSetupCardProps) {
                   </div>
                 </div>
               )}
+          </div>
+        )}
+
+        {/* CSV Upload for Trade Monitoring - Only show when entry hit */}
+        {setup.status === 'entry_hit' && (
+          <div className="border-t pt-3 space-y-2">
+            <p className="text-sm font-medium flex items-center gap-2">
+              <Activity className="h-4 w-4" />
+              Monitor Trade Progress
+            </p>
+            <p className="text-xs text-muted-foreground">
+              Upload current chart CSV to check if SL/TP was hit
+            </p>
+            <div className="flex gap-2">
+              <input
+                type="file"
+                accept=".csv,text/csv"
+                className="flex-1 text-xs file:mr-2 file:py-1 file:px-3 file:rounded file:border-0 file:text-xs file:font-semibold file:bg-primary file:text-primary-foreground hover:file:bg-primary/90"
+                onChange={async (e) => {
+                  const file = e.target.files?.[0]
+                  if (!file) return
+
+                  const formData = new FormData()
+                  formData.append('csv', file)
+
+                  try {
+                    const response = await fetch(`/api/setups/${setup.id}/monitor`, {
+                      method: 'POST',
+                      body: formData,
+                    })
+
+                    const data = await response.json()
+
+                    if (response.ok) {
+                      alert(`✅ ${data.message}\nStatus: ${data.status}\nCurrent Price: ${data.current_price}`)
+                      window.location.reload() // Refresh to show updated status
+                    } else {
+                      alert(`❌ ${data.error}`)
+                    }
+                  } catch (error) {
+                    console.error('Monitor error:', error)
+                    alert('❌ Failed to monitor trade')
+                  }
+                }}
+              />
+            </div>
           </div>
         )}
 

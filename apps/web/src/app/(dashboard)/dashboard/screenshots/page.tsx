@@ -10,6 +10,7 @@ import { Badge } from '@/components/ui/badge'
 interface AnalysisResult {
   file: File | null  // Allow null for existing analyses
   status: 'pending' | 'analyzing' | 'success' | 'error'
+  preview?: string  // Base64 preview for pending files
   screenshot_url?: string  // For existing analyses from DB
   analysis?: {
     analysis_id: string
@@ -44,11 +45,21 @@ export default function ScreenshotsPage() {
   const [loading, setLoading] = useState(true)
   const [creatingSetup, setCreatingSetup] = useState<string | null>(null) // Track which analysis is creating setup
 
+  // Convert File to Base64 for preview
+  const fileToBase64 = (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader()
+      reader.onload = () => resolve(reader.result as string)
+      reader.onerror = reject
+      reader.readAsDataURL(file)
+    })
+  }
+
   useEffect(() => {
     loadExistingAnalyses()
 
     // Add paste event listener for clipboard images
-    const handlePaste = (e: ClipboardEvent) => {
+    const handlePaste = async (e: ClipboardEvent) => {
       const items = e.clipboardData?.items
       if (!items) return
 
@@ -71,10 +82,21 @@ export default function ScreenshotsPage() {
 
       // Add pasted images to files state
       if (imageFiles.length > 0) {
-        const newFiles: AnalysisResult[] = imageFiles.map(file => ({
-          file,
-          status: 'pending'
-        }))
+        const newFiles: AnalysisResult[] = await Promise.all(
+          imageFiles.map(async (file) => {
+            let preview: string | undefined
+            try {
+              preview = await fileToBase64(file)
+            } catch (err) {
+              console.error('Failed to generate preview:', err)
+            }
+            return {
+              file,
+              status: 'pending' as const,
+              preview,
+            }
+          })
+        )
         setFiles(prev => [...prev, ...newFiles])
         console.log(`📋 Pasted ${imageFiles.length} image(s) from clipboard`)
       }
@@ -149,11 +171,24 @@ export default function ScreenshotsPage() {
     }
   }
 
-  const handleFileSelect = (selectedFiles: FileList) => {
-    const newFiles: AnalysisResult[] = Array.from(selectedFiles).map(file => ({
-      file,
-      status: 'pending'
-    }))
+  const handleFileSelect = async (selectedFiles: FileList) => {
+    const newFiles: AnalysisResult[] = await Promise.all(
+      Array.from(selectedFiles).map(async (file) => {
+        let preview: string | undefined
+        if (file.type.startsWith('image/')) {
+          try {
+            preview = await fileToBase64(file)
+          } catch (err) {
+            console.error('Failed to generate preview:', err)
+          }
+        }
+        return {
+          file,
+          status: 'pending' as const,
+          preview,
+        }
+      })
+    )
     setFiles(prev => [...prev, ...newFiles])
   }
 
@@ -425,7 +460,7 @@ export default function ScreenshotsPage() {
                       {item.file.type.startsWith('image/') ? (
                         <div className="relative">
                           <img
-                            src={URL.createObjectURL(item.file)}
+                            src={item.preview || ''}
                             alt={`Preview ${item.file.name}`}
                             className="w-full h-48 object-contain bg-muted rounded"
                             loading="lazy"
