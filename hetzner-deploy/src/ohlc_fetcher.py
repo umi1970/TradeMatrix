@@ -52,18 +52,20 @@ class OHLCFetcher:
         # Everything else → yfinance (indices, stocks, commodities, etc.)
         return 'yfinance'
 
-    def get_api_symbol(self, symbol: str, vendor: str = None) -> str:
+    def get_api_symbol_fallback(self, symbol: str) -> str:
         """
-        Convert DB symbol to API symbol
+        DEPRECATED: Fallback mapping when api_symbol is NULL in database
+
+        This should NOT be used - all symbols should have api_symbol in DB.
+        Only kept as safety net for backwards compatibility.
 
         Args:
             symbol: DB symbol (DAX, NDX, EUR/USD, US30, etc.)
-            vendor: Vendor from DB
 
         Returns:
-            API-compatible symbol
+            API-compatible symbol (best guess)
         """
-        # Known mappings
+        # Fallback mappings (SHOULD NOT BE NEEDED!)
         mappings = {
             'DAX': '^GDAXI',
             'NDX': '^NDX',
@@ -74,6 +76,7 @@ class OHLCFetcher:
             'EUR/USD': 'EUR/USD',
             'EUR/GBP': 'EUR/GBP',
             'GBP/USD': 'GBP/USD',
+            'XAG/USD': 'XAG/USD',
         }
 
         return mappings.get(symbol, symbol)
@@ -176,12 +179,13 @@ class OHLCFetcher:
             print(f"❌ {symbol}: Twelvedata error: {str(e)}")
             return None
 
-    def fetch_symbol_ohlc(self, symbol: str, vendor: str = None) -> Optional[Dict]:
+    def fetch_symbol_ohlc(self, symbol: str, api_symbol: str, vendor: str = None) -> Optional[Dict]:
         """
         Fetch OHLC for a symbol using appropriate provider
 
         Args:
             symbol: DB symbol (DAX, EUR/USD, US30, etc.)
+            api_symbol: API-specific symbol (^GDAXI, EUR/USD, etc.) from database
             vendor: Vendor from DB (capitalcom, tradingview, etc.)
 
         Returns:
@@ -189,9 +193,6 @@ class OHLCFetcher:
         """
         # Determine provider automatically
         provider = self.determine_provider(symbol, vendor)
-
-        # Get API symbol
-        api_symbol = self.get_api_symbol(symbol, vendor)
 
         if provider == 'yfinance':
             return self.fetch_yfinance_ohlc(symbol, api_symbol)
@@ -259,7 +260,7 @@ class OHLCFetcher:
         # Get ALL active symbols from database (dynamic)
         try:
             symbols_result = self.supabase.table('market_symbols')\
-                .select('id, symbol, vendor')\
+                .select('id, symbol, vendor, api_symbol')\
                 .eq('active', True)\
                 .execute()
 
@@ -292,6 +293,12 @@ class OHLCFetcher:
             symbol_name = db_symbol['symbol']
             symbol_id = db_symbol['id']
             vendor = db_symbol.get('vendor')
+            api_symbol = db_symbol.get('api_symbol')
+
+            # Fallback: If api_symbol is NULL, use fallback mapping (SHOULD NOT HAPPEN!)
+            if not api_symbol:
+                print(f"  ⚠️  {symbol_name}: api_symbol is NULL in DB! Using fallback...")
+                api_symbol = self.get_api_symbol_fallback(symbol_name)
 
             # Determine provider automatically
             provider = self.determine_provider(symbol_name, vendor)
@@ -299,7 +306,7 @@ class OHLCFetcher:
             print(f"\n📈 Fetching {symbol_name} ({provider})...")
 
             # Fetch OHLC
-            ohlc_data = self.fetch_symbol_ohlc(symbol_name, vendor)
+            ohlc_data = self.fetch_symbol_ohlc(symbol_name, api_symbol, vendor)
 
             if ohlc_data and symbol_id:
                 # Store in database
