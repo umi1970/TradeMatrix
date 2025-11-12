@@ -45,8 +45,8 @@ celery.conf.update(
     task_serializer='json',
     accept_content=['json'],
     result_serializer='json',
-    timezone='UTC',
-    enable_utc=True,
+    timezone='Europe/Berlin',  # MEZ/MESZ timezone
+    enable_utc=False,  # Use local timezone (Berlin)
     task_track_started=True,
     task_time_limit=30 * 60,  # 30 minutes
     worker_prefetch_multiplier=1,
