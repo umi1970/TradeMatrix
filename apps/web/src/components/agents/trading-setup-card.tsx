@@ -54,6 +54,7 @@ interface TradingSetup {
     trend?: string
     support_levels?: number[]
     resistance_levels?: number[]
+    detailed_analysis?: string
   }
 }
 

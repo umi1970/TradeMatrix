@@ -95,7 +95,7 @@ export async function POST(request: NextRequest) {
           ...payload,
           analysis_id: analysis_id,
           timeframe: analysis.timeframe,
-          symbol: analysis.market_symbols?.symbol,
+          symbol: (analysis.market_symbols as any)?.symbol,
           source: 'vision_screenshot',
         },
       })
@@ -114,7 +114,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({
       setup_id: setup.id,
-      symbol: analysis.market_symbols?.symbol,
+      symbol: (analysis.market_symbols as any)?.symbol,
       side: setup.side,
       entry_price: setup.entry_price,
       stop_loss: setup.stop_loss,

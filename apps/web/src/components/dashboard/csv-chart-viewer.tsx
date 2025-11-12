@@ -62,7 +62,7 @@ export function CSVChartViewer({ data }: CSVChartViewerProps) {
     chartRef.current = chart
 
     // Add candlestick series
-    const candleSeries = chart.addCandlestickSeries({
+    const candleSeries = (chart as any).addCandlestickSeries({
       upColor: '#22c55e',
       downColor: '#ef4444',
       borderUpColor: '#22c55e',

@@ -495,13 +495,13 @@ export default function ScreenshotsPage() {
                       )}
 
                       {/* Patterns & Key Factors */}
-                      {(item.analysis.patterns_detected?.length > 0 || item.analysis.key_factors?.length > 0) && (
+                      {((item.analysis.patterns_detected?.length ?? 0) > 0 || (item.analysis.key_factors?.length ?? 0) > 0) && (
                         <div className="space-y-2 text-xs">
-                          {item.analysis.patterns_detected?.length > 0 && (
+                          {(item.analysis.patterns_detected?.length ?? 0) > 0 && (
                             <div>
                               <p className="font-semibold mb-1">Patterns:</p>
                               <div className="flex flex-wrap gap-1">
-                                {item.analysis.patterns_detected.map((pattern, i) => (
+                                {item.analysis.patterns_detected?.map((pattern, i) => (
                                   <Badge key={i} variant="secondary" className="text-xs">
                                     {pattern}
                                   </Badge>
@@ -509,11 +509,11 @@ export default function ScreenshotsPage() {
                               </div>
                             </div>
                           )}
-                          {item.analysis.key_factors?.length > 0 && (
+                          {(item.analysis.key_factors?.length ?? 0) > 0 && (
                             <div>
                               <p className="font-semibold mb-1">Key Factors:</p>
                               <ul className="list-disc list-inside text-muted-foreground space-y-0.5">
-                                {item.analysis.key_factors.map((factor, i) => (
+                                {item.analysis.key_factors?.map((factor, i) => (
                                   <li key={i}>{factor}</li>
                                 ))}
                               </ul>
