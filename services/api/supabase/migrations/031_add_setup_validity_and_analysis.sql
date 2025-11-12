@@ -185,7 +185,11 @@ CREATE INDEX IF NOT EXISTS idx_setups_closed_at
 -- 8. UPDATE VIEWS
 -- =====================================================================
 
--- Update active_setups view to include validity info
+-- Drop existing views before recreating (to avoid column conflicts)
+DROP VIEW IF EXISTS active_setups;
+DROP VIEW IF EXISTS completed_setups;
+
+-- Recreate active_setups view with validity info
 CREATE OR REPLACE VIEW active_setups AS
 SELECT
   s.id,

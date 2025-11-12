@@ -7,14 +7,14 @@ const supabase = createClient(
 )
 
 interface MonitorParams {
-  params: {
+  params: Promise<{
     id: string
-  }
+  }>
 }
 
-export async function POST(request: NextRequest, { params }: MonitorParams) {
+export async function POST(request: NextRequest, context: MonitorParams) {
   try {
-    const { id: setupId } = params
+    const { id: setupId } = await context.params
 
     // Get CSV file from FormData
     const formData = await request.formData()
@@ -173,6 +173,32 @@ export async function POST(request: NextRequest, { params }: MonitorParams) {
         { error: 'Failed to update setup status' },
         { status: 500 }
       )
+    }
+
+    // Auto-trigger outcome analysis when SL/TP hit
+    if ((newStatus === 'sl_hit' || newStatus === 'tp_hit') && outcome) {
+      try {
+        console.log(`📊 Auto-triggering outcome analysis for setup ${setupId} (${outcome})...`)
+
+        // Call analyze-outcome endpoint (internal fetch)
+        const analyzeUrl = new URL(`/api/setups/${setupId}/analyze-outcome`, request.url)
+        const analyzeResponse = await fetch(analyzeUrl.toString(), {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        })
+
+        if (analyzeResponse.ok) {
+          const analyzeData = await analyzeResponse.json()
+          console.log(`✅ Auto-analysis completed: ${analyzeData.lesson?.lesson_learned?.substring(0, 100)}...`)
+        } else {
+          console.warn(`⚠️ Auto-analysis failed (non-critical): ${analyzeResponse.statusText}`)
+        }
+      } catch (analyzeError) {
+        console.warn('⚠️ Auto-analysis failed (non-critical):', analyzeError)
+        // Don't fail the whole request - analysis can be done manually later
+      }
     }
 
     // Build response message

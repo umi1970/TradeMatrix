@@ -26,6 +26,15 @@ interface Pattern {
   description?: string
 }
 
+interface TradeLesson {
+  id: string
+  root_cause?: string | null
+  failed_indicators?: string[] | null
+  lesson_learned: string
+  improved_strategy?: string | null
+  created_at: string
+}
+
 interface TradingSetup {
   id: string
   symbol: string
@@ -45,6 +54,8 @@ interface TradingSetup {
   pnl_percent?: number | null
   pine_script?: string | null
   pine_script_active?: boolean
+  outcome_analysis?: string | null
+  trade_lesson?: TradeLesson | null
   metadata: {
     setup_type?: string
     entry?: number
@@ -572,6 +583,55 @@ export function TradingSetupCard({ setup }: TradingSetupCardProps) {
                 }}
               />
             </div>
+          </div>
+        )}
+
+        {/* Trade Lesson - Show after outcome */}
+        {(setup.trade_lesson || setup.outcome_analysis) && setup.outcome && (
+          <div className={`border-t pt-3 space-y-2 ${setup.outcome === 'loss' ? 'bg-red-50/50 dark:bg-red-950/20' : 'bg-green-50/50 dark:bg-green-950/20'} -mx-4 px-4 pb-3 rounded-b-lg`}>
+            <p className="text-sm font-semibold flex items-center gap-2">
+              {setup.outcome === 'loss' ? '📚' : '✨'} Trade Lesson
+            </p>
+
+            {/* Lesson Learned */}
+            <div className="space-y-1">
+              <p className="text-xs font-medium text-muted-foreground">Key Takeaway:</p>
+              <p className="text-sm">
+                {setup.trade_lesson?.lesson_learned || setup.outcome_analysis}
+              </p>
+            </div>
+
+            {/* Root Cause (if available) */}
+            {setup.trade_lesson?.root_cause && (
+              <div className="space-y-1">
+                <p className="text-xs font-medium text-muted-foreground">Root Cause:</p>
+                <p className="text-xs">{setup.trade_lesson.root_cause}</p>
+              </div>
+            )}
+
+            {/* Failed Indicators (for losses) */}
+            {setup.trade_lesson?.failed_indicators && setup.trade_lesson.failed_indicators.length > 0 && (
+              <div className="space-y-1">
+                <p className="text-xs font-medium text-muted-foreground">Misleading Indicators:</p>
+                <div className="flex flex-wrap gap-1">
+                  {setup.trade_lesson.failed_indicators.map((indicator, idx) => (
+                    <Badge key={idx} variant="destructive" className="text-xs">
+                      {indicator}
+                    </Badge>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Improved Strategy */}
+            {setup.trade_lesson?.improved_strategy && (
+              <div className="space-y-1">
+                <p className="text-xs font-medium text-muted-foreground">
+                  {setup.outcome === 'loss' ? 'How to Avoid:' : 'What Worked:'}
+                </p>
+                <p className="text-xs">{setup.trade_lesson.improved_strategy}</p>
+              </div>
+            )}
           </div>
         )}
 
