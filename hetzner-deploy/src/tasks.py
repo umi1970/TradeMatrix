@@ -25,6 +25,7 @@ from .push_notification_service import PushNotificationService
 from .chart_watcher import ChartWatcher
 from .morning_planner import MorningPlanner
 from .journal_bot import JournalBot
+from .ohlc_fetcher import OHLCFetcher
 
 # Configure logging
 logging.basicConfig(
@@ -267,6 +268,37 @@ def run_journal_bot_task(self):
         }
 
 
+@celery.task(name='fetch_ohlc_data', bind=True)
+def fetch_ohlc_data_task(self):
+    """
+    OHLC Fetcher - runs every 5 minutes (Mon-Fri only)
+    Fetches 5-minute candlestick data for MorningPlanner analysis
+    """
+    try:
+        logger.info("=" * 70)
+        logger.info("📊 Starting OHLC data fetch")
+        logger.info("=" * 70)
+
+        # Initialize OHLC Fetcher
+        fetcher = OHLCFetcher()
+
+        # Fetch all symbols
+        result = fetcher.fetch_all_ohlc()
+
+        logger.info("=" * 70)
+        logger.info(f"✅ OHLC Fetch completed: {result.get('success', 0)} success, {result.get('failed', 0)} failed")
+        logger.info("=" * 70)
+
+        return result
+
+    except Exception as e:
+        logger.error(f"❌ Fatal error in OHLC Fetcher: {str(e)}")
+        return {
+            'status': 'error',
+            'error': str(e)
+        }
+
+
 # ================================================
 # Celery Beat Schedule
 # ================================================
@@ -278,6 +310,15 @@ celery.conf.beat_schedule = {
         'schedule': crontab(minute='*', day_of_week='mon-fri'),  # Every minute, Mon-Fri only
         'options': {
             'expires': 55,  # Task expires after 55 seconds (before next run)
+        }
+    },
+
+    # OHLC Fetcher - runs every 5 minutes (Mon-Fri only, during trading hours)
+    'ohlc-fetcher-5min': {
+        'task': 'fetch_ohlc_data',
+        'schedule': crontab(minute='*/5', day_of_week='mon-fri'),  # Every 5 minutes, Mon-Fri only
+        'options': {
+            'expires': 240,  # Task expires after 4 minutes (before next run)
         }
     },
 
